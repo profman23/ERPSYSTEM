@@ -20,5 +20,8 @@
   "devDependencies": {
     "concurrently": "^8.2.2",
     "drizzle-orm": "^0.44.7"
+  },
+  "dependencies": {
+    "lucide-react": "^0.554.0"
   }
 }
