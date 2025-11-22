@@ -15,6 +15,17 @@ npm run dev
 The client will be available at `http://localhost:5000`  
 The server API will be available at `http://localhost:3000`
 
+## 🗄️ Database
+
+This project uses **Neon Serverless PostgreSQL** with connection pooling. The database connection is configured via the `DATABASE_URL` environment variable.
+
+To use your own Neon instance:
+1. Get your connection string from [Neon Console](https://console.neon.tech)
+2. Add it to your Replit secrets as `DATABASE_URL`
+3. The server will automatically use it via environment variables
+
+---
+
 ## 📁 Project Structure
 
 ```

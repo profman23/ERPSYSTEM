@@ -6,7 +6,14 @@ Enterprise-grade Multi-Tenant Veterinary ERP SaaS platform built with modern tec
 ## Project Status
 **Phase:** 1 - Foundation  
 **Status:** In Development  
+**Database:** Neon PostgreSQL (EU-Central-1)  
 **Last Updated:** November 22, 2025
+
+### Database Configuration
+- **Provider:** Neon Serverless PostgreSQL
+- **Region:** EU-Central-1 (AWS)
+- **Connection:** Pooled connection via Neon Pooler
+- **Status:** ✅ Connected and verified
 
 ## Architecture
 
