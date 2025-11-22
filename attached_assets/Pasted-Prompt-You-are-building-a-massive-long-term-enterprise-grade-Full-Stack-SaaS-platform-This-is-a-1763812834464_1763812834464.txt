@@ -1,0 +1,331 @@
+Prompt:
+
+You are building a massive, long-term, enterprise-grade Full-Stack SaaS platform.
+This is a very large project, and it must NOT be simplified.
+This project will be developed in multiple phases, and today is Phase 1 only.
+
+⚠️ DO NOT build features.
+⚠️ DO NOT simplify the architecture.
+⚠️ DO NOT create an MVP.
+⚠️ ONLY create project structure, configs, and the Master Design System (Brand Guidelines).
+
+📌 PROJECT OVERVIEW (For your understanding — do NOT implement features)
+
+This is a Multi-Tenant → Multi-Business-Line → Multi-Branch Veterinary ERP SaaS with:
+
+Multi-tenant branding (logo, colors, fonts, themes)
+
+Theme engine (per tenant)
+
+White-label mode
+
+Multi-language (Arabic RTL + English)
+
+Fully responsive UI (mobile/tablet/desktop)
+
+Real-time system (Socket.IO + Redis)
+
+Full concurrency protection (locks + idempotency)
+
+AGI + AI (text + voice)
+
+AGI permission guard
+
+S3 storage for PDFs
+
+Lab device integrations (IDEXX, Zoetis)
+
+Workflow engine
+
+Document templates
+
+Plug-in architecture
+
+Notifications system
+
+ERP modules (invoices, appointments, inventory, medical records…)
+
+DO NOT build any of these features now.
+Just understand the scale.
+
+📌 PHASE 1 — WHAT YOU MUST BUILD NOW
+✔️ 1. Generate the FULL monorepo structure
+/client
+/server
+/types
+/scripts
+/env
+
+✔️ 2. MASTER BRAND GUIDELINES (GLOBAL DESIGN SYSTEM)
+
+Create a complete reusable design system that will be inherited by all tenants.
+
+Include the full Modern Medical Blue Theme:
+Color Palette
+
+Primary:
+
+#2563EB
+
+#3B82F6
+
+#1E40AF
+
+Secondary:
+
+#0EA5E9
+
+#7DD3FC
+
+#0369A1
+
+Accent:
+
+#14B8A6
+
+Neutral:
+
+Background: #F9FAFB
+
+Surface: #FFFFFF
+
+Border: #E5E7EB
+
+Text: #111827
+
+Text Secondary: #4B5563
+
+Status:
+
+Success: #22C55E
+
+Error: #EF4444
+
+Warning: #F59E0B
+
+Info: #0EA5E9
+
+Font System
+
+English: Inter
+Arabic: Cairo
+Heading: Inter
+Body: Inter + Cairo
+
+Radius
+
+sm: 6px
+
+md: 10px
+
+lg: 16px
+
+full: 999px
+
+Theme CSS Variables
+
+Create a file like:
+
+/client/src/styles/theme.css
+
+With:
+
+:root {
+  --color-primary: #2563EB;
+  --color-primary-light: #3B82F6;
+  --color-primary-dark: #1E40AF;
+
+  --color-secondary: #0EA5E9;
+  --color-secondary-light: #7DD3FC;
+  --color-secondary-dark: #0369A1;
+
+  --color-accent: #14B8A6;
+
+  --color-bg: #F9FAFB;
+  --color-surface: #FFFFFF;
+  --color-border: #E5E7EB;
+
+  --color-text: #111827;
+  --color-text-secondary: #4B5563;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  --font-heading: "Inter", sans-serif;
+  --font-body: "Inter", "Cairo", sans-serif;
+}
+
+Tailwind Tokens
+
+Modify tailwind.config.js:
+
+theme: {
+  extend: {
+    colors: {
+      primary: "var(--color-primary)",
+      secondary: "var(--color-secondary)",
+      accent: "var(--color-accent)",
+      bg: "var(--color-bg)",
+      surface: "var(--color-surface)",
+      border: "var(--color-border)",
+      text: "var(--color-text)",
+      textSecondary: "var(--color-text-secondary)",
+    },
+    borderRadius: {
+      sm: "var(--radius-sm)",
+      md: "var(--radius-md)",
+      lg: "var(--radius-lg)",
+    },
+    fontFamily: {
+      heading: "var(--font-heading)",
+      body: "var(--font-body)",
+    },
+  }
+}
+
+✔️ 3. CLIENT (React + Vite + TS)
+
+Generate:
+
+React + Vite + TS boilerplate
+
+Tailwind + Shadcn setup
+
+i18n folder structure
+
+Theme Provider (empty logic, just variables)
+
+Layout:
+
+Sidebar (placeholder)
+
+Header (placeholder)
+
+Content area
+
+Auth pages placeholders
+
+Multi-tenant branding loader (empty function)
+
+React Query Provider
+
+Zustand store boilerplate
+
+Socket Provider (empty)
+
+Do NOT implement real features.
+
+✔️ 4. SERVER (Node + Express + TS)
+
+Generate:
+
+Express app
+
+/server/api folder
+
+/server/services folder
+
+/server/db
+
+/server/core (permission guard, tenant loader)
+
+/server/realtime (Socket.IO setup)
+
+/server/ai (AGI engine placeholder)
+
+/server/config
+
+/server/middleware
+
+No real business logic.
+
+✔️ 5. DATABASE (Drizzle)
+
+Create empty schemas for:
+
+tenants
+
+business_lines
+
+branches
+
+users
+
+roles
+
+permissions
+
+Only:
+
+id
+name
+created_at
+updated_at
+tenant_id (if needed)
+
+
+Do NOT add ERP-specific tables yet.
+
+✔️ 6. REAL-TIME SYSTEM
+
+Initialize:
+
+Socket.IO server
+
+Redis connection placeholder
+
+Base events file (empty)
+
+✔️ 7. AGI SYSTEM (foundation only)
+
+Create folders:
+
+/server/ai/engine
+/server/ai/actions
+/server/ai/utils
+
+
+Add empty placeholder files only.
+
+✔️ 8. CONFIG & DEV EXPERIENCE
+
+Generate:
+
+tsconfig.json
+
+vite.config.ts
+
+eslint + prettier
+
+.env.example
+
+drizzle.config.ts
+
+Request logger middleware
+
+Error handler
+
+📌 OUTPUT REQUIREMENTS
+
+You MUST:
+
+Generate the full folder & file structure
+
+Generate all boilerplate files
+
+Include the full Master Brand Guidelines (colors, fonts, theme variables)
+
+Ensure everything runs on Replit immediately
+
+Do NOT skip any modules
+
+Do NOT generate feature logic
+
+Output Phase 1 only
+
+🚀 **BEGIN NOW — Build Phase 1 + Brand System only.
+
+Do NOT create features.
+Do NOT simplify.
+This is an enterprise project.**
