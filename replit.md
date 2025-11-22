@@ -4,8 +4,8 @@
 Enterprise-grade Multi-Tenant Veterinary ERP SaaS platform built with modern technologies. This is Phase 1 - Foundation and Architecture Setup.
 
 ## Project Status
-**Phase:** 1 - Foundation  
-**Status:** In Development  
+**Phase:** 2.5 - Enterprise Tenant Module  
+**Status:** Structure Implementation Complete  
 **Database:** Neon PostgreSQL (EU-Central-1)  
 **Last Updated:** November 22, 2025
 
@@ -14,6 +14,7 @@ Enterprise-grade Multi-Tenant Veterinary ERP SaaS platform built with modern tec
 - **Region:** EU-Central-1 (AWS)
 - **Connection:** Pooled connection via Neon Pooler
 - **Status:** ✅ Connected and verified
+- **Schema:** ✅ Enhanced for Enterprise Tenant Module
 
 ## Architecture
 
@@ -114,15 +115,22 @@ Status:
 14. Middleware placeholders
 15. Dev tools configuration (ESLint, Prettier)
 
-### Database Schema (Phase 1 - Foundation Only)
-- `tenants` - Multi-tenant support
-- `business_lines` - Business line management
-- `branches` - Branch management
-- `users` - User accounts
-- `roles` - Role-based access control
-- `permissions` - Permission system
+### Database Schema (Enterprise Tenant Module)
 
-**Note:** No ERP-specific tables in Phase 1
+**Enhanced Tables:**
+- `tenants` - Enhanced with code, default_language, country, timezone
+- `business_lines` - Enhanced with branding fields (logo_url, colors), code, description, is_active
+- `branches` - Enhanced with business_line_id FK, code, city, address, is_active
+- `users` - Enhanced with access_scope (system|tenant|business_line|branch) and multi-level FK support
+
+**New Tables:**
+- `branch_capacity` - Tracks allowed user count per branch
+
+**Existing Tables (Unchanged):**
+- `roles` - Role-based access control structure
+- `permissions` - Permission system structure
+
+**Note:** Full RBAC/ABAC logic planned for Phase 3
 
 ## Future Phases
 

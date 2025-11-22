@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { TenantController } from '../controllers/TenantController';
+import { createTenant, getAllTenants, getTenantById } from '../controllers/tenantController';
 
 const router = Router();
-const tenantController = new TenantController();
 
-router.get('/', tenantController.getAll);
-router.get('/:id', tenantController.getById);
+router.post('/', createTenant);
+router.get('/', getAllTenants);
+router.get('/:id', getTenantById);
 
 export default router;
