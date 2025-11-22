@@ -32,7 +32,10 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // Find user by email
+    // CRITICAL SECURITY: Find user by email AND validate tenant association
+    // This prevents cross-tenant account takeover
+    // System users (tenantId IS NULL) can log in with any tenant code
+    // Tenant users (tenantId = tenant.id) can only log in with their tenant
     const [user] = await db
       .select()
       .from(users)
@@ -42,6 +45,14 @@ export const login = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(401).json({
         error: 'Invalid email or password',
+      });
+    }
+
+    // CRITICAL: Validate tenant association BEFORE password check
+    // This prevents cross-tenant access
+    if (user.accessScope !== 'system' && user.tenantId !== tenant.id) {
+      return res.status(401).json({
+        error: 'Invalid email or password', // Generic error to prevent enumeration
       });
     }
 
@@ -62,15 +73,6 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({
         error: 'Invalid email or password',
       });
-    }
-
-    // For non-system users, validate tenant association
-    if (user.accessScope !== 'system') {
-      if (user.tenantId !== tenant.id) {
-        return res.status(403).json({
-          error: 'User does not belong to this tenant',
-        });
-      }
     }
 
     // Generate tokens
