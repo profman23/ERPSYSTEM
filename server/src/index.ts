@@ -6,6 +6,7 @@ import { initializeSocket } from './realtime/socket';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import apiRoutes from './api/routes';
+import { seedSuperAdmin } from './db/seed/seedSuperAdmin';
 
 dotenv.config();
 
@@ -28,7 +29,10 @@ initializeSocket(httpServer);
 
 app.use(errorHandler);
 
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, async () => {
   console.log(`✅ Server running on port ${PORT}`);
-  console.log(`🏥 Veterinary ERP SaaS - Phase 1 Foundation`);
+  console.log(`🏥 Veterinary ERP SaaS - Phase 3 - Authentication System`);
+  
+  // Seed super admin user
+  await seedSuperAdmin();
 });

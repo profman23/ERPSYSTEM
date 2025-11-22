@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import authRoutes from './authRoutes';
 import tenantRoutes from './tenantRoutes';
 import businessLineRoutes from './businessLineRoutes';
 import branchRoutes from './branchRoutes';
@@ -6,6 +7,7 @@ import branchCapacityRoutes from './branchCapacityRoutes';
 
 const router = Router();
 
+router.use('/auth', authRoutes);
 router.use('/tenants', tenantRoutes);
 router.use('/business-lines', businessLineRoutes);
 router.use('/branches', branchRoutes);
