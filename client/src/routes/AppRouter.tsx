@@ -61,11 +61,6 @@ const NotFoundPage = lazy(() => import('@/pages/not-found/NotFoundPage'));
  * - RTL support throughout
  */
 const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <Navigate to="/dashboard" replace />,
-  },
-  
   // ==========================================
   // AUTH ROUTES (Public - AuthLayout)
   // ==========================================
@@ -95,6 +90,15 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
+      // Root redirect to dashboard
+      {
+        index: true,
+        element: <Navigate to="/dashboard" replace />,
+      },
+      
+      // ==========================================
+      // DASHBOARD
+      // ==========================================
       {
         path: 'dashboard',
         element: (
