@@ -1,0 +1,114 @@
+Implement a complete, enterprise-grade routing system for our Multi-Tenant Veterinary ERP SaaS platform using React Router v6, following our exact stack and architecture.
+
+IMPORTANT:
+UI ONLY – no backend logic, no API calls, no authentication, no RBAC.
+Just routing structure with placeholder components.
+
+=========================================================
+STACK REQUIREMENTS (USE EXACTLY THESE):
+- React 18 + TypeScript
+- Vite
+- React Router v6.21
+- TailwindCSS
+- shadcn/ui
+- Zustand + React Query (already configured)
+- i18n-ready (LTR + RTL)
+- Our design system colors and theme
+- No external UI libraries beyond shadcn/ui
+=========================================================
+
+🎯 GOAL:
+Create a full routing architecture for the app with:
+- Public routes
+- Auth routes
+- Protected routes (structure only)
+- Dashboard layout
+- Module placeholder pages
+- Error pages
+- Lazy loading
+- RTL support
+- Enterprise folder structure
+
+=========================================================
+📁 ROUTING FILES TO CREATE/UPDATE:
+
+1) Create a new router entry file:
+   client/src/routes/AppRouter.tsx
+
+2) Update:
+   client/src/App.tsx → to use <AppRouter />
+
+3) Create a protected routes wrapper:
+   client/src/routes/ProtectedRoute.tsx (UI only, no auth logic)
+
+4) Create layouts:
+   client/src/layouts/AuthLayout.tsx
+   client/src/layouts/DashboardLayout.tsx
+
+5) Create base pages (placeholders):
+   - /login → LoginPage (already created)
+   - /dashboard → DashboardHomePage.tsx
+   - /tenants → TenantsListPage.tsx
+   - /tenants/create → CreateTenantPage.tsx
+   - /users → UsersListPage.tsx
+   - /branches → BranchesListPage.tsx
+   - /business-lines → BusinessLinesListPage.tsx
+   - /not-found → NotFoundPage.tsx
+
+=========================================================
+🔐 PROTECTED ROUTE BEHAVIOR (NO REAL AUTH YET)
+ProtectedRoute must:
+- Wrap children inside DashboardLayout
+- NO redirect logic yet
+- NO auth logic yet
+Just UI structure.
+
+=========================================================
+📌 ROUTER CONFIGURATION RULES:
+
+• All auth-related routes use AuthLayout:
+    /login
+
+• All application routes use DashboardLayout:
+    /dashboard
+    /tenants
+    /branches
+    /business-lines
+    /users
+
+• Use createBrowserRouter or createRoutesFromElements
+
+• Use lazy() + Suspense for all pages:
+    const DashboardPage = lazy(() => import("../pages/dashboard/DashboardHomePage"));
+
+• Include loading fallback skeleton (UI only)
+
+• NotFound route:
+    path: "*"
+
+=========================================================
+📌 FILE OUTPUT REQUIRED:
+
+✔ client/src/routes/AppRouter.tsx  
+✔ client/src/routes/ProtectedRoute.tsx  
+✔ client/src/layouts/AuthLayout.tsx  
+✔ client/src/layouts/DashboardLayout.tsx  
+✔ client/src/pages/not-found/NotFoundPage.tsx  
+✔ Any missing placeholder pages created
+
+=========================================================
+⚠️ IMPORTANT RULES:
+- Do NOT add backend logic
+- Do NOT add auth logic
+- Do NOT modify LoginPage.tsx
+- UI ONLY
+- Match our brand design system
+- Ensure RTL/LTR support for spacing and alignment
+
+=========================================================
+FINAL TASK:
+Generate all routing files, layouts, and placeholder pages exactly as described above.
+
+Do not skip any file.
+Do not simplify routing.
+Follow enterprise SaaS architecture strictly.

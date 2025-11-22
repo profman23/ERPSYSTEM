@@ -1,17 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Building2, Plus, Search } from 'lucide-react';
+import { Users, Plus, Search, Filter } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 /**
- * TenantsListPage - List all tenants in the system
+ * UsersListPage - List all users in the system
  * 
  * Phase 1: UI placeholder with empty state
- * Phase 3+: Real data from API, pagination, filtering
+ * Phase 3+: Real data from API, role filtering, permissions, multi-tenant
  */
-export default function TenantsListPage() {
+export default function UsersListPage() {
   const [isRTL, setIsRTL] = useState(false);
 
   useEffect(() => {
@@ -38,18 +37,16 @@ export default function TenantsListPage() {
       <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
         <div className={isRTL ? 'text-right' : 'text-left'}>
           <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
-            {isRTL ? 'العملاء' : 'Tenants'}
+            {isRTL ? 'المستخدمين' : 'Users'}
           </h1>
           <p className="mt-2" style={{ color: 'var(--color-text-secondary)' }}>
-            {isRTL ? 'إدارة المنظمات في النظام' : 'Manage organizations in the system'}
+            {isRTL ? 'إدارة مستخدمي النظام والأدوار' : 'Manage system users and roles'}
           </p>
         </div>
-        <Link to="/tenants/create">
-          <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
-            <Plus className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            {isRTL ? 'إضافة عميل' : 'Add Tenant'}
-          </Button>
-        </Link>
+        <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
+          <Plus className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+          {isRTL ? 'إضافة مستخدم' : 'Add User'}
+        </Button>
       </div>
 
       {/* Search and Filters */}
@@ -59,40 +56,38 @@ export default function TenantsListPage() {
             <div className="flex-1 relative">
               <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4`} style={{ color: '#9CA3AF' }} />
               <Input
-                placeholder={isRTL ? 'البحث عن العملاء...' : 'Search tenants...'}
+                placeholder={isRTL ? 'البحث عن المستخدمين...' : 'Search users...'}
                 className={isRTL ? 'pr-10' : 'pl-10'}
                 dir={isRTL ? 'rtl' : 'ltr'}
               />
             </div>
+            <Button variant="outline">
+              <Filter className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+              {isRTL ? 'تصفية' : 'Filter'}
+            </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Tenants List - Empty State */}
+      {/* Users List - Empty State */}
       <Card>
         <CardHeader>
           <CardTitle className={isRTL ? 'text-right' : 'text-left'}>
-            {isRTL ? 'قائمة العملاء' : 'Tenants List'}
+            {isRTL ? 'قائمة المستخدمين' : 'Users List'}
           </CardTitle>
           <CardDescription className={isRTL ? 'text-right' : 'text-left'}>
-            {isRTL ? 'جميع المنظمات المسجلة' : 'All registered organizations'}
+            {isRTL ? 'جميع المستخدمين المسجلين في النظام' : 'All registered users in the system'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-12" style={{ color: 'var(--color-text-secondary)' }}>
-            <Building2 className="w-16 h-16 mx-auto mb-4" style={{ color: '#9CA3AF' }} />
+            <Users className="w-16 h-16 mx-auto mb-4" style={{ color: '#9CA3AF' }} />
             <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
-              {isRTL ? 'لا توجد منظمات' : 'No Tenants Yet'}
+              {isRTL ? 'لا يوجد مستخدمين' : 'No Users Yet'}
             </h3>
             <p className="mb-6">
-              {isRTL ? 'ابدأ بإضافة أول منظمة' : 'Get started by creating your first tenant'}
+              {isRTL ? 'سيتم تنفيذ إدارة المستخدمين في المرحلة 3' : 'User management will be implemented in Phase 3'}
             </p>
-            <Link to="/tenants/create">
-              <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
-                <Plus className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                {isRTL ? 'إضافة عميل' : 'Add Tenant'}
-              </Button>
-            </Link>
           </div>
         </CardContent>
       </Card>
