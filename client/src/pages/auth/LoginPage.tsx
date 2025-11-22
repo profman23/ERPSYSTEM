@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, Building2, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/contexts/AuthContext';
 
 /**
  * COLOR STRATEGY (Hybrid Approach):
@@ -13,12 +15,16 @@ import { Separator } from '@/components/ui/separator';
  */
 
 export default function LoginPage() {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  
   const [tenantCode, setTenantCode] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [capsLockOn, setCapsLockOn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [isRTL, setIsRTL] = useState(false);
 
   // RTL Detection
@@ -65,11 +71,20 @@ export default function LoginPage() {
     };
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // UI ONLY - No auth logic
-    setTimeout(() => setIsLoading(false), 1500);
+    setError('');
+
+    try {
+      await login(tenantCode, email, password);
+      // Redirect to dashboard on successful login
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isFormValid = tenantCode.trim() !== '' && email.trim() !== '' && password.trim() !== '';
@@ -148,6 +163,14 @@ export default function LoginPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Error Message */}
+                {error && (
+                  <div className={`p-4 rounded-lg bg-red-50 border border-red-200 flex items-start gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <p className={`text-sm text-red-800 ${isRTL ? 'text-right' : 'text-left'}`}>{error}</p>
+                  </div>
+                )}
+
                 {/* Tenant Code Field */}
                 <div className="space-y-2">
                   <Label 

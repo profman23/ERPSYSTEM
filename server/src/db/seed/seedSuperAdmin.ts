@@ -26,7 +26,6 @@ export async function seedSuperAdmin() {
         defaultLanguage: 'en',
         country: 'GLOBAL',
         timezone: 'UTC',
-        isActive: true,
       }).returning();
       
       systemTenantId = newTenant.id;
