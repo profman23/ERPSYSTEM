@@ -1,0 +1,23 @@
+{
+  "name": "veterinary-erp-saas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Enterprise-grade Multi-Tenant Veterinary ERP SaaS Platform",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:client": "cd client && npm run dev",
+    "dev:server": "cd server && npm run dev",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "cd client && npm run build",
+    "build:server": "cd server && npm run build",
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install"
+  },
+  "workspaces": [
+    "client",
+    "server",
+    "types"
+  ],
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
