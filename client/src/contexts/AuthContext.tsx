@@ -1,7 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3000/api';
+// Dynamic API URL for Replit environment
+const getApiUrl = () => {
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    // Replace any port in the origin with :3000 for backend
+    return origin.replace(/:\d+$/, ':3000') + '/api';
+  }
+  return 'http://localhost:3000/api';
+};
+
+const API_URL = getApiUrl();
 
 interface User {
   id: string;

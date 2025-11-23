@@ -17,7 +17,17 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const socketInstance = io('http://localhost:3000', {
+    // Dynamic Socket.IO URL for Replit environment
+    const getSocketUrl = () => {
+      if (typeof window !== 'undefined') {
+        const origin = window.location.origin;
+        // Replace any port in the origin with :3000 for backend
+        return origin.replace(/:\d+$/, ':3000');
+      }
+      return 'http://localhost:3000';
+    };
+
+    const socketInstance = io(getSocketUrl(), {
       autoConnect: true,
     });
 

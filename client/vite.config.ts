@@ -22,6 +22,7 @@ export default defineConfig({
     ],
     strictPort: true,
     hmr: {
+      host: 'f7dd660b-f703-4da3-9d7c-ca3ca5d4c75a-00-2d1defatxzons.kirk.replit.dev',
       clientPort: 443,
       protocol: 'wss',
     },
