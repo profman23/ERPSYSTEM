@@ -88,7 +88,11 @@ export const login = async (req: Request, res: Response) => {
     const accessToken = AuthService.generateAccessToken(tokenPayload);
     const refreshToken = AuthService.generateRefreshToken(tokenPayload);
 
-    // Store refresh token in database
+    // TOKEN ROTATION SECURITY: Invalidate all previous refresh tokens
+    // This prevents token reuse attacks and ensures only the latest token is valid
+    await AuthService.deleteAllUserTokens(user.id);
+    
+    // Store new refresh token in database
     await AuthService.storeRefreshToken(user.id, refreshToken);
 
     // Update last login time
@@ -153,7 +157,7 @@ export const refresh = async (req: Request, res: Response) => {
       });
     }
 
-    // Generate new access token
+    // Generate new tokens
     const tokenPayload = {
       userId: user.id,
       role: user.role,
@@ -164,9 +168,18 @@ export const refresh = async (req: Request, res: Response) => {
     };
 
     const accessToken = AuthService.generateAccessToken(tokenPayload);
+    const newRefreshToken = AuthService.generateRefreshToken(tokenPayload);
+
+    // TOKEN ROTATION SECURITY: Delete old refresh token
+    // This prevents token reuse attacks - each refresh invalidates the previous token
+    await AuthService.deleteRefreshToken(refreshToken);
+    
+    // Store new refresh token
+    await AuthService.storeRefreshToken(user.id, newRefreshToken);
 
     return res.status(200).json({
       accessToken,
+      refreshToken: newRefreshToken,
     });
   } catch (error) {
     console.error('Token refresh error:', error);

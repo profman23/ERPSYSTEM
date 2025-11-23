@@ -1,10 +1,15 @@
 import express from 'express';
-import cors from 'cors';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { initializeSocket } from './realtime/socket';
+import { initializeRedis } from './services/redisClient';
+import { startAllJobs } from './jobs';
+import logger from './config/logger';
+import { helmetMiddleware, corsMiddleware } from './middleware/securityMiddleware';
+import { metricsMiddleware } from './middleware/metricsMiddleware';
 import { requestLogger } from './middleware/requestLogger';
-import { errorHandler } from './middleware/errorHandler';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { apiRateLimiter } from './middleware/rateLimiter';
 import apiRoutes from './api/routes';
 import { seedSuperAdmin } from './db/seed/seedSuperAdmin';
 
@@ -14,25 +19,59 @@ const app = express();
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(requestLogger);
+const startServer = async () => {
+  try {
+    logger.info('🚀 Starting Veterinary ERP SaaS Server...');
 
-app.use('/api', apiRoutes);
+    await initializeRedis();
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Veterinary ERP Server - Phase 1' });
+    app.use(helmetMiddleware);
+    app.use(corsMiddleware);
+    app.use(express.json({ limit: '10mb' }));
+    app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+    app.use(requestLogger);
+    app.use(metricsMiddleware);
+
+    app.get('/health', (req, res) => {
+      res.json({ 
+        success: true, 
+        status: 'healthy', 
+        message: 'Veterinary ERP Server - Level 1 Enterprise Infrastructure',
+        timestamp: new Date().toISOString(),
+      });
+    });
+
+    app.use('/api', apiRateLimiter, apiRoutes);
+
+    app.use(notFoundHandler);
+    app.use(errorHandler);
+
+    await initializeSocket(httpServer);
+
+    httpServer.listen(PORT, async () => {
+      logger.info(`✅ Server running on port ${PORT}`);
+      logger.info(`🏥 Veterinary ERP SaaS - Level 1 - Enterprise Infrastructure`);
+      
+      await seedSuperAdmin();
+
+      startAllJobs();
+      
+      logger.info('🎉 All systems initialized successfully');
+    });
+
+  } catch (error) {
+    logger.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-initializeSocket(httpServer);
-
-app.use(errorHandler);
-
-httpServer.listen(PORT, async () => {
-  console.log(`✅ Server running on port ${PORT}`);
-  console.log(`🏥 Veterinary ERP SaaS - Phase 3 - Authentication System`);
-  
-  // Seed super admin user
-  await seedSuperAdmin();
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', error);
+  process.exit(1);
 });
+
+startServer();
