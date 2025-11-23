@@ -7,13 +7,14 @@ import { dpfActions } from './dpfActions';
 /**
  * DPF Permissions - Dynamic permission definitions
  * Links permissions to modules, screens, and actions
+ * CRITICAL: permission_code is unique PER TENANT (composite unique index via migration)
  */
 export const dpfPermissions = pgTable('dpf_permissions', {
   id: uuid('id').primaryKey().defaultRandom(),
   tenantId: uuid('tenant_id')
     .references(() => tenants.id)
     .notNull(),
-  permissionCode: varchar('permission_code', { length: 100 }).notNull().unique(), // e.g., 'PATIENT:CREATE'
+  permissionCode: varchar('permission_code', { length: 100 }).notNull(), // e.g., 'PATIENT:CREATE' - unique per tenant via composite index
   permissionName: varchar('permission_name', { length: 255 }).notNull(),
   permissionNameAr: varchar('permission_name_ar', { length: 255 }),
   description: text('description'),

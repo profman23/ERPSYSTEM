@@ -20,7 +20,7 @@ import {
   PermissionScope,
 } from './dpfTypes';
 import logger from '../config/logger';
-import { cacheService } from '../services/cacheService';
+import { cacheService } from '../services/CacheService';
 
 class DPFEngine {
   private readonly CACHE_TTL = 300; // 5 minutes

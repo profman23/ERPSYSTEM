@@ -25,7 +25,7 @@ import {
   ActionType,
 } from './dpfTypes';
 import logger from '../config/logger';
-import { cacheService } from '../services/cacheService';
+import { cacheService } from '../services/CacheService';
 
 class DPFRegistry {
   private cache: Map<string, DPFRegistryCache> = new Map(); // tenantId -> cache

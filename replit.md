@@ -151,7 +151,30 @@ Status:
 40. **Express Trust Proxy:** Enabled for accurate rate limiting behind Replit/enterprise proxies
 41. **Tenant-Scoped HTTP Routes:** All protected routes use authMiddleware → tenantLoader → controllers
 
-### Database Schema (Enterprise Tenant Module)
+#### 🤖 DPF-AGI: Dynamic Permission Fabric with AGI Integration (S-Tier) ✅
+42. **DPF Database Layer:** 9 tables (modules, screens, actions, permissions, roles, role_permissions, user_roles, agi_logs, voice_logs) with 62+ performance indexes
+43. **DPF Type System:** Comprehensive TypeScript types for modules, screens, actions, permissions, AGI levels, voice commands, safety checks
+44. **DPF Registry:** Auto-registration system for modules/screens/actions - components register themselves automatically on mount/load
+45. **DPF Engine:** High-performance permission evaluation with caching, tenant isolation, and AGI access level support
+46. **Permission Middleware:** Automatic enforcement for Express routes (`requirePermission()`) and Socket.IO events (`checkSocketPermission()`)
+47. **AGI Interpreter:** Natural language to permission operations - supports English and Arabic with pattern matching
+48. **Voice Command Support:** English and Arabic voice commands for permission management with safety validation
+49. **Safety Validation:** Multi-layer safety checks (AGI permission, destructive operation warnings, tenant isolation, parameter validation)
+50. **Client Integration:** React hooks (`usePermissions`), context provider (`PermissionProvider`), protected route components
+51. **Real-time Permissions:** Socket.IO integration for instant permission updates across all connected clients
+52. **Auto-Permission Creation:** Actions automatically generate corresponding permissions during registration
+53. **Bulk Permission Checks:** Optimized multi-permission checking for UI state management (single DB query)
+
+**DPF-AGI Architecture:**
+- **Auto-Discovery:** Modules/screens/actions register themselves automatically (event-driven)
+- **Tenant-Scoped:** All DPF tables have tenantId FK with indexes for isolation
+- **AGI Access Levels:** NO_ACCESS → READ_ONLY → SUGGEST → AUTOMATE → AUTONOMOUS
+- **Natural Language:** "Create role named Admin" → parsed intent → safety checks → execution
+- **Voice Commands:** Multilingual voice support with language detection (EN/AR)
+- **Whitelist Security:** Only registered events allowed, unregistered events blocked by default
+- **Performance:** In-memory caching with 5-minute TTL, cache invalidation on permission changes
+
+### Database Schema (Enterprise Tenant Module + DPF-AGI)
 
 **Enhanced Tables:**
 - `tenants` - Enhanced with code, default_language, country, timezone
