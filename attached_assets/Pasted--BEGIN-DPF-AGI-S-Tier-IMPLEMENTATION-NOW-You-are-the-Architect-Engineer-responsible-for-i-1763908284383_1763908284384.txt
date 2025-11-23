@@ -1,0 +1,171 @@
+🚀 **BEGIN DPF-AGI (S-Tier) IMPLEMENTATION NOW**
+
+You are the Architect/Engineer responsible for implementing the Dynamic Permission Fabric (DPF-AGI — S-Tier) inside my multi-tenant veterinary ERP system.
+
+🎯 **Primary Objective**
+Build a *self-expanding*, *AGI-compatible*, *voice-controlled*, *tenant-isolated* permission system that automatically understands all modules, screens, workflows, and action types — now and in the future — without manual coding.
+
+---
+
+# 1️⃣ SYSTEM REQUIREMENTS
+
+## 🔥 Dynamic Permission Fabric (DPF)
+Implement a system where:
+
+- Every Module auto-registers itself.
+- Every Screen auto-registers itself.
+- Every Button/Action auto-registers itself.
+- Every API endpoint auto-registers its required permissions.
+- Every Event (socket.io) auto-registers its permission category.
+- Future Modules register automatically (Zero-Touch RBAC).
+
+DPF must store:
+- Module ID  
+- Screen/Submodule ID  
+- Action ID  
+- Action Category  
+- Required AGI Level  
+- Tenant Boundary  
+- Scope (Tenant / Branch / Doctor / System)  
+- Voice Command Mappings  
+- Audit Trail  
+
+All of this must be dynamically generated & self-maintained.
+
+---
+
+# 2️⃣ AGI INTEGRATION (MANDATORY)
+
+AGI must understand:
+- "Create user"
+- "Give permissions"
+- "Add doctor"
+- "Grant access to Inventory Module"
+- "Revoke purchase rights"
+…in English & Arabic.
+
+AGI must perform:
+- Role creation  
+- User assignment  
+- Permission updates  
+- Admin workflows  
+- Tenant-level changes  
+
+AGI must validate with RBAC before executing.
+
+---
+
+# 3️⃣ VOICE ENGINE INTEGRATION
+
+Add a Voice Permission Interface:
+- Recognize English + Arabic  
+- Convert voice → AGI Instruction → RBAC Enforcement  
+- Validate that the user has permission before executing voice commands  
+
+Example:
+“أضف موظف جديد في فرع العليا واديه صلاحيات الدكتور”  
+→ AGI → RBAC → Execution
+
+---
+
+# 4️⃣ TENANT ISOLATION REQUIREMENTS (MANDATORY)
+
+Ensure all RBAC operations follow:
+- tenantId  
+- branchId  
+- businessLineId  
+- userId  
+- roleId  
+
+No cross-tenant leakage allowed.
+
+Integrate with existing:
+- tenantLoader  
+- tenantContext (AsyncLocalStorage)  
+- socketAuth  
+- socketEventAuth  
+
+---
+
+# 5️⃣ EXTREME SCALABILITY (ENTERPRISE)
+
+System must support:
+- 2,000 tenants
+- 50,000+ concurrent users
+- 100+ modules
+- 10k+ actions
+- 10k+ screens
+
+DPF must remain fast, with indexes, caching, and event-based updates.
+
+---
+
+# 6️⃣ DELIVERABLES THE AGENT MUST BUILD
+
+## Files to create/update:
+- server/src/rbac/dpfRegistry.ts
+- server/src/rbac/dpfScanner.ts
+- server/src/rbac/dpfEngine.ts
+- server/src/rbac/permissionMiddleware.ts
+- server/src/rbac/voiceInterface.ts
+- server/src/rbac/agiInterpreter.ts
+- server/src/rbac/dpfTypes.ts
+- server/src/rbac/dpfEvents.ts
+- server/src/rbac/dpfLoader.ts
+- server/src/rbac/roleController.ts
+- server/src/rbac/roleService.ts
+- server/src/rbac/userRoleService.ts
+
+## Client:
+- client/src/hooks/usePermissions.ts
+- client/src/providers/PermissionProvider.tsx
+- client/src/agi/voice/voiceAdapter.ts
+- client/src/agi/voice/commands.ts
+- client/src/agi/agiClient.ts
+
+## Database:
+- permissions
+- modules
+- screens
+- actions
+- roles
+- role_permissions
+- user_roles
+- agi_logs
+- voice_logs
+
+AGI must generate full schema + migrations.
+
+---
+
+# 7️⃣ VALIDATION REQUIREMENTS
+
+Before marking tasks as complete, perform:
+- Static analysis
+- Tenant isolation check
+- AsyncLocalStorage race-condition check
+- Event permission check
+- API endpoint permission match check
+- Voice command permission check
+- AGI safety validation
+
+---
+
+# 8️⃣ FINAL OUTPUT
+
+When finished, output:
+- ✔ Complete file diff
+- ✔ Full code for all created files
+- ✔ DB migrations
+- ✔ Updated architecture diagram
+- ✔ Test scenarios
+- ✔ DPF-AGI execution flow diagram
+- ✔ Example voice commands (EN/AR)
+- ✔ How to register new modules automatically
+
+---
+
+# 🔥 COMMAND
+Start immediately.
+
+**BEGIN DPF-AGI (S-Tier) NOW.**
