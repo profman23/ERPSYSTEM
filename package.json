@@ -37,6 +37,7 @@
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.554.0",
     "node-cron": "^4.2.1",
+    "react-hook-form": "^7.66.1",
     "react-router-dom": "^7.9.6",
     "redis": "^5.10.0",
     "uuid": "^13.0.0",

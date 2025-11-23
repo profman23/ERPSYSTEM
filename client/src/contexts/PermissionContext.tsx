@@ -5,7 +5,7 @@
 
 import { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
-import { socket } from '../services/socket';
+import { useSocket } from '../providers/SocketProvider';
 
 interface PermissionContextType {
   userPermissions: string[];
@@ -23,6 +23,7 @@ interface PermissionProviderProps {
 
 export function PermissionProvider({ children }: PermissionProviderProps) {
   const { user } = useAuth();
+  const { socket } = useSocket();
   const [userPermissions, setUserPermissions] = useState<string[]>([]);
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
