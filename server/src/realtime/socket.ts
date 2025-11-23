@@ -3,6 +3,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
 import Redis from 'ioredis';
 import { handleConnection } from './handlers/connectionHandler';
+import { socketAuthMiddleware } from './middleware/socketAuth';
 import { getRedisClient } from '../services/redisClient';
 import { allowedOrigins } from '../middleware/securityMiddleware';
 import logger from '../config/logger';
@@ -37,6 +38,9 @@ export const initializeSocket = async (httpServer: HTTPServer) => {
       credentials: true,
     },
   });
+
+  // Apply authentication middleware to ALL connections
+  io.use(socketAuthMiddleware);
 
   const mainRedis = getRedisClient();
   

@@ -8,6 +8,7 @@ import logger from './config/logger';
 import { helmetMiddleware, corsMiddleware } from './middleware/securityMiddleware';
 import { metricsMiddleware } from './middleware/metricsMiddleware';
 import { requestLogger } from './middleware/requestLogger';
+import { tenantContextCleanup } from './middleware/tenantLoader';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { apiRateLimiter } from './middleware/rateLimiter';
 import apiRoutes from './api/routes';
@@ -24,6 +25,10 @@ const startServer = async () => {
     logger.info('🚀 Starting Veterinary ERP SaaS Server...');
 
     await initializeRedis();
+
+    // Enable trust proxy for Replit environment and enterprise deployments
+    // Required for proper rate limiting and X-Forwarded-For header handling
+    app.set('trust proxy', true);
 
     app.use(helmetMiddleware);
     app.use(corsMiddleware);
@@ -42,6 +47,9 @@ const startServer = async () => {
     });
 
     app.use('/api', apiRateLimiter, apiRoutes);
+
+    // Cleanup tenant context after request completes
+    app.use(tenantContextCleanup);
 
     app.use(notFoundHandler);
     app.use(errorHandler);
