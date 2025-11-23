@@ -48,9 +48,17 @@ export const corsMiddleware = cors({
       return;
     }
     
+    // Allow all .replit.dev domains for Replit environment
+    if (origin.endsWith('.replit.dev')) {
+      callback(null, true);
+      return;
+    }
+    
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.error(`❌ CORS Rejected Origin: ${origin}`);
+      console.error(`✅ Allowed Origins: ${allowedOrigins.join(', ')}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
