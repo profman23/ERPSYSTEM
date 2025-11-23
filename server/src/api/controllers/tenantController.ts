@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { db } from '../../db';
 import { tenants } from '../../db/schemas';
 import { eq, and, like, or, sql } from 'drizzle-orm';
+import { createTenantSchema, updateTenantSchema } from '../../validations/tenantValidation';
+import logger from '../../config/logger';
 import {
   getPaginationParams,
   calculateOffset,
@@ -19,46 +21,54 @@ export const createTenant = async (req: Request, res: Response) => {
 
     // Only system admins can create tenants
     if (user.accessScope !== 'system') {
-      return res.status(403).json({ error: 'Forbidden: System access required' });
+      return res.status(403).json({ 
+        success: false,
+        error: 'Forbidden: System access required' 
+      });
     }
 
-    const { code, name, defaultLanguage, country, timezone } = req.body;
+    // Zod validation
+    const validatedData = createTenantSchema.parse(req.body);
 
-    // Validation
-    if (!code || !name) {
-      return res.status(400).json({ error: 'Code and name are required' });
-    }
-
-    // Check if tenant code already exists
+    // Check if tenant code already exists (composite unique validation)
     const [existing] = await db
       .select()
       .from(tenants)
-      .where(eq(tenants.code, code.toUpperCase()))
+      .where(eq(tenants.code, validatedData.code.toUpperCase()))
       .limit(1);
 
     if (existing) {
-      return res.status(409).json({ error: 'Tenant code already exists' });
+      return res.status(409).json({ 
+        success: false,
+        error: 'Tenant code already exists' 
+      });
     }
 
     // Create tenant
     const [newTenant] = await db
       .insert(tenants)
       .values({
-        code: code.toUpperCase(),
-        name,
-        defaultLanguage: defaultLanguage || 'en',
-        country,
-        timezone,
+        code: validatedData.code.toUpperCase(),
+        name: validatedData.name,
+        defaultLanguage: validatedData.defaultLanguage,
+        country: validatedData.country,
+        timezone: validatedData.timezone,
       })
       .returning();
 
+    logger.info(`Tenant created: ${newTenant.code} by user ${user.userId}`);
+
     res.status(201).json({
+      success: true,
       message: 'Tenant created successfully',
       data: newTenant,
     });
   } catch (error: any) {
-    console.error('Error creating tenant:', error);
-    res.status(500).json({ error: 'Failed to create tenant' });
+    logger.error('Error creating tenant:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to create tenant' 
+    });
   }
 };
 
@@ -122,7 +132,10 @@ export const getAllTenants = async (req: Request, res: Response) => {
 
     const response = createPaginatedResponse(results, Number(total), page, limit);
 
-    res.json(response);
+    res.json({
+      success: true,
+      ...response,
+    });
   } catch (error: any) {
     console.error('Error fetching tenants:', error);
     res.status(500).json({ error: 'Failed to fetch tenants' });

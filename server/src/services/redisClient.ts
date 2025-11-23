@@ -7,12 +7,16 @@ const REDIS_CONFIG = {
   port: parseInt(process.env.REDIS_PORT || '6379', 10),
   password: process.env.REDIS_PASSWORD,
   retryStrategy: (times: number) => {
-    const delay = Math.min(times * 50, 2000);
+    if (times > 3) {
+      return null;
+    }
+    const delay = Math.min(times * 100, 1000);
     return delay;
   },
   maxRetriesPerRequest: 3,
   enableReadyCheck: true,
   lazyConnect: true,
+  reconnectOnError: () => false,
 };
 
 export const initializeRedis = async (): Promise<Redis> => {
@@ -21,6 +25,8 @@ export const initializeRedis = async (): Promise<Redis> => {
   }
 
   redisClient = new Redis(REDIS_CONFIG);
+
+  let connectionAttempted = false;
 
   redisClient.on('connect', () => {
     console.log('✅ Redis client connected');
@@ -31,15 +37,22 @@ export const initializeRedis = async (): Promise<Redis> => {
   });
 
   redisClient.on('error', (err) => {
-    console.error('❌ Redis client error:', err);
+    if (!connectionAttempted) {
+      console.error('❌ Redis connection failed:', err.message);
+      connectionAttempted = true;
+    }
   });
 
   redisClient.on('close', () => {
-    console.warn('⚠️ Redis client connection closed');
+    if (!connectionAttempted) {
+      console.warn('⚠️ Redis client connection closed');
+    }
   });
 
   redisClient.on('reconnecting', () => {
-    console.log('🔄 Redis client reconnecting...');
+    if (!connectionAttempted) {
+      console.log('🔄 Redis client reconnecting...');
+    }
   });
 
   try {

@@ -1,4 +1,5 @@
 import promBundle from 'express-prom-bundle';
+import { RequestHandler } from 'express';
 
 export const metricsMiddleware = promBundle({
   includeMethod: true,
@@ -9,4 +10,4 @@ export const metricsMiddleware = promBundle({
   promClient: {
     collectDefaultMetrics: {},
   },
-});
+}) as unknown as RequestHandler;
