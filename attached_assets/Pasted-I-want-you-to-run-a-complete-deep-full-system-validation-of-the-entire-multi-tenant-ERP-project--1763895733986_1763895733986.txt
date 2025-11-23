@@ -1,0 +1,80 @@
+I want you to run a complete, deep, full-system validation of the entire multi-tenant ERP project. 
+Check everything end-to-end — backend, frontend, database, API logic, auth, RBAC, and tenant isolation.
+
+Please perform this full audit:
+
+1. AUTHENTICATION:
+   - Test login, logout, token refresh, token expiration.
+   - Verify access tokens and refresh tokens work properly.
+   - Ensure expired tokens return 401, not 500.
+   - Confirm no infinite refresh loops.
+
+2. RBAC (Roles & Permissions):
+   - Verify roles exist (SuperAdmin, Admin, Doctor, Reception, etc.)
+   - Validate permissions enforcement on protected routes.
+   - Confirm unauthorized access is blocked correctly.
+   - Check if the permission system is scalable for new modules.
+
+3. MULTI-TENANT ISOLATION:
+   - Ensure each tenant only accesses its own data.
+   - Verify tenant_id filtering across ALL database queries.
+   - Confirm:
+     * Tenant A cannot see tenants of others
+     * Business lines are tenant-bound
+     * Branches cannot cross tenants
+     * Users cannot access other tenant data
+   - Confirm superadmin bypass works correctly.
+
+4. DATABASE HEALTH:
+   - Verify all tables exist and are structurally correct.
+   - Check relationships: tenant → business lines → branches → users.
+   - Verify foreign keys, cascading rules, indexes.
+   - Validate test data integrity.
+   - Confirm Prisma/ORM queries are not throwing hidden errors.
+
+5. BACKEND API:
+   - Test all major routes:
+     * /api/auth/login
+     * /api/tenants
+     * /api/business-lines
+     * /api/branches
+     * /api/users
+   - Validate:
+     * Correct HTTP status codes
+     * Proper error messages
+     * Correct JSON structure
+   - Detect any missing, broken, or unregistered routes.
+
+6. FRONTEND HEALTH:
+   - Verify all pages load:
+     * Login
+     * Dashboard
+     * Tenants
+     * Business Lines
+     * Branches
+     * Users
+   - Ensure React Router navigation works.
+   - Check console for any hidden errors or warnings.
+
+7. SOCKET.IO:
+   - Confirm the client successfully connects to the backend.
+   - Ensure no polling/websocket errors.
+   - Ensure the correct backend port is used.
+
+8. DYNAMIC PORT HANDLING:
+   - Ensure the backend uses process.env.PORT.
+   - Ensure frontend API base URL and socket URL match the backend port.
+
+9. BUILD INTEGRITY:
+   - Detect missing packages.
+   - Detect unused or broken imports.
+   - Detect circular dependencies.
+   - Validate that the project builds cleanly.
+
+10. FINAL REPORT:
+    - Give me a detailed summary of ALL findings.
+    - Highlight any risky areas.
+    - Recommend fixes if needed.
+    - Tell me if the system is 100% production-safe or what remains needed.
+
+Run all these checks automatically and show me the results.
