@@ -6,7 +6,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { PermissionService } from '../services/permissionService';
-import { tenantContext } from '../middleware/tenantLoader';
+import { TenantContext } from '../core/tenant/tenantContext';
 
 const assignPermissionsSchema = z.object({
   permissionIds: z.array(z.string().uuid()).min(0).max(1000),
@@ -18,7 +18,7 @@ export class PermissionController {
    */
   static async getMatrix(req: Request, res: Response, next: NextFunction) {
     try {
-      const context = tenantContext.getStore();
+      const context = TenantContext.getContext();
       if (!context?.tenantId) throw new Error('Tenant context not found');
       
       const matrix = await PermissionService.getPermissionMatrix(context.tenantId);
@@ -33,7 +33,7 @@ export class PermissionController {
    */
   static async getAll(req: Request, res: Response, next: NextFunction) {
     try {
-      const context = tenantContext.getStore();
+      const context = TenantContext.getContext();
       if (!context?.tenantId) throw new Error('Tenant context not found');
       
       const permissions = await PermissionService.getAllPermissions(context.tenantId);
@@ -48,7 +48,7 @@ export class PermissionController {
    */
   static async getRolePermissions(req: Request, res: Response, next: NextFunction) {
     try {
-      const context = tenantContext.getStore();
+      const context = TenantContext.getContext();
       if (!context?.tenantId) throw new Error('Tenant context not found');
       
       const { id: roleId } = req.params;
@@ -64,7 +64,7 @@ export class PermissionController {
    */
   static async assignPermissions(req: Request, res: Response, next: NextFunction) {
     try {
-      const context = tenantContext.getStore();
+      const context = TenantContext.getContext();
       if (!context?.tenantId) throw new Error('Tenant context not found');
       
       const { id: roleId } = req.params;

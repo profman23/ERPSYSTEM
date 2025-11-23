@@ -15,6 +15,8 @@ export const authRateLimiter = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   // Skip successful login attempts from counting
   skipSuccessfulRequests: true,
+  // Validate trust proxy configuration for enterprise/Replit environments
+  validate: { trustProxy: false },
 });
 
 /**
@@ -29,6 +31,7 @@ export const apiRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false },
 });
 
 /**
@@ -46,6 +49,7 @@ export const strictRateLimiter = rateLimit({
   legacyHeaders: false,
   // Only apply to mutating methods
   skip: (req) => ['GET', 'HEAD', 'OPTIONS'].includes(req.method),
+  validate: { trustProxy: false },
 });
 
 /**
@@ -60,4 +64,5 @@ export const tokenRefreshRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false },
 });

@@ -6,7 +6,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { RoleService } from '../services/roleService';
-import { tenantContext } from '../middleware/tenantLoader';
+import { TenantContext } from '../core/tenant/tenantContext';
 
 const createRoleSchema = z.object({
   roleCode: z.string().min(2).max(100),
@@ -39,7 +39,7 @@ export class RoleController {
    */
   static async list(req: Request, res: Response, next: NextFunction) {
     try {
-      const context = tenantContext.getStore();
+      const context = TenantContext.getContext();
       if (!context?.tenantId) throw new Error('Tenant context not found');
       
       const query = listRolesQuerySchema.parse(req.query);
@@ -55,7 +55,7 @@ export class RoleController {
    */
   static async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const context = tenantContext.getStore();
+      const context = TenantContext.getContext();
       if (!context?.tenantId) throw new Error('Tenant context not found');
       
       const { id } = req.params;
@@ -76,7 +76,7 @@ export class RoleController {
    */
   static async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const context = tenantContext.getStore();
+      const context = TenantContext.getContext();
       if (!context?.tenantId) throw new Error('Tenant context not found');
       
       const input = createRoleSchema.parse(req.body);
@@ -92,7 +92,7 @@ export class RoleController {
    */
   static async update(req: Request, res: Response, next: NextFunction) {
     try {
-      const context = tenantContext.getStore();
+      const context = TenantContext.getContext();
       if (!context?.tenantId) throw new Error('Tenant context not found');
       
       const { id } = req.params;
@@ -109,7 +109,7 @@ export class RoleController {
    */
   static async delete(req: Request, res: Response, next: NextFunction) {
     try {
-      const context = tenantContext.getStore();
+      const context = TenantContext.getContext();
       if (!context?.tenantId) throw new Error('Tenant context not found');
       
       const { id } = req.params;

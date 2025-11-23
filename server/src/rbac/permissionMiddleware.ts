@@ -9,7 +9,7 @@ import { dpfEngine } from './dpfEngine';
 import { dpfRegistry } from './dpfRegistry';
 import { PermissionCheckRequest, PermissionScope } from './dpfTypes';
 import logger from '../config/logger';
-import { getTenantContext } from '../core/tenant/tenantContext';
+import { TenantContext } from '../core/tenant/tenantContext';
 
 /**
  * Express middleware for API endpoint permission checking
@@ -20,7 +20,7 @@ export function requirePermission(permissionCode: string) {
     try {
       // Get user and tenant from request (set by authMiddleware and tenantLoader)
       const user = (req as any).user;
-      const tenantContext = getTenantContext();
+      const tenantContext = TenantContext.getContext();
 
       if (!user || !tenantContext) {
         logger.warn(`⚠️ DPF: Permission check failed - no user or tenant context`);
@@ -76,7 +76,7 @@ export function requireApiPermission() {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = (req as any).user;
-      const tenantContext = getTenantContext();
+      const tenantContext = TenantContext.getContext();
 
       if (!user || !tenantContext) {
         return res.status(401).json({

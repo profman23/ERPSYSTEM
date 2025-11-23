@@ -6,8 +6,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { UserRoleService } from '../services/userRoleService';
-import { tenantContext } from '../middleware/tenantLoader';
-import { authContext } from '../middleware/authMiddleware';
+import { TenantContext } from '../core/tenant/tenantContext';
 
 const assignRoleSchema = z.object({
   roleId: z.string().uuid(),
@@ -20,17 +19,16 @@ export class UserRoleController {
    */
   static async assignRole(req: Request, res: Response, next: NextFunction) {
     try {
-      const tenantCtx = tenantContext.getStore();
-      const authCtx = authContext.getStore();
-      if (!tenantCtx?.tenantId) throw new Error('Tenant context not found');
-      if (!authCtx?.user) throw new Error('Auth context not found');
+      const context = TenantContext.getContext();
+      if (!context?.tenantId) throw new Error('Tenant context not found');
+      if (!req.user) throw new Error('User not authenticated');
       
       const { id: userId } = req.params;
       const { roleId, expiresAt } = assignRoleSchema.parse(req.body);
 
       const result = await UserRoleService.assignRoleToUser(
-        tenantCtx.tenantId,
-        authCtx.user.id,
+        context.tenantId,
+        req.user.userId,
         {
           userId,
           roleId,
@@ -49,7 +47,7 @@ export class UserRoleController {
    */
   static async removeRole(req: Request, res: Response, next: NextFunction) {
     try {
-      const context = tenantContext.getStore();
+      const context = TenantContext.getContext();
       if (!context?.tenantId) throw new Error('Tenant context not found');
       
       const { id: userId } = req.params;
@@ -65,7 +63,7 @@ export class UserRoleController {
    */
   static async getUsersWithRoles(req: Request, res: Response, next: NextFunction) {
     try {
-      const context = tenantContext.getStore();
+      const context = TenantContext.getContext();
       if (!context?.tenantId) throw new Error('Tenant context not found');
       
       const users = await UserRoleService.getUsersWithRoles(context.tenantId);
@@ -80,7 +78,7 @@ export class UserRoleController {
    */
   static async getUserRole(req: Request, res: Response, next: NextFunction) {
     try {
-      const context = tenantContext.getStore();
+      const context = TenantContext.getContext();
       if (!context?.tenantId) throw new Error('Tenant context not found');
       
       const { id: userId } = req.params;
