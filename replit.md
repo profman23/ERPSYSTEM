@@ -188,24 +188,60 @@ Status:
 - Standardized error responses with request tracking
 - Job execution logging
 
+## Architecture Documentation
+
+### Global Module Map
+**Location:** `docs/architecture/GLOBAL_MODULE_MAP.md`
+
+Comprehensive enterprise-level architecture blueprint defining:
+- **14 Top-Level Domains** (Administration, Patients, Clients, Appointments, Clinical, Pharmacy, Lab, Finance, Inventory, HR, POS, Insurance, Analytics, AI/AGI)
+- **58 Detailed Modules** with complete specifications
+- **Module → RBAC Mapping** with standard role templates
+- **Module → AGI Understanding Map** with 5 access levels (No Access, Read-Only, Suggest, Automate, Autonomous)
+- **Cross-Module Boundaries** and event-driven integration patterns
+- **Scalability Notes** for 2,000+ clinics, 50,000+ users, 1B+ records
+- **Text-Based Architecture Diagrams** (domain hierarchy, entity maps, interaction graphs)
+
 ## Future Phases
 
-### Phase 2 (Planned)
-- Multi-tenant branding system with dynamic theme loading
-- Authentication system with RBAC
-- Real-time event system with Redis pub/sub
-- AGI engine implementation
-- ERP core modules
+### Phase 2 - Core ERP Modules (Months 1-6)
+**Priority Modules:**
+1. Enhanced Tenant Management with multi-branding
+2. Patient Registration & Demographics (Module 2.1, 2.2)
+3. Client Registration & Portal (Module 3.1, 3.3)
+4. Appointment Scheduling System (Module 4.1, 4.2)
+5. Basic EMR & SOAP Notes (Module 5.1)
+6. Invoicing & Payment Processing (Module 8.1)
+7. Communication Hub (SMS/Email) (Module 3.2)
 
-### Phase 3+ (Future)
-- Appointment management
-- Invoice and billing
-- Inventory management
-- Medical records
-- Lab device integrations (IDEXX, Zoetis)
-- Workflow engine
-- Document templates
-- Notification system
+### Phase 3 - Advanced Clinical & Operations (Months 7-12)
+**Advanced Modules:**
+8. Prescription Management with E-Prescribing (Module 5.3)
+9. In-House Laboratory & IDEXX Integration (Module 7.1, 7.2)
+10. Pharmacy Management with DEA Compliance (Module 6.1)
+11. Point of Sale (POS) System (Module 11.1)
+12. Inventory Management (Module 9.1)
+13. Staff Scheduling & Time Tracking (Module 10.2, 10.3)
+14. Vaccination Tracking & Reminders (Module 5.4)
+
+### Phase 4 - Enterprise Features (Months 13-18)
+**Enterprise Modules:**
+15. Insurance Claims Processing (Module 12.2, 12.3)
+16. Accounting & General Ledger (Module 8.2)
+17. Data Warehouse & Analytics (Module 13.4)
+18. AGI Agent Framework (Module 14.1)
+19. Predictive Analytics Engine (Module 14.3)
+20. Natural Language Interface (Module 14.2)
+21. Surgery & Anesthesia Management (Module 5.5)
+22. PACS & Imaging (Module 7.3)
+
+### Phase 5+ - Full Enterprise Suite
+- E-Commerce & Online Store (Module 11.2)
+- Supply Chain & Distribution (Module 9.3)
+- Payroll & HR Compliance (Module 8.5, 10.4)
+- Loyalty & Rewards Programs (Module 11.3)
+- Workflow Automation Engine (Module 14.4)
+- Advanced Clinical Analytics (Module 13.3)
 
 ## Development
 
