@@ -10,24 +10,19 @@ import { dpfModules } from '../db/schemas/dpfModules';
 import { dpfScreens } from '../db/schemas/dpfScreens';
 import { dpfActions } from '../db/schemas/dpfActions';
 import { eq, and, inArray } from 'drizzle-orm';
-import { tenantContext } from '../middleware/tenantLoader';
 import { CacheService } from '../services/CacheService';
 import type { DPFPermission, PermissionMatrixModule, AssignPermissionsInput } from '../../../types/dpf';
 
-function getTenantContext() {
-  const context = tenantContext.getStore();
-  if (!context || !context.tenantId) {
-    throw new Error('Tenant context not found');
-  }
-  return context;
-}
+/**
+ * CRITICAL: Tenant ID must be explicitly passed from HTTP request context
+ * Services NEVER access AsyncLocalStorage directly - this prevents context leaks
+ */
 
 export class PermissionService {
   /**
    * Get all permissions for current tenant (organized by module → screen → action)
    */
-  static async getPermissionMatrix(): Promise<PermissionMatrixModule[]> {
-    const { tenantId } = getTenantContext();
+  static async getPermissionMatrix(tenantId: string): Promise<PermissionMatrixModule[]> {
 
     const [modules, screens, actions, permissions] = await Promise.all([
       db.query.dpfModules.findMany({
@@ -78,8 +73,7 @@ export class PermissionService {
   /**
    * Get permissions assigned to a specific role
    */
-  static async getRolePermissions(roleId: string): Promise<string[]> {
-    const { tenantId } = getTenantContext();
+  static async getRolePermissions(tenantId: string, roleId: string): Promise<string[]> {
 
     const rolePermissions = await db.query.dpfRolePermissions.findMany({
       where: and(eq(dpfRolePermissions.tenantId, tenantId), eq(dpfRolePermissions.roleId, roleId)),
@@ -90,10 +84,23 @@ export class PermissionService {
 
   /**
    * Assign permissions to a role (replaces existing permissions)
+   * SECURITY: Validates all permission IDs belong to tenant before assignment
    */
-  static async assignPermissionsToRole(input: AssignPermissionsInput): Promise<{ success: boolean }> {
-    const { tenantId } = getTenantContext();
+  static async assignPermissionsToRole(tenantId: string, input: AssignPermissionsInput): Promise<{ success: boolean }> {
     const { roleId, permissionIds } = input;
+
+    if (permissionIds.length > 0) {
+      const validPermissions = await db.query.dpfPermissions.findMany({
+        where: and(
+          eq(dpfPermissions.tenantId, tenantId),
+          inArray(dpfPermissions.id, permissionIds)
+        ),
+      });
+
+      if (validPermissions.length !== permissionIds.length) {
+        throw new Error('Invalid permission IDs: some permissions do not belong to this tenant');
+      }
+    }
 
     await db
       .delete(dpfRolePermissions)
@@ -118,8 +125,7 @@ export class PermissionService {
   /**
    * Get all permissions (flat list)
    */
-  static async getAllPermissions(): Promise<DPFPermission[]> {
-    const { tenantId } = getTenantContext();
+  static async getAllPermissions(tenantId: string): Promise<DPFPermission[]> {
 
     const permissions = await db.query.dpfPermissions.findMany({
       where: and(eq(dpfPermissions.tenantId, tenantId), eq(dpfPermissions.isActive, 'true')),

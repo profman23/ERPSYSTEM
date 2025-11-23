@@ -8,28 +8,26 @@ import { dpfRoles } from '../db/schemas/dpfRoles';
 import { dpfRolePermissions } from '../db/schemas/dpfRolePermissions';
 import { dpfUserRoles } from '../db/schemas/dpfUserRoles';
 import { eq, and, sql, ilike, or } from 'drizzle-orm';
-import { tenantContext } from '../middleware/tenantLoader';
 import type { CreateRoleInput, UpdateRoleInput, RoleListItem, PaginatedResponse } from '../../../types/dpf';
 
-function getTenantContext() {
-  const context = tenantContext.getStore();
-  if (!context || !context.tenantId) {
-    throw new Error('Tenant context not found');
-  }
-  return context;
-}
+/**
+ * CRITICAL: Tenant ID must be explicitly passed from HTTP request context
+ * Services NEVER access AsyncLocalStorage directly - this prevents context leaks
+ */
 
 export class RoleService {
   /**
    * List all roles for current tenant with pagination and search
    */
-  static async list(params: {
-    page?: number;
-    limit?: number;
-    search?: string;
-    isActive?: boolean;
-  }): Promise<PaginatedResponse<RoleListItem>> {
-    const { tenantId } = getTenantContext();
+  static async list(
+    tenantId: string,
+    params: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      isActive?: boolean;
+    }
+  ): Promise<PaginatedResponse<RoleListItem>> {
     const page = params.page || 1;
     const limit = params.limit || 10;
     const offset = (page - 1) * limit;
@@ -97,8 +95,7 @@ export class RoleService {
   /**
    * Get single role by ID
    */
-  static async getById(roleId: string): Promise<RoleListItem | null> {
-    const { tenantId } = getTenantContext();
+  static async getById(tenantId: string, roleId: string): Promise<RoleListItem | null> {
 
     const results = await db
       .select({
@@ -129,8 +126,7 @@ export class RoleService {
   /**
    * Create new role
    */
-  static async create(input: CreateRoleInput) {
-    const { tenantId } = getTenantContext();
+  static async create(tenantId: string, input: CreateRoleInput) {
 
     if (input.isDefault) {
       await db
@@ -160,9 +156,7 @@ export class RoleService {
   /**
    * Update existing role
    */
-  static async update(roleId: string, input: UpdateRoleInput) {
-    const { tenantId } = getTenantContext();
-
+  static async update(tenantId: string, roleId: string, input: UpdateRoleInput) {
     const existingRole = await db.query.dpfRoles.findFirst({
       where: and(eq(dpfRoles.tenantId, tenantId), eq(dpfRoles.id, roleId)),
     });
@@ -171,8 +165,8 @@ export class RoleService {
       throw new Error('Role not found');
     }
 
-    if (existingRole.isProtected === 'true') {
-      throw new Error('Cannot modify protected role');
+    if (existingRole.isSystemRole === 'true') {
+      throw new Error('Cannot modify system role');
     }
 
     if (input.isDefault) {
@@ -201,18 +195,17 @@ export class RoleService {
 
   /**
    * Delete role (only if no users assigned)
+   * SECURITY: Validates isSystemRole at service level to prevent bypass
    */
-  static async delete(roleId: string): Promise<{ success: boolean; message: string }> {
-    const { tenantId } = getTenantContext();
-
-    const role = await this.getById(roleId);
+  static async delete(tenantId: string, roleId: string): Promise<{ success: boolean; message: string }> {
+    const role = await this.getById(tenantId, roleId);
 
     if (!role) {
       throw new Error('Role not found');
     }
 
-    if (role.isProtected === 'true') {
-      throw new Error('Cannot delete protected role');
+    if (role.isSystemRole === 'true') {
+      throw new Error('Cannot delete system role');
     }
 
     if (role.usersCount > 0) {

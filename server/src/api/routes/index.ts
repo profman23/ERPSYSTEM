@@ -4,6 +4,7 @@ import tenantRoutes from './tenantRoutes';
 import businessLineRoutes from './businessLineRoutes';
 import branchRoutes from './branchRoutes';
 import branchCapacityRoutes from './branchCapacityRoutes';
+import tenantAdminRoutes from '../../routes/tenant';
 import { authMiddleware } from '../../middleware/authMiddleware';
 import { tenantLoader } from '../../middleware/tenantLoader';
 import { apiRateLimiter, strictRateLimiter } from '../../middleware/rateLimiter';
@@ -18,6 +19,9 @@ router.use('/tenants', authMiddleware, tenantLoader, apiRateLimiter, strictRateL
 router.use('/business-lines', authMiddleware, tenantLoader, apiRateLimiter, strictRateLimiter, businessLineRoutes);
 router.use('/branches', authMiddleware, tenantLoader, apiRateLimiter, strictRateLimiter, branchRoutes);
 router.use('/branch-capacity', authMiddleware, tenantLoader, apiRateLimiter, branchCapacityRoutes);
+
+// Tenant Admin routes - roles & permissions management (DPF-AGI)
+router.use('/tenant', authMiddleware, tenantLoader, apiRateLimiter, tenantAdminRoutes);
 
 router.get('/', (req, res) => {
   res.json({ message: 'API - Enterprise Tenant Module - Phase 3 Complete' });

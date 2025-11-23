@@ -1,0 +1,70 @@
+/**
+ * React Query Hooks for Permission Management
+ * Provides permission matrix and role permission assignment
+ */
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
+import type {
+  PermissionMatrixModule,
+  DPFPermission,
+  AssignPermissionsInput,
+  ApiResponse,
+} from '../../../types/dpf';
+
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
+export function usePermissionMatrix() {
+  return useQuery({
+    queryKey: ['permissions', 'matrix'],
+    queryFn: async (): Promise<PermissionMatrixModule[]> => {
+      const { data } = await axios.get<ApiResponse<PermissionMatrixModule[]>>(
+        `${API_BASE}/tenant/permissions/matrix`
+      );
+      return data.data!;
+    },
+  });
+}
+
+export function useAllPermissions() {
+  return useQuery({
+    queryKey: ['permissions', 'all'],
+    queryFn: async (): Promise<DPFPermission[]> => {
+      const { data } = await axios.get<ApiResponse<DPFPermission[]>>(
+        `${API_BASE}/tenant/permissions/all`
+      );
+      return data.data!;
+    },
+  });
+}
+
+export function useRolePermissions(roleId: string | undefined) {
+  return useQuery({
+    queryKey: ['role-permissions', roleId],
+    queryFn: async (): Promise<string[]> => {
+      const { data } = await axios.get<ApiResponse<string[]>>(
+        `${API_BASE}/tenant/roles/${roleId}/permissions`
+      );
+      return data.data!;
+    },
+    enabled: !!roleId,
+  });
+}
+
+export function useAssignPermissions() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: AssignPermissionsInput) => {
+      const { data } = await axios.post<ApiResponse<{ success: boolean }>>(
+        `${API_BASE}/tenant/roles/${input.roleId}/permissions`,
+        { permissionIds: input.permissionIds }
+      );
+      return data.data!;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['role-permissions', variables.roleId] });
+      queryClient.invalidateQueries({ queryKey: ['roles', variables.roleId] });
+    },
+  });
+}

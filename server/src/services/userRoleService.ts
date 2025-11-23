@@ -8,34 +8,23 @@ import { dpfUserRoles } from '../db/schemas/dpfUserRoles';
 import { dpfRoles } from '../db/schemas/dpfRoles';
 import { users } from '../db/schemas/users';
 import { eq, and } from 'drizzle-orm';
-import { tenantContext } from '../middleware/tenantLoader';
-import { authContext } from '../middleware/authMiddleware';
 import { CacheService } from '../services/CacheService';
 import type { AssignRoleToUserInput, UserWithRole } from '../../../types/dpf';
 
-function getTenantContext() {
-  const context = tenantContext.getStore();
-  if (!context || !context.tenantId) {
-    throw new Error('Tenant context not found');
-  }
-  return context;
-}
-
-function getAuthContext() {
-  const context = authContext.getStore();
-  if (!context || !context.user) {
-    throw new Error('Auth context not found');
-  }
-  return context;
-}
+/**
+ * CRITICAL: Tenant ID and User ID must be explicitly passed from HTTP request context
+ * Services NEVER access AsyncLocalStorage directly - this prevents context leaks
+ */
 
 export class UserRoleService {
   /**
    * Assign role to user
    */
-  static async assignRoleToUser(input: AssignRoleToUserInput): Promise<{ success: boolean }> {
-    const { tenantId } = getTenantContext();
-    const { user } = getAuthContext();
+  static async assignRoleToUser(
+    tenantId: string,
+    assignedBy: string,
+    input: AssignRoleToUserInput
+  ): Promise<{ success: boolean }> {
     const { userId, roleId, expiresAt } = input;
 
     const targetUser = await db.query.users.findFirst({
@@ -62,7 +51,7 @@ export class UserRoleService {
       tenantId,
       userId,
       roleId,
-      assignedBy: user.id,
+      assignedBy,
       expiresAt,
     });
 
@@ -75,8 +64,7 @@ export class UserRoleService {
   /**
    * Remove role from user
    */
-  static async removeRoleFromUser(userId: string): Promise<{ success: boolean }> {
-    const { tenantId } = getTenantContext();
+  static async removeRoleFromUser(tenantId: string, userId: string): Promise<{ success: boolean }> {
 
     await db
       .delete(dpfUserRoles)
@@ -91,8 +79,7 @@ export class UserRoleService {
   /**
    * Get users with their assigned roles
    */
-  static async getUsersWithRoles(): Promise<UserWithRole[]> {
-    const { tenantId } = getTenantContext();
+  static async getUsersWithRoles(tenantId: string): Promise<UserWithRole[]> {
 
     const usersWithRoles = await db
       .select({
@@ -140,8 +127,7 @@ export class UserRoleService {
   /**
    * Get user's current role
    */
-  static async getUserRole(userId: string) {
-    const { tenantId } = getTenantContext();
+  static async getUserRole(tenantId: string, userId: string) {
 
     const userRole = await db.query.dpfUserRoles.findFirst({
       where: and(eq(dpfUserRoles.tenantId, tenantId), eq(dpfUserRoles.userId, userId)),
