@@ -13,16 +13,9 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5000,
-    allowedHosts: [
-      'localhost',
-      '127.0.0.1',
-      '0.0.0.0',
-      '*.replit.dev',
-      'f7dd660b-f703-4da3-9d7c-ca3ca5d4c75a-00-2d1defatxzons.kirk.replit.dev',
-    ],
+    allowedHosts: true, // Allow all hosts in Replit environment
     strictPort: true,
     hmr: {
-      host: 'f7dd660b-f703-4da3-9d7c-ca3ca5d4c75a-00-2d1defatxzons.kirk.replit.dev',
       clientPort: 443,
       protocol: 'wss',
     },

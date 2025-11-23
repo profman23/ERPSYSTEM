@@ -17,13 +17,38 @@ export const helmetMiddleware = helmet({
   },
 });
 
-export const allowedOrigins = process.env.CORS_ORIGIN 
+// Auto-detect Replit origin from environment variables
+const getReplitOrigin = (): string | null => {
+  if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+    return `https://${process.env.REPL_SLUG}-${process.env.REPL_OWNER}.replit.dev`;
+  }
+  return null;
+};
+
+// Build allowed origins list: Replit origin + custom origins from env + localhost fallback
+const replitOrigin = getReplitOrigin();
+const customOrigins = process.env.CORS_ORIGIN 
   ? process.env.CORS_ORIGIN.split(',').filter(o => o !== '*')
-  : ['http://localhost:5000', 'http://localhost:3000'];
+  : [];
+
+export const allowedOrigins = [
+  ...(replitOrigin ? [replitOrigin] : []),
+  ...customOrigins,
+  'http://localhost:5000',
+  'http://localhost:3000',
+  'http://127.0.0.1:5000',
+  'http://127.0.0.1:3000',
+].filter(Boolean);
 
 export const corsMiddleware = cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Allow requests with no origin (mobile apps, Postman, server-to-server)
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
