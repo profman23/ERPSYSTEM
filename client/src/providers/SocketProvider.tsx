@@ -18,16 +18,21 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
 
   useEffect(() => {
     // Dynamic Socket.IO URL for Replit environment
+    // Backend ALWAYS runs on port 3000
     const getSocketUrl = () => {
       if (typeof window !== 'undefined') {
         const origin = window.location.origin;
-        // Replace any port in the origin with :3000 for backend
-        return origin.replace(/:\d+$/, ':3000');
+        // Remove existing port (if any) then add :3000
+        const baseWithoutPort = origin.replace(/:\d+$/, '');
+        return `${baseWithoutPort}:3000`;
       }
       return 'http://localhost:3000';
     };
 
-    const socketInstance = io(getSocketUrl(), {
+    const socketUrl = getSocketUrl();
+    console.log('🔧 Socket.IO URL:', socketUrl);
+
+    const socketInstance = io(socketUrl, {
       autoConnect: true,
     });
 
