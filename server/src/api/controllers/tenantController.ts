@@ -15,7 +15,7 @@ import {
  * Create a new tenant
  * Access: System admins only
  */
-export const createTenant = async (req: Request, res: Response) => {
+export const createTenant = async (req: Request, res: Response, next: any) => {
   try {
     const user = (req as any).user;
 
@@ -27,7 +27,7 @@ export const createTenant = async (req: Request, res: Response) => {
       });
     }
 
-    // Zod validation
+    // Zod validation (errors will be caught and sent to global error handler)
     const validatedData = createTenantSchema.parse(req.body);
 
     // Check if tenant code already exists (composite unique validation)
@@ -65,10 +65,7 @@ export const createTenant = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     logger.error('Error creating tenant:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Failed to create tenant' 
-    });
+    next(error);
   }
 };
 
