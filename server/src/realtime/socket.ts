@@ -12,7 +12,27 @@ let io: SocketIOServer;
 export const initializeSocket = async (httpServer: HTTPServer) => {
   io = new SocketIOServer(httpServer, {
     cors: {
-      origin: allowedOrigins,
+      origin: (origin, callback) => {
+        // Allow requests with no origin
+        if (!origin) {
+          callback(null, true);
+          return;
+        }
+        
+        // Allow all .replit.dev domains for Replit environment
+        if (origin.endsWith('.replit.dev')) {
+          callback(null, true);
+          return;
+        }
+        
+        // Allow configured origins
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          logger.warn(`❌ Socket.IO CORS rejected origin: ${origin}`);
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
       methods: ['GET', 'POST'],
       credentials: true,
     },
