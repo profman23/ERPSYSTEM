@@ -42,7 +42,7 @@ export function RolePermissionsPage() {
           <p className="mt-2 text-muted-foreground">
             {axios.isAxiosError(error) ? error.response?.data?.error : 'Failed to load role'}
           </p>
-          <Button onClick={() => navigate('/admin/roles')} className="mt-4">
+          <Button onClick={() => navigate('/roles')} className="mt-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Roles
           </Button>
@@ -59,7 +59,7 @@ export function RolePermissionsPage() {
           <p className="mt-2 text-muted-foreground">
             The requested role could not be found.
           </p>
-          <Button onClick={() => navigate('/admin/roles')} className="mt-4">
+          <Button onClick={() => navigate('/roles')} className="mt-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Roles
           </Button>
@@ -73,7 +73,7 @@ export function RolePermissionsPage() {
       <div className="mb-6">
         <Button
           variant="ghost"
-          onClick={() => navigate('/admin/roles')}
+          onClick={() => navigate('/roles')}
           className="mb-4"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
