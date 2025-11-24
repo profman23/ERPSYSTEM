@@ -5,6 +5,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
+import { useAuth } from '@/contexts/AuthContext';
 import type {
   PermissionMatrixModule,
   DPFPermission,
@@ -52,17 +53,20 @@ export function useRolePermissions(roleId: string | undefined) {
 }
 
 export function useBatchRolePermissions(roleIds: string[]) {
+  const { accessToken } = useAuth();
+  
   return useQuery({
     queryKey: ['batch-role-permissions', roleIds.sort().join(',')],
     queryFn: async () => {
-      if (roleIds.length === 0) {
+      if (roleIds.length === 0 || !accessToken) {
         return { permissions: [], rolePermissionsMap: {} };
       }
 
       const responses = await Promise.all(
         roleIds.map(roleId =>
           axios.get<ApiResponse<{ roleId: string; permissions: DPFPermission[] }>>(
-            `${API_BASE}/tenant/roles/${roleId}/permissions`
+            `${API_BASE}/tenant/roles/${roleId}/permissions`,
+            { headers: { Authorization: `Bearer ${accessToken}` } }
           ).catch(() => ({ data: { data: { roleId, permissions: [] } } }))
         )
       );
@@ -91,7 +95,7 @@ export function useBatchRolePermissions(roleIds: string[]) {
         rolePermissionsMap,
       };
     },
-    enabled: roleIds.length > 0,
+    enabled: roleIds.length > 0 && !!accessToken,
     staleTime: 5 * 60 * 1000,
   });
 }

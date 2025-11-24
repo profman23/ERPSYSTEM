@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/providers/SocketProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useRoles } from '@/hooks/useRoles';
+import { useBatchRolePermissions } from '@/hooks/useRolePermissions';
 import { useUser, useUserRoles, useBatchAssignRoles, useBatchRemoveRoles } from '@/hooks/useUserRoles';
 import { ArrowLeft, Loader2, Shield, Settings } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +40,10 @@ export default function UserRoleAssignmentPage() {
 
   const allRoles = rolesData?.data || [];
   const currentRoles = userRoles.map(ur => allRoles.find(r => r.id === ur.roleId)).filter(Boolean) as any[];
+  
+  const currentRoleIds = currentRoles.map(r => r.id);
+  const { data: currentRolePermsData, isLoading: isLoadingCurrentPerms } = useBatchRolePermissions(currentRoleIds);
+  const currentPermissions = currentRolePermsData?.permissions || [];
 
   useEffect(() => {
     const fetchPermissions = async () => {
@@ -135,7 +140,7 @@ export default function UserRoleAssignmentPage() {
     );
   }
 
-  if (isLoadingUser || isLoadingRoles || isLoadingAllRoles) {
+  if (isLoadingUser || isLoadingRoles || isLoadingAllRoles || isLoadingCurrentPerms) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center min-h-[400px]">
@@ -161,10 +166,6 @@ export default function UserRoleAssignmentPage() {
       </div>
     );
   }
-
-  const currentPermissions = allPermissions.filter(p => 
-    currentRoles.some(r => r.id === p.moduleId || p.permissionCode.startsWith(r.roleCode))
-  );
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
