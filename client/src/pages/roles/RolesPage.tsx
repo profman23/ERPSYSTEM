@@ -3,7 +3,7 @@
  * Enforces permission-based UI rendering
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Plus, Edit, Trash2, Search, Shield } from 'lucide-react';
 import { useRoles, useDeleteRole } from '../../hooks/useRoles';
 import { Button } from '../../components/ui/button';
@@ -16,21 +16,21 @@ import { DeleteRoleDialog } from '../../components/roles/DeleteRoleDialog';
 import { usePermissions } from '../../hooks/usePermissions';
 import type { RoleListItem } from '../../../../types/dpf';
 
-export function RolesPage() {
+export default function RolesPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [selectedRole, setSelectedRole] = useState<RoleListItem | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-  const { checkPermission } = usePermissions();
+  const { hasPermission } = usePermissions();
   const { data, isLoading, error } = useRoles({ page, limit: 20, search });
   const deleteRoleMutation = useDeleteRole();
 
-  const canCreate = checkPermission('roles.create');
-  const canEdit = checkPermission('roles.update');
-  const canDelete = checkPermission('roles.delete');
-  const canView = checkPermission('roles.view');
+  const canCreate = hasPermission('roles.create');
+  const canEdit = hasPermission('roles.update');
+  const canDelete = hasPermission('roles.delete');
+  const canView = hasPermission('roles.view');
 
   if (!canView) {
     return (
