@@ -47,6 +47,7 @@ const UsersListPage = lazy(() => import('@/pages/users/UsersListPage'));
 // Role Pages (DPF-AGI)
 const RolesPage = lazy(() => import('@/pages/roles/RolesPage'));
 const RolePermissionsPage = lazy(() => import('@/pages/admin/RolePermissionsPage'));
+const UserRoleAssignmentPage = lazy(() => import('@/pages/admin/UserRoleAssignmentPage'));
 
 // Error Pages
 const NotFoundPage = lazy(() => import('@/pages/not-found/NotFoundPage'));
@@ -167,6 +168,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<LoadingFallback />}>
             <UsersListPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'users/:userId/roles',
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <UserRoleAssignmentPage />
           </Suspense>
         ),
       },

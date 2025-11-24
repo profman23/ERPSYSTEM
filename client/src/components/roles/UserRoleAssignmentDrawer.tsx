@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -202,17 +202,17 @@ export function UserRoleAssignmentDrawer({
   if (!user) return null;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Manage Roles for {user.firstName} {user.lastName}</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Manage Roles for {user.firstName} {user.lastName}</DialogTitle>
+          <DialogDescription>
             {user.email}
             <Badge variant={user.status === 'active' ? 'success' : 'default'} className="ml-2">
               {user.status}
             </Badge>
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
         <div className="mt-6 space-y-6">
           <div className="space-y-3">
@@ -325,7 +325,7 @@ export function UserRoleAssignmentDrawer({
           />
         </div>
 
-        <SheetFooter className="mt-6 gap-2">
+        <DialogFooter className="mt-6 gap-2 flex-row justify-end">
           <Button variant="outline" onClick={handleReset} disabled={isSaving || !hasChanges}>
             <X className="mr-2 h-4 w-4" />
             Reset
@@ -343,8 +343,8 @@ export function UserRoleAssignmentDrawer({
               </>
             )}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Users, Plus, Search, Filter } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Users, Plus, Search, Filter, Settings } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,9 +9,11 @@ import { Input } from '@/components/ui/input';
  * UsersListPage - List all users in the system
  * 
  * Phase 1: UI placeholder with empty state
+ * Phase 2: Added "Manage Roles" navigation (connects to UserRoleAssignmentPage)
  * Phase 3+: Real data from API, role filtering, permissions, multi-tenant
  */
 export default function UsersListPage() {
+  const navigate = useNavigate();
   const [isRTL, setIsRTL] = useState(false);
 
   useEffect(() => {
@@ -88,6 +91,15 @@ export default function UsersListPage() {
             <p className="mb-6">
               {isRTL ? 'سيتم تنفيذ إدارة المستخدمين في المرحلة 3' : 'User management will be implemented in Phase 3'}
             </p>
+            <p className="text-sm mb-4">
+              {isRTL ? 'تم بناء نظام تعيين أدوار المستخدمين وهو جاهز' : 'User Role Assignment system is built and ready'}
+            </p>
+            <div className="flex gap-2 justify-center">
+              <Button variant="outline" onClick={() => navigate('/users/demo-user-id/roles')}>
+                <Settings className="mr-2 h-4 w-4" />
+                {isRTL ? 'عرض إدارة الأدوار (تجريبي)' : 'View Role Management (Demo)'}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
