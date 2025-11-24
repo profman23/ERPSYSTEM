@@ -2,10 +2,12 @@ import { db } from '../index';
 import { users, tenants } from '../schemas';
 import { eq } from 'drizzle-orm';
 import { AuthService } from '../../services/AuthService';
+import { seedDPFStructure, validateDPFStructure } from './seedDPFStructure';
 
 /**
  * Seed System Tenant and Super Admin User
  * Creates a system tenant and super admin if they don't exist
+ * Also syncs DPF structure for SYSTEM tenant
  */
 export async function seedSuperAdmin() {
   try {
@@ -47,6 +49,12 @@ export async function seedSuperAdmin() {
 
     if (existingSuperAdmin) {
       console.log('✅ Super Admin already exists');
+      
+      // Always sync DPF structure for SYSTEM tenant (ensures updates are applied)
+      console.log('\n🔄 Syncing DPF structure for SYSTEM tenant...');
+      await seedDPFStructure(systemTenantId);
+      await validateDPFStructure(systemTenantId);
+      
       console.log('');
       console.log('═══════════════════════════════════════════');
       console.log('  Super Admin Login Credentials');
@@ -76,6 +84,12 @@ export async function seedSuperAdmin() {
     });
 
     console.log('✅ Super Admin created successfully');
+    
+    // Sync DPF structure for SYSTEM tenant
+    console.log('\n🔄 Syncing DPF structure for SYSTEM tenant...');
+    await seedDPFStructure(systemTenantId);
+    await validateDPFStructure(systemTenantId);
+    
     console.log('');
     console.log('═══════════════════════════════════════════');
     console.log('  Super Admin Login Credentials');
