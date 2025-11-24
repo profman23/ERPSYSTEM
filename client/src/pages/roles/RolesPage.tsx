@@ -4,7 +4,8 @@
  */
 
 import { useState } from 'react';
-import { Plus, Edit, Trash2, Search, Shield } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Edit, Trash2, Search, Shield, Settings } from 'lucide-react';
 import { useRoles, useDeleteRole } from '../../hooks/useRoles';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -17,6 +18,7 @@ import { usePermissions } from '../../hooks/usePermissions';
 import type { RoleListItem } from '../../../../types/dpf';
 
 export default function RolesPage() {
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [selectedRole, setSelectedRole] = useState<RoleListItem | null>(null);
@@ -31,6 +33,7 @@ export default function RolesPage() {
   const canEdit = hasPermission('roles.update');
   const canDelete = hasPermission('roles.delete');
   const canView = hasPermission('roles.view');
+  const canManagePermissions = hasPermission('permissions.assign');
 
   if (!canView) {
     return (
@@ -152,11 +155,22 @@ export default function RolesPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          {canManagePermissions && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/roles/${role.id}/permissions`)}
+                              title="Manage Permissions"
+                            >
+                              <Settings className="h-4 w-4" />
+                            </Button>
+                          )}
                           {canEdit && (
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEdit(role)}
+                              title="Edit Role"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -167,6 +181,7 @@ export default function RolesPage() {
                               size="sm"
                               onClick={() => handleDeleteClick(role)}
                               disabled={role.usersCount > 0}
+                              title="Delete Role"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
