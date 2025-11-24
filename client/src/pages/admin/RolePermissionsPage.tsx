@@ -9,7 +9,7 @@ import type { DPFRole } from '../../../../types/dpf';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
-export function RolePermissionsPage() {
+export default function RolePermissionsPage() {
   const { roleId } = useParams<{ roleId: string }>();
   const navigate = useNavigate();
   const { accessToken } = useAuth();
