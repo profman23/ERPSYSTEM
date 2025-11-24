@@ -34,6 +34,11 @@ The platform adheres to a "Modern Medical Blue" design system.
     -   Support for voice commands and multi-layer safety validation.
     -   Production-ready static structure defined in `dpfStructure.ts` with an idempotent sync system for database consistency.
     -   Comprehensive validation to ensure DPF integrity.
+    -   **RBAC UI Modules (Production-Ready):**
+        -   **Permission Matrix UI:** Hierarchical Module→Screen→Action permission assignment for roles with save/reset flows.
+        -   **User Role Assignment UI:** Complete role management with real-time updates, AGI natural language interpreter ("/agi" prefix), role impact preview showing BEFORE/AFTER permission diffs, conflict detection, and Socket.IO synchronization.
+        -   **React Query Integration:** Client-side caching with automatic invalidation on updates.
+        -   **Backend API Integration:** All permission calculations use authenticated backend APIs, no client-side heuristics.
 
 ### Database Schema
 -   **Enhanced Tables:** `tenants`, `business_lines`, `branches`, `users` are enhanced with additional fields and multi-level foreign key support to support the multi-tenant architecture and access control.
@@ -45,11 +50,22 @@ The platform adheres to a "Modern Medical Blue" design system.
 -   **Scalability Features:** Redis adapter for Socket.IO horizontal scaling, graceful Redis degradation, and Neon Pooler for connection pooling.
 -   **Observability:** Winston logging, Prometheus metrics, and standardized error responses.
 
+## Recent Changes (November 2025)
+
+-   **User Role Assignment UI Module (COMPLETE):**
+    -   Created comprehensive user role management system with 7 new components/hooks
+    -   RoleImpactPreview: BEFORE/AFTER permission diff viewer with conflict detection
+    -   UserRoleAssignmentDrawer: Role selection with AGI natural language interpreter (English & Arabic)
+    -   UserRoleAssignmentPage: Full-featured page with Socket.IO real-time synchronization
+    -   useBatchRolePermissions: Authenticated batch API fetching for accurate permission calculations
+    -   Routes: /users/:userId/roles for role management
+    -   **Key Features:** "/agi" prefix command interpreter, Arabic language support, real-time updates, accurate permission diff calculations using backend API data
+
 ## External Dependencies
 
 -   **Database:** Neon Serverless PostgreSQL (EU-Central-1)
 -   **Real-time Communication:** Socket.IO
--   **Caching/Pub-Sub:** Redis
+-   **Caching/Pub-Sub:** Redis (optional, graceful degradation in dev)
 -   **UI Components:** Shadcn UI
 -   **Internationalization:** i18next
 -   **Monitoring:** Prometheus
