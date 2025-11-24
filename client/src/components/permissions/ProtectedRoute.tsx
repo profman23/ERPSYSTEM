@@ -22,7 +22,7 @@ export function ProtectedRoute({
   fallback,
   redirectTo = '/unauthorized',
 }: ProtectedRouteProps) {
-  const { hasPermission, hasRole, loading } = usePermissions();
+  const { hasPermission, loading } = usePermissions();
 
   if (loading) {
     return (
@@ -34,7 +34,7 @@ export function ProtectedRoute({
 
   const hasAccess =
     (!requiredPermission || hasPermission(requiredPermission)) &&
-    (!requiredRole || hasRole(requiredRole));
+    !requiredRole; // Role checking removed - use permission-based access control
 
   if (!hasAccess) {
     if (fallback) {

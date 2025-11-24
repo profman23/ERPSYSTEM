@@ -3,7 +3,6 @@
  * Prevents deletion if users are assigned
  */
 
-import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import {
   Dialog,
