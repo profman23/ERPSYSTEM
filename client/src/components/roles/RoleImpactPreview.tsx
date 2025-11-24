@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Plus, Minus, Shield, CheckCircle } from 'lucide-react';
+import { AlertTriangle, Plus, Minus, Shield, CheckCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useBatchRolePermissions } from '@/hooks/useRolePermissions';
 import type { DPFPermission, DPFRole } from '../../../../types/dpf';
 
 interface RoleImpactPreviewProps {
@@ -37,29 +38,28 @@ export function RoleImpactPreview({
   allPermissions,
   currentPermissions,
 }: RoleImpactPreviewProps) {
+  const selectedRoleIdsArray = Array.from(selectedRoleIds);
+  const { data: selectedRolePermsData, isLoading: isLoadingSelectedPerms } = useBatchRolePermissions(selectedRoleIdsArray);
+
   const diff = useMemo<PermissionDiff>(() => {
-    const selectedRoles = allRoles.filter(r => selectedRoleIds.has(r.id));
-    
+    if (!selectedRolePermsData) {
+      return { gained: [], lost: [], unchanged: [], conflicts: [], highRisk: [] };
+    }
+
     const currentPermCodes = new Set(currentPermissions.map(p => p.permissionCode));
+    const afterPermissions = selectedRolePermsData.permissions;
+    const afterPermCodes = new Set(afterPermissions.map(p => p.permissionCode));
     
-    const afterPermCodes = new Set<string>();
-    selectedRoles.forEach(role => {
-      const rolePerms = allPermissions.filter(p => 
-        p.moduleId === role.id || p.permissionCode.startsWith(role.roleCode)
-      );
-      rolePerms.forEach(p => afterPermCodes.add(p.permissionCode));
-    });
-    
-    const gained = allPermissions.filter(p => 
-      afterPermCodes.has(p.permissionCode) && !currentPermCodes.has(p.permissionCode)
+    const gained = afterPermissions.filter(p => 
+      !currentPermCodes.has(p.permissionCode)
     );
     
-    const lost = allPermissions.filter(p => 
-      currentPermCodes.has(p.permissionCode) && !afterPermCodes.has(p.permissionCode)
+    const lost = currentPermissions.filter(p => 
+      !afterPermCodes.has(p.permissionCode)
     );
     
-    const unchanged = allPermissions.filter(p => 
-      currentPermCodes.has(p.permissionCode) && afterPermCodes.has(p.permissionCode)
+    const unchanged = currentPermissions.filter(p => 
+      afterPermCodes.has(p.permissionCode)
     );
     
     const highRisk = gained.filter(p => 
@@ -69,7 +69,7 @@ export function RoleImpactPreview({
     const conflicts = detectConflicts([...afterPermCodes]);
     
     return { gained, lost, unchanged, conflicts, highRisk };
-  }, [currentRoles, selectedRoleIds, allRoles, allPermissions, currentPermissions]);
+  }, [currentPermissions, selectedRolePermsData]);
 
   function detectConflicts(permissionCodes: string[]): PermissionConflict[] {
     const conflicts: PermissionConflict[] = [];
@@ -121,6 +121,19 @@ export function RoleImpactPreview({
   const hasChanges = diff.gained.length > 0 || diff.lost.length > 0;
   const hasConflicts = diff.conflicts.length > 0;
   const hasHighRisk = diff.highRisk.length > 0;
+
+  if (isLoadingSelectedPerms) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-sm text-muted-foreground">Loading permission impact...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!hasChanges) {
     return (

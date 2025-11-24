@@ -106,10 +106,22 @@ export function UserRoleAssignmentDrawer({
   };
 
   const interpretAgiCommand = async () => {
-    if (!agiCommand.trim()) {
+    const trimmedCommand = agiCommand.trim();
+    
+    if (!trimmedCommand.startsWith('/agi ')) {
+      toast({
+        title: 'Invalid command',
+        description: 'AGI commands must start with "/agi ". Example: "/agi make admin"',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const command = trimmedCommand.slice(5).trim();
+    if (!command) {
       toast({
         title: 'No command',
-        description: 'Please enter an AI command to interpret',
+        description: 'Please provide a command after "/agi"',
       });
       return;
     }
@@ -117,72 +129,87 @@ export function UserRoleAssignmentDrawer({
     setIsProcessingAgi(true);
     
     try {
-      const command = agiCommand.toLowerCase();
+      const commandLower = command.toLowerCase();
       const newSelection = new Set(selectedRoleIds);
 
-      if (command.includes('all') && command.includes('finance')) {
+      const isArabic = /[\u0600-\u06FF]/.test(command);
+      
+      if ((commandLower.includes('all') && commandLower.includes('finance')) || 
+          (isArabic && command.includes('كل') && command.includes('مالي'))) {
         const financeRoles = allRoles.filter(r =>
           r.roleCode.toLowerCase().includes('finance') ||
-          r.roleName.toLowerCase().includes('finance')
+          r.roleName.toLowerCase().includes('finance') ||
+          r.roleNameAr?.includes('مالي')
         );
         financeRoles.forEach(r => newSelection.add(r.id));
         toast({
-          title: 'AI Interpreted',
+          title: 'AGI Interpreted',
           description: `Added ${financeRoles.length} finance-related roles`,
         });
-      } else if (command.includes('all') && command.includes('admin')) {
+      } else if ((commandLower.includes('all') && commandLower.includes('admin')) ||
+                 (isArabic && (command.includes('كل') || command.includes('جميع')) && (command.includes('مدير') || command.includes('إداري')))) {
         const adminRoles = allRoles.filter(r =>
           r.roleCode.toLowerCase().includes('admin') ||
-          r.roleName.toLowerCase().includes('admin')
+          r.roleName.toLowerCase().includes('admin') ||
+          r.roleNameAr?.includes('مدير') ||
+          r.roleNameAr?.includes('إداري')
         );
         adminRoles.forEach(r => newSelection.add(r.id));
         toast({
-          title: 'AI Interpreted',
+          title: 'AGI Interpreted',
           description: `Added ${adminRoles.length} admin-related roles`,
         });
-      } else if (command.includes('remove all')) {
+      } else if (commandLower.includes('remove all') || commandLower.includes('clear') ||
+                 (isArabic && (command.includes('أزل') || command.includes('احذف')) && (command.includes('كل') || command.includes('جميع')))) {
         newSelection.clear();
         toast({
-          title: 'AI Interpreted',
+          title: 'AGI Interpreted',
           description: 'Removed all roles',
         });
-      } else if (command.includes('readonly') || command.includes('read-only') || command.includes('view only')) {
+      } else if (commandLower.includes('readonly') || commandLower.includes('read-only') || commandLower.includes('view only') ||
+                 (isArabic && (command.includes('قراءة فقط') || command.includes('عرض فقط')))) {
         const viewOnlyRoles = allRoles.filter(r =>
           r.roleCode.toLowerCase().includes('view') ||
           r.roleCode.toLowerCase().includes('read') ||
-          r.roleName.toLowerCase().includes('viewer')
+          r.roleName.toLowerCase().includes('viewer') ||
+          r.roleNameAr?.includes('قراءة') ||
+          r.roleNameAr?.includes('عرض')
         );
         viewOnlyRoles.forEach(r => newSelection.add(r.id));
         toast({
-          title: 'AI Interpreted',
+          title: 'AGI Interpreted',
           description: `Added ${viewOnlyRoles.length} read-only roles`,
         });
-      } else if (command.includes('manager') || command.includes('supervisor')) {
+      } else if (commandLower.includes('manager') || commandLower.includes('supervisor') ||
+                 (isArabic && (command.includes('مشرف') || command.includes('مسؤول')))) {
         const managerRoles = allRoles.filter(r =>
           r.roleCode.toLowerCase().includes('manager') ||
           r.roleName.toLowerCase().includes('manager') ||
-          r.roleName.toLowerCase().includes('supervisor')
+          r.roleName.toLowerCase().includes('supervisor') ||
+          r.roleNameAr?.includes('مشرف') ||
+          r.roleNameAr?.includes('مسؤول')
         );
         managerRoles.forEach(r => newSelection.add(r.id));
         toast({
-          title: 'AI Interpreted',
+          title: 'AGI Interpreted',
           description: `Added ${managerRoles.length} manager/supervisor roles`,
         });
       } else {
         const matchedRoles = allRoles.filter(r =>
-          r.roleName.toLowerCase().includes(command) ||
-          r.roleCode.toLowerCase().includes(command)
+          r.roleName.toLowerCase().includes(commandLower) ||
+          r.roleCode.toLowerCase().includes(commandLower) ||
+          r.roleNameAr?.includes(command)
         );
         if (matchedRoles.length > 0) {
           matchedRoles.forEach(r => newSelection.add(r.id));
           toast({
-            title: 'AI Interpreted',
+            title: 'AGI Interpreted',
             description: `Added ${matchedRoles.length} matching roles`,
           });
         } else {
           toast({
             title: 'No matches',
-            description: 'Could not interpret command. Try "all finance roles" or "admin permissions"',
+            description: 'Could not interpret command. Try "/agi all admin" or "/agi كل المديرين"',
           });
         }
       }

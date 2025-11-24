@@ -51,6 +51,51 @@ export function useRolePermissions(roleId: string | undefined) {
   });
 }
 
+export function useBatchRolePermissions(roleIds: string[]) {
+  return useQuery({
+    queryKey: ['batch-role-permissions', roleIds.sort().join(',')],
+    queryFn: async () => {
+      if (roleIds.length === 0) {
+        return { permissions: [], rolePermissionsMap: {} };
+      }
+
+      const responses = await Promise.all(
+        roleIds.map(roleId =>
+          axios.get<ApiResponse<{ roleId: string; permissions: DPFPermission[] }>>(
+            `${API_BASE}/tenant/roles/${roleId}/permissions`
+          ).catch(() => ({ data: { data: { roleId, permissions: [] } } }))
+        )
+      );
+
+      const rolePermissionsMap: Record<string, DPFPermission[]> = {};
+      const allPermissions: DPFPermission[] = [];
+      const permissionCodesSeen = new Set<string>();
+
+      responses.forEach(response => {
+        const responseData = response.data.data;
+        if (responseData && responseData.permissions) {
+          const { roleId, permissions } = responseData;
+          rolePermissionsMap[roleId] = permissions;
+          
+          permissions.forEach(perm => {
+            if (!permissionCodesSeen.has(perm.permissionCode)) {
+              permissionCodesSeen.add(perm.permissionCode);
+              allPermissions.push(perm);
+            }
+          });
+        }
+      });
+
+      return {
+        permissions: allPermissions,
+        rolePermissionsMap,
+      };
+    },
+    enabled: roleIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useAssignPermissions() {
   const queryClient = useQueryClient();
 
@@ -64,6 +109,7 @@ export function useAssignPermissions() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['role-permissions', variables.roleId] });
+      queryClient.invalidateQueries({ queryKey: ['batch-role-permissions'] });
       queryClient.invalidateQueries({ queryKey: ['roles', variables.roleId] });
     },
   });

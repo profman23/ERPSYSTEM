@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserRoleAssignmentDrawer } from '@/components/roles/UserRoleAssignmentDrawer';
@@ -18,6 +19,7 @@ const API_BASE = import.meta.env.VITE_API_URL || '/api';
 export default function UserRoleAssignmentPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { accessToken } = useAuth();
   const { socket } = useSocket();
   const { hasPermission } = usePermissions();
@@ -60,15 +62,24 @@ export default function UserRoleAssignmentPage() {
     const handleUserRoleUpdated = (data: any) => {
       if (data.userId === userId) {
         console.log('User role updated via Socket.IO:', data);
+        queryClient.invalidateQueries({ queryKey: ['user', userId] });
+        queryClient.invalidateQueries({ queryKey: ['user-roles', userId] });
+        queryClient.invalidateQueries({ queryKey: ['batch-role-permissions'] });
       }
     };
 
     const handleRoleUpdated = () => {
       console.log('Role updated via Socket.IO - refreshing data');
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      queryClient.invalidateQueries({ queryKey: ['role-permissions'] });
+      queryClient.invalidateQueries({ queryKey: ['batch-role-permissions'] });
     };
 
     const handlePermissionsUpdated = () => {
       console.log('Permissions updated via Socket.IO - refreshing data');
+      queryClient.invalidateQueries({ queryKey: ['permissions'] });
+      queryClient.invalidateQueries({ queryKey: ['role-permissions'] });
+      queryClient.invalidateQueries({ queryKey: ['batch-role-permissions'] });
     };
 
     socket.on('user-role-updated', handleUserRoleUpdated);
@@ -80,7 +91,7 @@ export default function UserRoleAssignmentPage() {
       socket.off('role-updated', handleRoleUpdated);
       socket.off('permissions-updated', handlePermissionsUpdated);
     };
-  }, [socket, userId]);
+  }, [socket, userId, queryClient]);
 
   const handleSaveRoles = async (selectedRoleIds: string[]) => {
     if (!userId) return;
