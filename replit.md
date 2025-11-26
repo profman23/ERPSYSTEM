@@ -104,6 +104,36 @@ The Platform Core Layer provides enterprise-grade infrastructure following AWS/S
 
 ## Recent Changes (November 2025)
 
+-   **Multi-Tenant Hierarchy Foundation (COMPLETE - November 26, 2025):**
+    -   **Enhanced Database Schema:**
+        -   Tenants: subscriptionPlan, status, logoUrl, primaryColor, contactEmail, contactPhone, address, settings
+        -   Business Lines: businessLineType, contactEmail, contactPhone, settings, updatedAt
+        -   Branches: state, country, postalCode, phone, email, timezone, workingHours, settings, updatedAt
+        -   Users: code, name, firstName, lastName, phone, avatarUrl, status, scope, allowedBranchIds, preferences
+    -   **RBAC Scope System (`/server/src/services/ScopeService.ts`):**
+        -   Four scope levels: tenant (full access), business_line (BL + branches), branch (single), mixed (multiple selected)
+        -   Cascade permission checking with hierarchy-aware access control
+        -   Dynamic scope filter generation for database queries
+    -   **Hierarchy Service (`/server/src/services/HierarchyService.ts`):**
+        -   Cascade tenant creation (tenant→business line→branch→user in single transaction)
+        -   Automatic audit logging for all hierarchy operations
+        -   Validation and transaction safety with rollback support
+        -   Plan-based quota allocation (trial, standard, professional, enterprise)
+    -   **Hierarchy API Endpoints (`/api/v1/hierarchy/*`):**
+        -   POST /hierarchy/tenants - Create tenant with automatic quota setup
+        -   POST /hierarchy/business-lines - Create business line under tenant
+        -   POST /hierarchy/branches - Create branch under business line
+        -   POST /hierarchy/users - Create user under branch with cascade resolution
+        -   GET /hierarchy/tenants/:id/hierarchy - Full tenant structure with counts
+        -   GET /hierarchy/users/:id/context - User's resolved hierarchy context
+        -   GET /hierarchy/users/:id/scope - User's effective scope and filters
+    -   **Demo Tenant ("Petcare Plus Veterinary"):**
+        -   Code: PETCARE-001, Plan: Professional
+        -   2 Business Lines: Small Animal Clinic (SAC), Equine & Large Animal (ELA)
+        -   5 Branches: Main Hospital (SAC-HQ), North Clinic (SAC-N), South Clinic (SAC-S), Equine Center (ELA-EC), Mobile Unit (ELA-MU)
+        -   5 Users with varied scopes: Tenant Manager, 2 Business Line Vets, 2 Branch Staff
+        -   Login: Any user with password "Demo@2024!" (e.g., manager@petcareplus.vet)
+
 -   **User Role Assignment UI Module (COMPLETE):**
     -   Created comprehensive user role management system with 7 new components/hooks
     -   RoleImpactPreview: BEFORE/AFTER permission diff viewer with conflict detection

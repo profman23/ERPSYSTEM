@@ -224,7 +224,7 @@ export class HierarchyService {
       phone: input.phone,
       passwordHash,
       role: input.role || 'staff',
-      scope: input.accessScope || 'branch',
+      accessScope: input.accessScope || 'branch',
       status: 'active',
       isActive: true,
       branchId: input.branchId,
@@ -287,7 +287,7 @@ export class HierarchyService {
                 lastName: true,
                 email: true,
                 role: true,
-                scope: true,
+                accessScope: true,
                 isActive: true,
               },
             });

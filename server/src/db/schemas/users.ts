@@ -20,7 +20,7 @@ export const users = pgTable('users', {
   passwordHash: varchar('password_hash', { length: 255 }).notNull(),
   avatarUrl: varchar('avatar_url', { length: 500 }),
   role: varchar('role', { length: 50 }).notNull().default('staff'),
-  scope: varchar('scope', { length: 50 }).notNull().default('branch'),
+  accessScope: varchar('scope', { length: 50 }).notNull().default('branch'),
   status: varchar('status', { length: 50 }).notNull().default('active'),
   isActive: boolean('is_active').notNull().default(true),
   branchId: uuid('branch_id').references(() => branches.id, { onDelete: 'set null' }),
