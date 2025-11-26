@@ -89,12 +89,12 @@ export class HierarchyService {
     });
 
     await auditService.log({
-      tenantId: tenant.id,
-      action: 'tenant.create',
+      action: 'create',
       resourceType: 'tenant',
       resourceId: tenant.id,
-      newData: tenant,
+      newData: tenant as unknown as Record<string, unknown>,
       severity: 'high',
+      metadata: { tenantId: tenant.id },
     });
 
     contextLogger.info('Tenant created', { tenantId: tenant.id, code: tenant.code });
@@ -125,12 +125,12 @@ export class HierarchyService {
     }).returning();
 
     await auditService.log({
-      tenantId: input.tenantId,
-      action: 'business_line.create',
+      action: 'create',
       resourceType: 'business_line',
       resourceId: businessLine.id,
-      newData: businessLine,
+      newData: businessLine as unknown as Record<string, unknown>,
       severity: 'medium',
+      metadata: { tenantId: input.tenantId, businessLineId: businessLine.id },
     });
 
     contextLogger.info('Business line created', { 
@@ -172,12 +172,12 @@ export class HierarchyService {
     }).returning();
 
     await auditService.log({
-      tenantId,
-      action: 'branch.create',
+      action: 'create',
       resourceType: 'branch',
       resourceId: branch.id,
-      newData: branch,
+      newData: branch as unknown as Record<string, unknown>,
       severity: 'medium',
+      metadata: { tenantId, businessLineId: input.businessLineId, branchId: branch.id },
     });
 
     contextLogger.info('Branch created', { 
@@ -233,13 +233,12 @@ export class HierarchyService {
     }).returning();
 
     await auditService.log({
-      tenantId,
-      userId: user.id,
-      action: 'user.create',
+      action: 'create',
       resourceType: 'user',
       resourceId: user.id,
-      newData: { ...user, passwordHash: '[REDACTED]' },
+      newData: { ...user, passwordHash: '[REDACTED]' } as unknown as Record<string, unknown>,
       severity: 'high',
+      metadata: { tenantId, businessLineId, branchId: input.branchId, userId: user.id },
     });
 
     contextLogger.info('User created', { 
