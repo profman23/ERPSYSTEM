@@ -5,6 +5,7 @@ import businessLineRoutes from './businessLineRoutes';
 import branchRoutes from './branchRoutes';
 import branchCapacityRoutes from './branchCapacityRoutes';
 import hierarchyRoutes from './hierarchyRoutes';
+import usersRoutes from './usersRoutes';
 import tenantAdminRoutes from '../../routes/tenant';
 import { authMiddleware } from '../../middleware/authMiddleware';
 import { tenantLoader } from '../../middleware/tenantLoader';
@@ -20,6 +21,8 @@ router.use('/tenants', authMiddleware, tenantLoader, apiRateLimiter, strictRateL
 router.use('/business-lines', authMiddleware, tenantLoader, apiRateLimiter, strictRateLimiter, businessLineRoutes);
 router.use('/branches', authMiddleware, tenantLoader, apiRateLimiter, strictRateLimiter, branchRoutes);
 router.use('/branch-capacity', authMiddleware, tenantLoader, apiRateLimiter, branchCapacityRoutes);
+
+router.use('/tenant/users', authMiddleware, tenantLoader, apiRateLimiter, usersRoutes);
 
 router.use('/tenant', authMiddleware, tenantLoader, apiRateLimiter, tenantAdminRoutes);
 

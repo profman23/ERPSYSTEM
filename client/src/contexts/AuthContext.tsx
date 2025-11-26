@@ -8,9 +8,9 @@ const getApiUrl = () => {
     const origin = window.location.origin;
     // Remove existing port (if any) then add :3000
     const baseWithoutPort = origin.replace(/:\d+$/, '');
-    return `${baseWithoutPort}:3000/api`;
+    return `${baseWithoutPort}:3000/api/v1`;
   }
-  return 'http://localhost:3000/api';
+  return 'http://localhost:3000/api/v1';
 };
 
 const API_URL = getApiUrl();
