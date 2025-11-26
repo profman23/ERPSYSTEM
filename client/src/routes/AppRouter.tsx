@@ -31,6 +31,7 @@ const BranchesListPage = lazy(() => import('@/pages/branches/BranchesListPage'))
 const CreateBranchPage = lazy(() => import('@/pages/branches/CreateBranchPage'));
 
 const UsersListPage = lazy(() => import('@/pages/users/UsersListPage'));
+const CreateUserPage = lazy(() => import('@/pages/users/CreateUserPage'));
 
 const RolesPage = lazy(() => import('@/pages/roles/RolesPage'));
 const RolePermissionsPage = lazy(() => import('@/pages/admin/RolePermissionsPage'));
@@ -150,6 +151,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<LoadingFallback />}>
             <UsersListPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'users/create',
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <CreateUserPage />
           </Suspense>
         ),
       },

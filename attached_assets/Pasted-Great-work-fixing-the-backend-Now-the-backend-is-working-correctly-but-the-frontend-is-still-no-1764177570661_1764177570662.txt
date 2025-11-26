@@ -1,0 +1,58 @@
+Great work fixing the backend!  
+Now the backend is working correctly, but the frontend is still not aligned.  
+We need to fully sync the React Admin UI with the updated API behavior.
+
+Here is exactly what I need you to fix now:
+
+1. Update all React Query hooks (useHierarchy.ts) so they use:
+   - Correct paths: /api/v1/*
+   - Correct tenant/user endpoints
+   - Correct axios client with attached token
+   - Remove any old or unused endpoints
+
+2. Ensure that after login:
+   - The token is saved to localStorage
+   - The API client attaches Authorization header correctly
+   - React Query refetches tenants, business lines, branches, and users
+
+3. Fix Dashboard:
+   - Fetch correct stats from /api/v1/tenants, /api/v1/business-lines, /api/v1/branches, /api/v1/tenant/users
+   - Display real counts instead of zeros
+
+4. Fix Tenants page:
+   - Must load tenants using GET /api/v1/tenants
+   - Must show list correctly
+   - Must remove any leftover errors from old logic
+
+5. Fix Business Lines page:
+   - The “tenant” select list must load working tenants
+   - Should use GET /api/v1/business-lines
+   - Must show real data now that backend works
+
+6. Fix Branches:
+   - Tenant dropdown must load real tenants
+   - Business line dropdown must load business lines
+   - Branches list must show real branches
+
+7. Fix Users page:
+   - Update fetchUsers hook to use: GET /api/v1/tenant/users
+   - Remove old path (/api/v1/users or /tenant/users without prefix)
+   - Ensure filters (tenant, business line, branch) work
+
+8. Fix Add User button:
+   - /users/create must EXIST
+   - Create User page must be generated if missing
+   - Form should POST to: /api/v1/tenant/users
+
+9. Ensure navigation is correct:
+   - No more 404 pages
+   - No broken links in Sidebar
+
+10. After fixing everything:
+   - Restart workflow
+   - Test login
+   - Test all pages: Tenants, Business Lines, Branches, Users
+   - Verify Dashboard shows correct stats
+
+Finally:  
+Send me a summary of every frontend file you updated and why.

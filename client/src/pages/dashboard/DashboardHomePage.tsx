@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
-import { LayoutDashboard, Building2, Users, GitBranch, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Building2, Users, GitBranch, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTenants, useAllBranchesNoFilter, useAllUsers, useAllBusinessLines } from '@/hooks/useHierarchy';
 
-/**
- * DashboardHomePage - Main dashboard landing page
- * 
- * Phase 1: UI placeholder with stats cards
- * Phase 3+: Real-time data, charts, analytics
- */
 export default function DashboardHomePage() {
   const [isRTL, setIsRTL] = useState(false);
+  
+  const { data: tenants, isLoading: loadingTenants } = useTenants();
+  const { data: businessLines, isLoading: loadingBusinessLines } = useAllBusinessLines();
+  const { data: branches, isLoading: loadingBranches } = useAllBranchesNoFilter();
+  const { data: users, isLoading: loadingUsers } = useAllUsers();
 
   useEffect(() => {
     const checkRTL = () => {
@@ -33,38 +33,42 @@ export default function DashboardHomePage() {
     {
       title: 'Total Tenants',
       titleAr: 'إجمالي العملاء',
-      value: '0',
+      value: tenants?.length?.toString() || '0',
       icon: Building2,
       description: 'Active organizations',
       descriptionAr: 'المنظمات النشطة',
-      color: '#2563EB'
+      color: '#2563EB',
+      loading: loadingTenants
     },
     {
-      title: 'Total Users',
-      titleAr: 'إجمالي المستخدمين',
-      value: '0',
-      icon: Users,
-      description: 'Platform users',
-      descriptionAr: 'مستخدمو النظام',
-      color: '#0EA5E9'
+      title: 'Business Lines',
+      titleAr: 'خطوط الأعمال',
+      value: businessLines?.length?.toString() || '0',
+      icon: GitBranch,
+      description: 'Across all tenants',
+      descriptionAr: 'عبر جميع العملاء',
+      color: '#0EA5E9',
+      loading: loadingBusinessLines
     },
     {
       title: 'Total Branches',
       titleAr: 'إجمالي الفروع',
-      value: '0',
-      icon: GitBranch,
-      description: 'Across all tenants',
-      descriptionAr: 'عبر جميع العملاء',
-      color: '#14B8A6'
+      value: branches?.length?.toString() || '0',
+      icon: Building2,
+      description: 'Physical locations',
+      descriptionAr: 'المواقع الفعلية',
+      color: '#14B8A6',
+      loading: loadingBranches
     },
     {
-      title: 'System Health',
-      titleAr: 'صحة النظام',
-      value: '100%',
-      icon: TrendingUp,
-      description: 'All systems operational',
-      descriptionAr: 'جميع الأنظمة تعمل',
-      color: '#22C55E'
+      title: 'Total Users',
+      titleAr: 'إجمالي المستخدمين',
+      value: users?.length?.toString() || '0',
+      icon: Users,
+      description: 'Platform users',
+      descriptionAr: 'مستخدمو النظام',
+      color: '#22C55E',
+      loading: loadingUsers
     }
   ];
 
@@ -100,7 +104,11 @@ export default function DashboardHomePage() {
               <CardContent>
                 <div className={isRTL ? 'text-right' : 'text-left'}>
                   <div className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
-                    {stat.value}
+                    {stat.loading ? (
+                      <Loader2 className="w-6 h-6 animate-spin" style={{ color: stat.color }} />
+                    ) : (
+                      stat.value
+                    )}
                   </div>
                   <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
                     {isRTL ? stat.descriptionAr : stat.description}

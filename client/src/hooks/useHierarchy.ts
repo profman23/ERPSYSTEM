@@ -301,6 +301,42 @@ export function useBranches(businessLineId: string | undefined) {
   });
 }
 
+export function useAllBusinessLines() {
+  return useQuery({
+    queryKey: ['allBusinessLines'],
+    queryFn: async () => {
+      const response = await apiClient.get('/api/v1/business-lines', {
+        headers: getAuthHeaders(),
+      });
+      return response.data.data as BusinessLine[];
+    },
+  });
+}
+
+export function useAllBranchesNoFilter() {
+  return useQuery({
+    queryKey: ['allBranchesNoFilter'],
+    queryFn: async () => {
+      const response = await apiClient.get('/api/v1/branches', {
+        headers: getAuthHeaders(),
+      });
+      return response.data.data as Branch[];
+    },
+  });
+}
+
+export function useAllUsers() {
+  return useQuery({
+    queryKey: ['allUsers'],
+    queryFn: async () => {
+      const response = await apiClient.get('/api/v1/tenant/users', {
+        headers: getAuthHeaders(),
+      });
+      return response.data.data as User[];
+    },
+  });
+}
+
 export function useAllBranches(tenantId: string | undefined) {
   return useQuery({
     queryKey: ['allBranches', tenantId],
