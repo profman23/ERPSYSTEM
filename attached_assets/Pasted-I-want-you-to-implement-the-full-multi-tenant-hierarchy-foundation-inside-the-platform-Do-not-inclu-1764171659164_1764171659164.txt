@@ -1,0 +1,203 @@
+I want you to implement the full multi-tenant hierarchy foundation inside the platform.
+Do not include any code in your reply — implement everything directly in the project.
+
+Please build and link the following entities using our existing architecture:
+
+1. Tenant Structure (Top Level)
+
+Add the fields below to the Tenant creation workflow:
+
+tenantCode
+
+tenantName
+
+country
+
+timezone
+
+subscriptionPlan (Trial, Standard, Professional, Enterprise)
+
+status (Active, Inactive)
+
+Make sure the tenant integrates with:
+
+DPF module auto-sync
+
+Quota system
+
+Audit logging
+
+Request context pipeline
+
+2. Business Line Structure (Level 2)
+
+Create the Business Line foundation with these fields:
+
+businessLineCode
+
+businessLineName
+
+businessLineType (General, Emergency, Surgery, Grooming, Pharmacy, etc.)
+
+tenantId (required parent link)
+
+Ensure:
+
+A tenant can have multiple business lines
+
+Fully isolated per tenant
+
+Included in audit logs
+
+Part of RBAC scoping
+
+3. Branch Structure (Level 3)
+
+Implement Branch creation with:
+
+branchCode
+
+branchName
+
+address
+
+businessLineId (required)
+
+tenantId (resolved from parent)
+
+Ensure:
+
+A business line can have multiple branches
+
+Branch inherits tenant context automatically
+
+Branch participates in RBAC scope
+
+TraceId context saved in audit logs
+
+4. User Structure (Level 4)
+
+Implement user creation inside the tenant ecosystem:
+
+User fields:
+
+userCode
+
+firstName
+
+lastName
+
+phone
+
+email
+
+password
+
+role assignment
+
+branchId (required — user must belong to a branch)
+
+businessLineId (auto-resolved from branch)
+
+tenantId (auto-resolved from business line)
+
+Important:
+
+Users must not attach directly to tenants
+
+Users attach to branches only
+
+Users inherit businessLineId + tenantId automatically
+
+Integrate with RBAC, DPF, audit, rate limiting, quota
+
+5. RBAC Scope Levels
+
+Implement the following scopes:
+
+tenantScope → full access to entire tenant
+
+businessLineScope → access to all branches under selected business line
+
+branchScope → access to one branch only
+
+mixedScope → allow assigning multiple branches to a user if needed later
+
+Make sure permissions evaluate:
+
+scope type
+
+tenantId
+
+businessLineId
+
+branchId
+
+6. Admin Panel Behavior
+
+Tenant Admin should be able to:
+
+View all business lines
+
+View all branches
+
+Create multiple business lines
+
+Create multiple branches
+
+Create users under any branch
+
+Assign roles and permissions with proper scope
+
+Branch user should only see:
+
+Their branch
+
+Their patients
+
+Their appointments
+
+Their inventory
+
+Their analytics
+
+Business line user sees all branches under same business line.
+
+7. UI Updates Needed
+
+Update the Admin UI forms to support:
+
+Tenant → Business Lines → Branches → Users (cascade flow)
+
+Dropdown filters (tenant, business line, branch)
+
+RBAC scope selectors
+
+Correct validation
+
+Correct linking
+
+8. Validation & Testing
+
+After implementation:
+
+Create one demo tenant
+
+Add 2 business lines
+
+Add 3 branches per business line
+
+Add 5 users (tenant admin, business line manager, branch vet, receptionist, inventory user)
+
+Test all scope levels
+
+Validate audit logs
+
+Validate request context
+
+Validate DPF permission checks
+
+Important:
+Do not include any code in your reply.
+Apply all logic internally and update the project structure accordingly.
+Return a summary of what was implemented and what’s pending.

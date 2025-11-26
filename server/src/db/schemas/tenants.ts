@@ -1,4 +1,10 @@
-import { pgTable, uuid, varchar, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, text, jsonb } from 'drizzle-orm/pg-core';
+
+export const subscriptionPlanEnum = ['trial', 'standard', 'professional', 'enterprise'] as const;
+export type SubscriptionPlan = typeof subscriptionPlanEnum[number];
+
+export const tenantStatusEnum = ['active', 'inactive', 'suspended', 'pending'] as const;
+export type TenantStatus = typeof tenantStatusEnum[number];
 
 export const tenants = pgTable('tenants', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -6,7 +12,18 @@ export const tenants = pgTable('tenants', {
   name: varchar('name', { length: 255 }).notNull(),
   defaultLanguage: varchar('default_language', { length: 10 }).notNull().default('en'),
   country: varchar('country', { length: 100 }),
-  timezone: varchar('timezone', { length: 100 }),
+  timezone: varchar('timezone', { length: 100 }).default('UTC'),
+  subscriptionPlan: varchar('subscription_plan', { length: 50 }).notNull().default('trial'),
+  status: varchar('status', { length: 50 }).notNull().default('active'),
+  logoUrl: varchar('logo_url', { length: 500 }),
+  primaryColor: varchar('primary_color', { length: 50 }).default('#2563EB'),
+  contactEmail: varchar('contact_email', { length: 255 }),
+  contactPhone: varchar('contact_phone', { length: 50 }),
+  address: text('address'),
+  settings: jsonb('settings').default({}),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+export type Tenant = typeof tenants.$inferSelect;
+export type NewTenant = typeof tenants.$inferInsert;
