@@ -41,7 +41,7 @@ export class ScopeService {
     }
 
     const scopeContext: ScopeContext = {
-      scopeType: (user.accessScope as ScopeType) || 'branch',
+      scopeType: (user.scope as ScopeType) || 'branch',
       tenantId: user.tenantId,
       businessLineId: user.businessLineId,
       branchId: user.branchId,
