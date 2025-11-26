@@ -1,106 +1,361 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Users, Plus, Search, Filter, Settings } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Users, Plus, Search, Eye, Edit, Shield, Loader2, User, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Select } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useUsers, useBranches, useBusinessLines, useTenants } from '@/hooks/useHierarchy';
+import { useAuth } from '@/contexts/AuthContext';
 
-/**
- * UsersListPage - List all users in the system
- * 
- * Phase 1: UI placeholder with empty state
- * Phase 2: Added "Manage Roles" navigation (connects to UserRoleAssignmentPage)
- * Phase 3+: Real data from API, role filtering, permissions, multi-tenant
- */
+const scopeColors: Record<string, 'default' | 'success' | 'warning' | 'info'> = {
+  tenant: 'success',
+  business_line: 'info',
+  branch: 'default',
+  mixed: 'warning',
+};
+
+const statusColors: Record<string, 'default' | 'success' | 'warning' | 'error'> = {
+  active: 'success',
+  inactive: 'default',
+  suspended: 'error',
+  pending: 'warning',
+};
+
 export default function UsersListPage() {
   const navigate = useNavigate();
-  const [isRTL, setIsRTL] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { user: currentUser } = useAuth();
+  
+  const tenantIdFromParams = searchParams.get('tenantId');
+  const businessLineIdFromParams = searchParams.get('businessLineId');
+  const branchIdFromParams = searchParams.get('branchId');
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTenantId, setSelectedTenantId] = useState(tenantIdFromParams || currentUser?.tenantId || '');
+  const [selectedBusinessLineId, setSelectedBusinessLineId] = useState(businessLineIdFromParams || '');
+  const [selectedBranchId, setSelectedBranchId] = useState(branchIdFromParams || '');
+  
+  const { data: tenants } = useTenants();
+  const { data: businessLines } = useBusinessLines(selectedTenantId || undefined);
+  const { data: branches } = useBranches(selectedBusinessLineId || undefined);
+  
+  const userFilters = useMemo(() => {
+    const filters: { tenantId?: string; businessLineId?: string; branchId?: string } = {};
+    if (selectedTenantId) filters.tenantId = selectedTenantId;
+    if (selectedBusinessLineId) filters.businessLineId = selectedBusinessLineId;
+    if (selectedBranchId) filters.branchId = selectedBranchId;
+    return Object.keys(filters).length > 0 ? filters : { tenantId: selectedTenantId || currentUser?.tenantId };
+  }, [selectedTenantId, selectedBusinessLineId, selectedBranchId, currentUser?.tenantId]);
+  
+  const { data: users, isLoading, error } = useUsers(userFilters);
 
   useEffect(() => {
-    const checkRTL = () => {
-      const dir = document.documentElement.getAttribute('dir') || 'ltr';
-      const lang = document.documentElement.lang || 'en';
-      setIsRTL(dir === 'rtl' || lang === 'ar');
-    };
+    if (selectedTenantId !== tenantIdFromParams) {
+      setSelectedBusinessLineId('');
+      setSelectedBranchId('');
+    }
+  }, [selectedTenantId]);
 
-    checkRTL();
+  useEffect(() => {
+    if (selectedBusinessLineId !== businessLineIdFromParams) {
+      setSelectedBranchId('');
+    }
+  }, [selectedBusinessLineId]);
 
-    const observer = new MutationObserver(checkRTL);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['dir', 'lang'],
-    });
+  const tenantOptions = useMemo(() => {
+    if (!tenants) return [];
+    return tenants.map(t => ({ value: t.id, label: `${t.name} (${t.code})` }));
+  }, [tenants]);
 
-    return () => observer.disconnect();
-  }, []);
+  const businessLineOptions = useMemo(() => {
+    if (!businessLines) return [];
+    return businessLines.map(bl => ({ value: bl.id, label: `${bl.name} (${bl.code})` }));
+  }, [businessLines]);
+
+  const branchOptions = useMemo(() => {
+    if (!branches) return [];
+    return branches.map(b => ({ value: b.id, label: `${b.name} (${b.code})` }));
+  }, [branches]);
+
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+    if (!searchQuery) return users;
+    const query = searchQuery.toLowerCase();
+    return users.filter(
+      (u) =>
+        u.email.toLowerCase().includes(query) ||
+        u.name?.toLowerCase().includes(query) ||
+        u.code?.toLowerCase().includes(query) ||
+        u.firstName?.toLowerCase().includes(query) ||
+        u.lastName?.toLowerCase().includes(query)
+    );
+  }, [users, searchQuery]);
+
+  const handleTenantChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newTenantId = e.target.value;
+    setSelectedTenantId(newTenantId);
+    const params = new URLSearchParams(searchParams);
+    if (newTenantId) {
+      params.set('tenantId', newTenantId);
+    } else {
+      params.delete('tenantId');
+    }
+    params.delete('businessLineId');
+    params.delete('branchId');
+    setSearchParams(params);
+  };
+
+  const handleBusinessLineChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newBLId = e.target.value;
+    setSelectedBusinessLineId(newBLId);
+    const params = new URLSearchParams(searchParams);
+    if (newBLId) {
+      params.set('businessLineId', newBLId);
+    } else {
+      params.delete('businessLineId');
+    }
+    params.delete('branchId');
+    setSearchParams(params);
+  };
+
+  const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newBranchId = e.target.value;
+    setSelectedBranchId(newBranchId);
+    const params = new URLSearchParams(searchParams);
+    if (newBranchId) {
+      params.set('branchId', newBranchId);
+    } else {
+      params.delete('branchId');
+    }
+    setSearchParams(params);
+  };
+
+  const getUserDisplayName = (u: any) => {
+    if (u.name) return u.name;
+    if (u.firstName && u.lastName) return `${u.firstName} ${u.lastName}`;
+    if (u.firstName) return u.firstName;
+    return u.email.split('@')[0];
+  };
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-        <div className={isRTL ? 'text-right' : 'text-left'}>
+      <div className="flex items-center justify-between">
+        <div>
           <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
-            {isRTL ? 'المستخدمين' : 'Users'}
+            Users
           </h1>
           <p className="mt-2" style={{ color: 'var(--color-text-secondary)' }}>
-            {isRTL ? 'إدارة مستخدمي النظام والأدوار' : 'Manage system users and roles'}
+            Manage user accounts and access permissions
           </p>
         </div>
-        <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
-          <Plus className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-          {isRTL ? 'إضافة مستخدم' : 'Add User'}
-        </Button>
+        <Link to={`/users/create${selectedBranchId ? `?branchId=${selectedBranchId}` : ''}`}>
+          <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
+            <Plus className="w-4 h-4 mr-2" />
+            Add User
+          </Button>
+        </Link>
       </div>
 
-      {/* Search and Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className={`flex gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className="flex-1 relative">
-              <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4`} style={{ color: '#9CA3AF' }} />
-              <Input
-                placeholder={isRTL ? 'البحث عن المستخدمين...' : 'Search users...'}
-                className={isRTL ? 'pr-10' : 'pl-10'}
-                dir={isRTL ? 'rtl' : 'ltr'}
-              />
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9CA3AF' }} />
+                <Input
+                  placeholder="Search users by name, email, or code..."
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
-            <Button variant="outline">
-              <Filter className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-              {isRTL ? 'تصفية' : 'Filter'}
-            </Button>
+            <div className="flex gap-4 flex-wrap">
+              {currentUser?.accessScope === 'system' && tenantOptions.length > 0 && (
+                <div className="w-56">
+                  <Select
+                    value={selectedTenantId}
+                    onChange={handleTenantChange}
+                  >
+                    <option value="">All Tenants</option>
+                    {tenantOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </Select>
+                </div>
+              )}
+              {businessLineOptions.length > 0 && (
+                <div className="w-56">
+                  <Select
+                    value={selectedBusinessLineId}
+                    onChange={handleBusinessLineChange}
+                  >
+                    <option value="">All Business Lines</option>
+                    {businessLineOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </Select>
+                </div>
+              )}
+              {branchOptions.length > 0 && (
+                <div className="w-56">
+                  <Select
+                    value={selectedBranchId}
+                    onChange={handleBranchChange}
+                  >
+                    <option value="">All Branches</option>
+                    {branchOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </Select>
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Users List - Empty State */}
       <Card>
         <CardHeader>
-          <CardTitle className={isRTL ? 'text-right' : 'text-left'}>
-            {isRTL ? 'قائمة المستخدمين' : 'Users List'}
-          </CardTitle>
-          <CardDescription className={isRTL ? 'text-right' : 'text-left'}>
-            {isRTL ? 'جميع المستخدمين المسجلين في النظام' : 'All registered users in the system'}
+          <CardTitle>Users</CardTitle>
+          <CardDescription>
+            {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''} found
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-12" style={{ color: 'var(--color-text-secondary)' }}>
-            <Users className="w-16 h-16 mx-auto mb-4" style={{ color: '#9CA3AF' }} />
-            <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
-              {isRTL ? 'لا يوجد مستخدمين' : 'No Users Yet'}
-            </h3>
-            <p className="mb-6">
-              {isRTL ? 'سيتم تنفيذ إدارة المستخدمين في المرحلة 3' : 'User management will be implemented in Phase 3'}
-            </p>
-            <p className="text-sm mb-4">
-              {isRTL ? 'تم بناء نظام تعيين أدوار المستخدمين وهو جاهز' : 'User Role Assignment system is built and ready'}
-            </p>
-            <div className="flex gap-2 justify-center">
-              <Button variant="outline" onClick={() => navigate('/users/demo-user-id/roles')}>
-                <Settings className="mr-2 h-4 w-4" />
-                {isRTL ? 'عرض إدارة الأدوار (تجريبي)' : 'View Role Management (Demo)'}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-[#2563EB]" />
+              <span className="ml-3" style={{ color: 'var(--color-text-secondary)' }}>Loading...</span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
+                <AlertCircle className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2 text-red-600">Error Loading Users</h3>
+              <p className="text-gray-600 mb-4">
+                {(error as any)?.message || 'Failed to load users. Please try again.'}
+              </p>
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Retry
               </Button>
             </div>
-          </div>
+          ) : filteredUsers.length === 0 ? (
+            <div className="text-center py-12" style={{ color: 'var(--color-text-secondary)' }}>
+              <Users className="w-16 h-16 mx-auto mb-4" style={{ color: '#9CA3AF' }} />
+              <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
+                {searchQuery ? 'No Matching Users' : 'No Users Yet'}
+              </h3>
+              <p className="mb-6">
+                {searchQuery ? 'Try adjusting your search' : 'Create your first user to get started'}
+              </p>
+              {!searchQuery && (
+                <Link to="/users/create">
+                  <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add User
+                  </Button>
+                </Link>
+              )}
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Scope</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.map((u) => (
+                  <TableRow key={u.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-3">
+                        {u.avatarUrl ? (
+                          <img src={u.avatarUrl} alt={getUserDisplayName(u)} className="w-9 h-9 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center">
+                            <User className="w-4 h-4 text-purple-600" />
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-medium">{getUserDisplayName(u)}</p>
+                          <p className="text-xs text-gray-500">{u.email}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {u.code ? (
+                        <code className="text-sm bg-gray-100 px-2 py-1 rounded">{u.code}</code>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={scopeColors[u.accessScope] || 'default'}>
+                        {u.accessScope || 'branch'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {u.phone || <span className="text-gray-400">-</span>}
+                    </TableCell>
+                    <TableCell>
+                      {u.roleCount ? (
+                        <span className="flex items-center gap-1">
+                          <Shield className="w-3 h-3" />
+                          {u.roleCount} role{u.roleCount !== 1 ? 's' : ''}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">No roles</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={statusColors[u.status] || 'default'}>
+                        {u.status || 'active'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/users/${u.id}`)}
+                          title="View"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/users/${u.id}/edit`)}
+                          title="Edit"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/users/${u.id}/roles`)}
+                          title="Manage Roles"
+                        >
+                          <Shield className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

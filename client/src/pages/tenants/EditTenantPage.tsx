@@ -1,19 +1,26 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Building2, Globe, MapPin, Mail, Phone, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Building2, Globe, Mail, Phone, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
-import { useCreateTenant } from '@/hooks/useHierarchy';
+import { useTenant, useUpdateTenant } from '@/hooks/useHierarchy';
 
 const subscriptionPlans = [
   { value: 'trial', label: 'Trial' },
   { value: 'standard', label: 'Standard' },
   { value: 'professional', label: 'Professional' },
   { value: 'enterprise', label: 'Enterprise' },
+];
+
+const statuses = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'suspended', label: 'Suspended' },
+  { value: 'pending', label: 'Pending' },
 ];
 
 const timezones = [
@@ -24,19 +31,20 @@ const timezones = [
   { value: 'Europe/Paris', label: 'Europe/Paris (CET)' },
   { value: 'Asia/Dubai', label: 'Asia/Dubai (GST)' },
   { value: 'Asia/Tokyo', label: 'Asia/Tokyo (JST)' },
-  { value: 'Asia/Shanghai', label: 'Asia/Shanghai (CST)' },
 ];
 
-export default function CreateTenantPage() {
+export default function EditTenantPage() {
+  const { tenantId } = useParams<{ tenantId: string }>();
   const navigate = useNavigate();
-  const createTenant = useCreateTenant();
+  const { data: tenant, isLoading: loadingTenant } = useTenant(tenantId);
+  const updateTenant = useUpdateTenant();
   
   const [formData, setFormData] = useState({
     name: '',
-    code: '',
     country: '',
     timezone: 'UTC',
     subscriptionPlan: 'trial',
+    status: 'active',
     contactEmail: '',
     contactPhone: '',
     address: '',
@@ -44,6 +52,22 @@ export default function CreateTenantPage() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (tenant) {
+      setFormData({
+        name: tenant.name || '',
+        country: tenant.country || '',
+        timezone: tenant.timezone || 'UTC',
+        subscriptionPlan: tenant.subscriptionPlan || 'trial',
+        status: tenant.status || 'active',
+        contactEmail: tenant.contactEmail || '',
+        contactPhone: tenant.contactPhone || '',
+        address: tenant.address || '',
+        primaryColor: tenant.primaryColor || '#2563EB',
+      });
+    }
+  }, [tenant]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -56,10 +80,6 @@ export default function CreateTenantPage() {
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.name.trim()) newErrors.name = 'Organization name is required';
-    if (!formData.code.trim()) newErrors.code = 'Organization code is required';
-    if (formData.code && !/^[A-Z0-9-]+$/i.test(formData.code)) {
-      newErrors.code = 'Code must contain only letters, numbers, and hyphens';
-    }
     if (formData.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) {
       newErrors.contactEmail = 'Invalid email format';
     }
@@ -69,12 +89,12 @@ export default function CreateTenantPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate() || !tenantId) return;
 
     try {
-      await createTenant.mutateAsync({
+      await updateTenant.mutateAsync({
+        id: tenantId,
         name: formData.name,
-        code: formData.code.toUpperCase(),
         country: formData.country || undefined,
         timezone: formData.timezone,
         subscriptionPlan: formData.subscriptionPlan,
@@ -83,36 +103,59 @@ export default function CreateTenantPage() {
         address: formData.address || undefined,
         primaryColor: formData.primaryColor,
       });
-      navigate('/tenants');
+      navigate(`/tenants/${tenantId}`);
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to create tenant';
+      const message = error.response?.data?.error || 'Failed to update tenant';
       setErrors({ submit: message });
     }
   };
+
+  if (loadingTenant) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="w-8 h-8 animate-spin text-[#2563EB]" />
+        <span className="ml-3" style={{ color: 'var(--color-text-secondary)' }}>Loading tenant...</span>
+      </div>
+    );
+  }
+
+  if (!tenant) {
+    return (
+      <div className="text-center py-24">
+        <Building2 className="w-16 h-16 mx-auto mb-4" style={{ color: '#9CA3AF' }} />
+        <h3 className="text-lg font-semibold mb-2">Tenant Not Found</h3>
+        <Link to="/tenants">
+          <Button variant="outline">Back to Tenants</Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
         <Link
-          to="/tenants"
+          to={`/tenants/${tenantId}`}
           className="inline-flex items-center gap-2 text-sm mb-4 hover:text-[#2563EB] transition-colors"
           style={{ color: 'var(--color-text-secondary)' }}
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Tenants
+          Back to Tenant
         </Link>
         <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
-          Create New Tenant
+          Edit Tenant
         </h1>
         <p className="mt-2" style={{ color: 'var(--color-text-secondary)' }}>
-          Add a new organization to the system
+          Update organization details for {tenant.name}
         </p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Organization Information</CardTitle>
-          <CardDescription>Enter the basic organization details</CardDescription>
+          <CardDescription>
+            Code: <code className="bg-gray-100 px-2 py-0.5 rounded">{tenant.code}</code>
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -140,16 +183,14 @@ export default function CreateTenantPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="code">Organization Code *</Label>
-                <Input
-                  id="code"
-                  name="code"
-                  placeholder="e.g., CLINIC001"
-                  value={formData.code}
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  id="status"
+                  name="status"
+                  value={formData.status}
                   onChange={handleChange}
-                  className="uppercase"
+                  options={statuses}
                 />
-                {errors.code && <p className="text-sm text-red-600">{errors.code}</p>}
               </div>
             </div>
 
@@ -251,32 +292,29 @@ export default function CreateTenantPage() {
 
             <div className="space-y-2">
               <Label htmlFor="address">Address</Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 w-4 h-4" style={{ color: '#9CA3AF' }} />
-                <Textarea
-                  id="address"
-                  name="address"
-                  placeholder="Enter full address"
-                  className="pl-10 min-h-[80px]"
-                  value={formData.address}
-                  onChange={handleChange}
-                />
-              </div>
+              <Textarea
+                id="address"
+                name="address"
+                placeholder="Enter full address"
+                className="min-h-[80px]"
+                value={formData.address}
+                onChange={handleChange}
+              />
             </div>
 
             <div className="flex gap-4 pt-4">
               <Button
                 type="submit"
                 className="bg-[#2563EB] hover:bg-[#1E40AF]"
-                disabled={createTenant.isPending}
+                disabled={updateTenant.isPending}
               >
-                {createTenant.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Create Tenant
+                {updateTenant.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Save Changes
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => navigate('/tenants')}
+                onClick={() => navigate(`/tenants/${tenantId}`)}
               >
                 Cancel
               </Button>

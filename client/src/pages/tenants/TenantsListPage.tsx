@@ -1,99 +1,207 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Building2, Plus, Search } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Building2, Plus, Search, Eye, Edit, Loader2, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useTenants } from '@/hooks/useHierarchy';
 
-/**
- * TenantsListPage - List all tenants in the system
- * 
- * Phase 1: UI placeholder with empty state
- * Phase 3+: Real data from API, pagination, filtering
- */
+const planColors: Record<string, 'default' | 'success' | 'warning' | 'info'> = {
+  trial: 'default',
+  standard: 'info',
+  professional: 'success',
+  enterprise: 'warning',
+};
+
+const statusColors: Record<string, 'default' | 'success' | 'warning' | 'error'> = {
+  active: 'success',
+  inactive: 'default',
+  suspended: 'error',
+  pending: 'warning',
+};
+
 export default function TenantsListPage() {
-  const [isRTL, setIsRTL] = useState(false);
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
+  const { data: tenants, isLoading, error } = useTenants();
 
-  useEffect(() => {
-    const checkRTL = () => {
-      const dir = document.documentElement.getAttribute('dir') || 'ltr';
-      const lang = document.documentElement.lang || 'en';
-      setIsRTL(dir === 'rtl' || lang === 'ar');
-    };
+  const filteredTenants = useMemo(() => {
+    if (!tenants) return [];
+    if (!searchQuery) return tenants;
+    const query = searchQuery.toLowerCase();
+    return tenants.filter(
+      (tenant) =>
+        tenant.name.toLowerCase().includes(query) ||
+        tenant.code.toLowerCase().includes(query) ||
+        tenant.contactEmail?.toLowerCase().includes(query)
+    );
+  }, [tenants, searchQuery]);
 
-    checkRTL();
-
-    const observer = new MutationObserver(checkRTL);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['dir', 'lang'],
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
     });
-
-    return () => observer.disconnect();
-  }, []);
+  };
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-        <div className={isRTL ? 'text-right' : 'text-left'}>
+      <div className="flex items-center justify-between">
+        <div>
           <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
-            {isRTL ? 'العملاء' : 'Tenants'}
+            Tenants
           </h1>
           <p className="mt-2" style={{ color: 'var(--color-text-secondary)' }}>
-            {isRTL ? 'إدارة المنظمات في النظام' : 'Manage organizations in the system'}
+            Manage organizations in the system
           </p>
         </div>
         <Link to="/tenants/create">
           <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
-            <Plus className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            {isRTL ? 'إضافة عميل' : 'Add Tenant'}
+            <Plus className="w-4 h-4 mr-2" />
+            Add Tenant
           </Button>
         </Link>
       </div>
 
-      {/* Search and Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className={`flex gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <div className="flex gap-4">
             <div className="flex-1 relative">
-              <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4`} style={{ color: '#9CA3AF' }} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9CA3AF' }} />
               <Input
-                placeholder={isRTL ? 'البحث عن العملاء...' : 'Search tenants...'}
-                className={isRTL ? 'pr-10' : 'pl-10'}
-                dir={isRTL ? 'rtl' : 'ltr'}
+                placeholder="Search tenants by name, code, or email..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Tenants List - Empty State */}
       <Card>
         <CardHeader>
-          <CardTitle className={isRTL ? 'text-right' : 'text-left'}>
-            {isRTL ? 'قائمة العملاء' : 'Tenants List'}
-          </CardTitle>
-          <CardDescription className={isRTL ? 'text-right' : 'text-left'}>
-            {isRTL ? 'جميع المنظمات المسجلة' : 'All registered organizations'}
+          <CardTitle>Tenants List</CardTitle>
+          <CardDescription>
+            {filteredTenants.length} organization{filteredTenants.length !== 1 ? 's' : ''} found
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-12" style={{ color: 'var(--color-text-secondary)' }}>
-            <Building2 className="w-16 h-16 mx-auto mb-4" style={{ color: '#9CA3AF' }} />
-            <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
-              {isRTL ? 'لا توجد منظمات' : 'No Tenants Yet'}
-            </h3>
-            <p className="mb-6">
-              {isRTL ? 'ابدأ بإضافة أول منظمة' : 'Get started by creating your first tenant'}
-            </p>
-            <Link to="/tenants/create">
-              <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
-                <Plus className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                {isRTL ? 'إضافة عميل' : 'Add Tenant'}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-[#2563EB]" />
+              <span className="ml-3" style={{ color: 'var(--color-text-secondary)' }}>Loading tenants...</span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
+                <AlertCircle className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2 text-red-600">Error Loading Tenants</h3>
+              <p className="text-gray-600 mb-4">
+                {(error as any)?.message || 'Failed to load tenants. Please try again.'}
+              </p>
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Retry
               </Button>
-            </Link>
-          </div>
+            </div>
+          ) : filteredTenants.length === 0 ? (
+            <div className="text-center py-12" style={{ color: 'var(--color-text-secondary)' }}>
+              <Building2 className="w-16 h-16 mx-auto mb-4" style={{ color: '#9CA3AF' }} />
+              <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
+                {searchQuery ? 'No Matching Tenants' : 'No Tenants Yet'}
+              </h3>
+              <p className="mb-6">
+                {searchQuery ? 'Try adjusting your search query' : 'Get started by creating your first tenant'}
+              </p>
+              {!searchQuery && (
+                <Link to="/tenants/create">
+                  <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Tenant
+                  </Button>
+                </Link>
+              )}
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Plan</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-center">Business Lines</TableHead>
+                  <TableHead className="text-center">Branches</TableHead>
+                  <TableHead className="text-center">Users</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredTenants.map((tenant) => (
+                  <TableRow key={tenant.id} className="cursor-pointer hover:bg-gray-50">
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                          style={{ backgroundColor: tenant.primaryColor || '#2563EB' }}
+                        >
+                          {tenant.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium">{tenant.name}</p>
+                          {tenant.contactEmail && (
+                            <p className="text-xs text-gray-500">{tenant.contactEmail}</p>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <code className="text-sm bg-gray-100 px-2 py-1 rounded">{tenant.code}</code>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={planColors[tenant.subscriptionPlan] || 'default'}>
+                        {tenant.subscriptionPlan}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusColors[tenant.status] || 'default'}>
+                        {tenant.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">{tenant.businessLineCount ?? '-'}</TableCell>
+                    <TableCell className="text-center">{tenant.totalBranches ?? '-'}</TableCell>
+                    <TableCell className="text-center">{tenant.totalUsers ?? '-'}</TableCell>
+                    <TableCell>{formatDate(tenant.createdAt)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/tenants/${tenant.id}`)}
+                          title="View Hierarchy"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/tenants/${tenant.id}/edit`)}
+                          title="Edit"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

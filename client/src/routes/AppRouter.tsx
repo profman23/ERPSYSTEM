@@ -5,10 +5,6 @@ import DashboardLayout from '@/layouts/DashboardLayout';
 import ProtectedRoute from '@/routes/ProtectedRoute';
 import { PermissionProvider } from '@/contexts/PermissionContext';
 
-/**
- * Loading Fallback Component
- * Shown while lazy-loaded components are loading
- */
 function LoadingFallback() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F3F4F6]">
@@ -20,56 +16,29 @@ function LoadingFallback() {
   );
 }
 
-/**
- * Lazy-loaded Pages
- * Code-splitting for better performance
- */
-
-// Auth Pages
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
-
-// Dashboard Pages
 const DashboardHomePage = lazy(() => import('@/pages/dashboard/DashboardHomePage'));
 
-// Tenant Pages
 const TenantsListPage = lazy(() => import('@/pages/tenants/TenantsListPage'));
 const CreateTenantPage = lazy(() => import('@/pages/tenants/CreateTenantPage'));
+const TenantDetailPage = lazy(() => import('@/pages/tenants/TenantDetailPage'));
+const EditTenantPage = lazy(() => import('@/pages/tenants/EditTenantPage'));
 
-// Business Line Pages
 const BusinessLinesListPage = lazy(() => import('@/pages/business-lines/BusinessLinesListPage'));
+const CreateBusinessLinePage = lazy(() => import('@/pages/business-lines/CreateBusinessLinePage'));
 
-// Branch Pages
 const BranchesListPage = lazy(() => import('@/pages/branches/BranchesListPage'));
+const CreateBranchPage = lazy(() => import('@/pages/branches/CreateBranchPage'));
 
-// User Pages
 const UsersListPage = lazy(() => import('@/pages/users/UsersListPage'));
 
-// Role Pages (DPF-AGI)
 const RolesPage = lazy(() => import('@/pages/roles/RolesPage'));
 const RolePermissionsPage = lazy(() => import('@/pages/admin/RolePermissionsPage'));
 const UserRoleAssignmentPage = lazy(() => import('@/pages/admin/UserRoleAssignmentPage'));
 
-// Error Pages
 const NotFoundPage = lazy(() => import('@/pages/not-found/NotFoundPage'));
 
-/**
- * Router Configuration
- * 
- * Route Structure:
- * - Auth routes (AuthLayout): /login
- * - Protected routes (DashboardLayout): /dashboard, /tenants, /branches, /business-lines, /users
- * - Error routes: 404
- * 
- * Features:
- * - Lazy loading with Suspense
- * - Protected route wrapper (UI only)
- * - Separate layouts for auth and dashboard
- * - RTL support throughout
- */
 const router = createBrowserRouter([
-  // ==========================================
-  // AUTH ROUTES (Public - AuthLayout)
-  // ==========================================
   {
     path: '/login',
     element: <AuthLayout />,
@@ -85,9 +54,6 @@ const router = createBrowserRouter([
     ],
   },
 
-  // ==========================================
-  // PROTECTED ROUTES (DashboardLayout)
-  // ==========================================
   {
     path: '/',
     element: (
@@ -98,15 +64,11 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      // Root redirect to dashboard
       {
         index: true,
         element: <Navigate to="/dashboard" replace />,
       },
       
-      // ==========================================
-      // DASHBOARD
-      // ==========================================
       {
         path: 'dashboard',
         element: (
@@ -116,9 +78,6 @@ const router = createBrowserRouter([
         ),
       },
       
-      // ==========================================
-      // TENANTS MODULE
-      // ==========================================
       {
         path: 'tenants',
         element: (
@@ -135,10 +94,23 @@ const router = createBrowserRouter([
           </Suspense>
         ),
       },
+      {
+        path: 'tenants/:tenantId',
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <TenantDetailPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'tenants/:tenantId/edit',
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <EditTenantPage />
+          </Suspense>
+        ),
+      },
 
-      // ==========================================
-      // BUSINESS LINES MODULE
-      // ==========================================
       {
         path: 'business-lines',
         element: (
@@ -147,10 +119,15 @@ const router = createBrowserRouter([
           </Suspense>
         ),
       },
+      {
+        path: 'business-lines/create',
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <CreateBusinessLinePage />
+          </Suspense>
+        ),
+      },
 
-      // ==========================================
-      // BRANCHES MODULE
-      // ==========================================
       {
         path: 'branches',
         element: (
@@ -159,10 +136,15 @@ const router = createBrowserRouter([
           </Suspense>
         ),
       },
+      {
+        path: 'branches/create',
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <CreateBranchPage />
+          </Suspense>
+        ),
+      },
 
-      // ==========================================
-      // USERS MODULE
-      // ==========================================
       {
         path: 'users',
         element: (
@@ -180,9 +162,6 @@ const router = createBrowserRouter([
         ),
       },
 
-      // ==========================================
-      // ROLES & PERMISSIONS MODULE (DPF-AGI)
-      // ==========================================
       {
         path: 'roles',
         element: (
@@ -202,9 +181,6 @@ const router = createBrowserRouter([
     ],
   },
 
-  // ==========================================
-  // ERROR ROUTES
-  // ==========================================
   {
     path: '*',
     element: (
@@ -215,10 +191,6 @@ const router = createBrowserRouter([
   },
 ]);
 
-/**
- * AppRouter Component
- * Main router provider for the application
- */
 export default function AppRouter() {
   return <RouterProvider router={router} />;
 }

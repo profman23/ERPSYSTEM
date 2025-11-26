@@ -134,6 +134,28 @@ The Platform Core Layer provides enterprise-grade infrastructure following AWS/S
         -   5 Users with varied scopes: Tenant Manager, 2 Business Line Vets, 2 Branch Staff
         -   Login: Any user with password "Demo@2024!" (e.g., manager@petcareplus.vet)
 
+-   **Multi-Tenant Admin UI (COMPLETE - November 26, 2025):**
+    -   **Tenants Module (`/client/src/pages/tenants/`):**
+        -   TenantsListPage: Real data table with search, plan/status badges, action buttons
+        -   CreateTenantPage: Full form with all tenant fields, validation, API integration
+        -   TenantDetailPage: Hierarchy view showing business lines and branches, stats cards
+        -   EditTenantPage: Update form with pre-populated data from API
+    -   **Business Lines Module (`/client/src/pages/business-lines/`):**
+        -   BusinessLinesListPage: Data table with tenant filter, type labels, delete confirmation
+        -   CreateBusinessLinePage: Form with tenant selector, business type dropdown
+    -   **Branches Module (`/client/src/pages/branches/`):**
+        -   BranchesListPage: Data table with business line filter, location display
+        -   CreateBranchPage: Form with address fields, timezone, business line selector
+    -   **Users Module (`/client/src/pages/users/`):**
+        -   UsersListPage: Data table with scope badges, role counts, action buttons for role management
+    -   **React Query Hooks (`/client/src/hooks/useHierarchy.ts`):**
+        -   Complete CRUD operations for Tenants, Business Lines, Branches, Users
+        -   Proper query key invalidation for cache management
+        -   Error handling and loading states
+    -   **Router Integration (`/client/src/routes/AppRouter.tsx`):**
+        -   All CRUD routes registered: /tenants, /business-lines, /branches, /users
+        -   Lazy loading with Suspense for code splitting
+
 -   **User Role Assignment UI Module (COMPLETE):**
     -   Created comprehensive user role management system with 7 new components/hooks
     -   RoleImpactPreview: BEFORE/AFTER permission diff viewer with conflict detection
