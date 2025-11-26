@@ -21,6 +21,58 @@ The platform adheres to a "Modern Medical Blue" design system.
 -   **Typography:** Inter for English, Cairo for Arabic, with specific weights for headings and body text.
 -   **Border Radius:** Standardized values (sm: 6px, md: 10px, lg: 16px, full: 999px).
 
+### Platform Core Layer (Enterprise Foundation)
+The Platform Core Layer provides enterprise-grade infrastructure following AWS/Stripe/Uber standards:
+
+-   **Request Context Layer (`/server/src/core/context/`):**
+    -   AsyncLocalStorage-based request tracing with traceId, correlationId, requestId
+    -   Distributed tracing with sampling (percentage, error, force, adaptive)
+    -   Client metadata (IP, user agent, device fingerprint, forwarded-for chain)
+    -   Context propagation to all async operations via `RequestContext.run()`
+    -   Outbound header propagation for microservice communication
+
+-   **Context Logger (`contextLogger`):**
+    -   Winston integration with automatic trace context injection
+    -   All logs include traceId, correlationId, tenantId, userId, branchId
+    -   Child logger support for sub-operations
+
+-   **Health Check System (`/health`, `/health/ready`, `/health/live`):**
+    -   Kubernetes/load balancer compatible probes
+    -   Dependency checks (database, Redis) with degraded/healthy status
+    -   Structured JSON responses with system metadata
+
+-   **Audit Logging System (`/server/src/core/audit/`):**
+    -   Immutable compliance trail with async writes
+    -   JSONB old/new/diff for change tracking
+    -   Severity levels (critical, high, medium, low, info)
+    -   Trace correlation for debugging
+
+-   **API Versioning (`/api/v1/*`):**
+    -   Path-based versioning with Accept-Version header support
+    -   Version discovery endpoint at `/api`
+    -   Deprecation tracking ready for future versions
+
+-   **Rate Limiting Service (`/server/src/core/ratelimit/`):**
+    -   Multi-tier limits (IP, user, tenant)
+    -   Sliding window algorithm with Redis backend
+    -   Graceful degradation to in-memory when Redis unavailable
+
+-   **Tiered Caching (`/server/src/core/cache/`):**
+    -   L1 in-memory cache (60s TTL)
+    -   L2 Redis cache (5m TTL)
+    -   Namespace isolation for tenant/resource separation
+    -   Invalidation groups for atomic cache clearing
+
+-   **Quota System (`/server/src/core/quota/`):**
+    -   Multi-tenant resource limits (users, branches, storage, API calls)
+    -   Plan tier support (basic, professional, enterprise, unlimited)
+    -   Usage tracking with period-based aggregation
+
+-   **Event Bus Interface (`/server/src/core/events/`):**
+    -   Foundation for async processing and event-driven architecture
+    -   Subscription management with pattern matching
+    -   Error handling with dead letter queue support
+
 ### Enterprise Infrastructure & Security
 -   **Tenant Isolation:** Achieved through `AsyncLocalStorage` for request-scoped tenant context, Socket.IO JWT authentication with scoped user context, packet middleware for blocking unauthorized events, strict scope validation, and database-level filtering (`and(...filters)` pattern).
 -   **Caching:** Redis integration with a `CacheService` providing graceful degradation.

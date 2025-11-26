@@ -56,6 +56,7 @@ function extractTraceHeaders(req: Request): {
 /**
  * Request Context Middleware
  * Creates and manages request-scoped context with tracing, sampling, and propagation
+ * Uses AsyncLocalStorage.run() to wrap entire request lifecycle for proper context propagation
  */
 export const requestContextMiddleware = (
   req: Request,
@@ -80,29 +81,41 @@ export const requestContextMiddleware = (
   res.setHeader('X-Trace-Id', context.traceId);
   res.setHeader('X-Request-Id', context.requestId);
 
-  onFinished(res, (err, finishedRes) => {
-    const duration = Date.now() - context.requestStart;
-    RequestContext.setDuration(duration);
+  RequestContext.run(context, () => {
+    onFinished(res, (err, finishedRes) => {
+      const duration = Date.now() - context.requestStart;
+      context.requestDuration = duration;
 
-    if (err || finishedRes.statusCode >= 400) {
-      RequestContext.markError();
-    }
+      if (err || finishedRes.statusCode >= 400) {
+        if (!context.sampling.sampled) {
+          context.sampling = {
+            sampled: true,
+            reason: 'error',
+            rate: 1,
+          };
+        }
+      }
 
-    const logData = RequestContext.getLogData();
-    if (logData) {
       const level = finishedRes.statusCode >= 500 ? 'error' :
                     finishedRes.statusCode >= 400 ? 'warn' : 'info';
 
       contextLogger[level]('Request completed', {
-        ...logData,
+        traceId: context.traceId,
+        correlationId: context.correlationId,
+        requestId: context.requestId,
+        spanId: context.spanId,
+        tenantId: context.tenantId,
+        userId: context.userId,
+        branchId: context.branchId,
+        clientIp: context.clientIp,
+        requestPath: context.requestPath,
+        requestMethod: context.requestMethod,
         statusCode: finishedRes.statusCode,
         duration,
         sampled: context.sampling.sampled,
       });
-    }
-  });
+    });
 
-  RequestContext.run(context, () => {
     next();
   });
 };

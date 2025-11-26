@@ -46,7 +46,21 @@ const startServer = async () => {
     app.use(versionMiddleware);
 
     app.use('/api/v1', apiRateLimiter, apiRoutes);
-    app.use('/api', apiRateLimiter, apiRoutes);
+    
+    app.get('/api', (req, res) => {
+      res.json({
+        success: true,
+        versions: {
+          current: 'v1',
+          available: ['v1'],
+          deprecated: [],
+        },
+        endpoints: {
+          v1: '/api/v1',
+        },
+        documentation: '/api/docs',
+      });
+    });
 
     // Cleanup tenant context after request completes
     app.use(tenantContextCleanup);
