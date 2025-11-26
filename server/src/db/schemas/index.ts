@@ -17,3 +17,7 @@ export * from './dpfRolePermissions';
 export * from './dpfUserRoles';
 export * from './dpfAgiLogs';
 export * from './dpfVoiceLogs';
+
+// Platform Core Layer Schemas
+export * from './auditLogs';
+export * from './quotas';
