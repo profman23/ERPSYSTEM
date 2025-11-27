@@ -15,6 +15,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../..
 import { RoleFormModal } from '../../components/roles/RoleFormModal';
 import { DeleteRoleDialog } from '../../components/roles/DeleteRoleDialog';
 import { usePermissions } from '../../hooks/usePermissions';
+import { useScopePath } from '../../hooks/useScopePath';
 import type { RoleListItem } from '../../../../types/dpf';
 
 export default function RolesPage() {
@@ -26,6 +27,7 @@ export default function RolesPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const { hasPermission } = usePermissions();
+  const { getRolePermissionsPath } = useScopePath();
   const { data, isLoading, error } = useRoles({ page, limit: 20, search });
   const deleteRoleMutation = useDeleteRole();
 
@@ -159,7 +161,7 @@ export default function RolesPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => navigate(`/roles/${role.id}/permissions`)}
+                              onClick={() => navigate(getRolePermissionsPath(role.id))}
                               title="Manage Permissions"
                             >
                               <Settings className="h-4 w-4" />

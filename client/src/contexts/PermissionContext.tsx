@@ -204,36 +204,48 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
 
   // ═══════════════════════════════════════════════════════════════
   // PERMISSION CHECK METHODS
+  // CRITICAL: SYSTEM users (accessScope === 'system') have ALL permissions
   // ═══════════════════════════════════════════════════════════════
 
   const hasPermission = useCallback(
     (code: string): boolean => {
+      if (user?.accessScope === 'system') {
+        return true;
+      }
       return permissionCodes.includes(code);
     },
-    [permissionCodes]
+    [permissionCodes, user?.accessScope]
   );
 
   const hasAction = useCallback(
     (module: string, screen: string, action: string): boolean => {
-      // Build DPF-style permission code: MODULE:SCREEN:ACTION
+      if (user?.accessScope === 'system') {
+        return true;
+      }
       const permissionCode = `${module}:${screen}:${action}`;
       return permissionCodes.includes(permissionCode);
     },
-    [permissionCodes]
+    [permissionCodes, user?.accessScope]
   );
 
   const hasAnyPermission = useCallback(
     (codes: string[]): boolean => {
+      if (user?.accessScope === 'system') {
+        return true;
+      }
       return codes.some(code => permissionCodes.includes(code));
     },
-    [permissionCodes]
+    [permissionCodes, user?.accessScope]
   );
 
   const hasAllPermissions = useCallback(
     (codes: string[]): boolean => {
+      if (user?.accessScope === 'system') {
+        return true;
+      }
       return codes.every(code => permissionCodes.includes(code));
     },
-    [permissionCodes]
+    [permissionCodes, user?.accessScope]
   );
 
   const clearPermissions = useCallback(() => {

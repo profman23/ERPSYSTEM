@@ -9,6 +9,7 @@ import { Select } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useUsers, useBranches, useBusinessLines, useTenants } from '@/hooks/useHierarchy';
 import { useAuth } from '@/contexts/AuthContext';
+import { useScopePath } from '@/hooks/useScopePath';
 
 const scopeColors: Record<string, 'default' | 'success' | 'warning' | 'info'> = {
   tenant: 'success',
@@ -28,6 +29,7 @@ export default function UsersListPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user: currentUser } = useAuth();
+  const { getUsersCreatePath, getUserRolesPath, getPath } = useScopePath();
   
   const tenantIdFromParams = searchParams.get('tenantId');
   const businessLineIdFromParams = searchParams.get('businessLineId');
@@ -151,7 +153,7 @@ export default function UsersListPage() {
             Manage user accounts and access permissions
           </p>
         </div>
-        <Link to={`/users/create${selectedBranchId ? `?branchId=${selectedBranchId}` : ''}`}>
+        <Link to={getUsersCreatePath(selectedBranchId ? `branchId=${selectedBranchId}` : undefined)}>
           <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
             <Plus className="w-4 h-4 mr-2" />
             Add User
@@ -254,7 +256,7 @@ export default function UsersListPage() {
                 {searchQuery ? 'Try adjusting your search' : 'Create your first user to get started'}
               </p>
               {!searchQuery && (
-                <Link to="/users/create">
+                <Link to={getUsersCreatePath()}>
                   <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
                     <Plus className="w-4 h-4 mr-2" />
                     Add User
@@ -328,7 +330,7 @@ export default function UsersListPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => navigate(`/users/${u.id}`)}
+                          onClick={() => navigate(getPath(`users/${u.id}`))}
                           title="View"
                         >
                           <Eye className="w-4 h-4" />
@@ -336,7 +338,7 @@ export default function UsersListPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => navigate(`/users/${u.id}/edit`)}
+                          onClick={() => navigate(getPath(`users/${u.id}/edit`))}
                           title="Edit"
                         >
                           <Edit className="w-4 h-4" />
@@ -344,7 +346,7 @@ export default function UsersListPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => navigate(`/users/${u.id}/roles`)}
+                          onClick={() => navigate(getUserRolesPath(u.id))}
                           title="Manage Roles"
                         >
                           <Shield className="w-4 h-4" />
