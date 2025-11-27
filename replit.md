@@ -1,7 +1,7 @@
 # Veterinary ERP SaaS Platform
 
 ## Overview
-This project is an enterprise-grade, multi-tenant Veterinary ERP SaaS platform designed to provide a robust foundation for veterinary practice management. The primary goal of Phase 1 is to establish a production-ready infrastructure with 100% AGI-Grade Tenant Isolation, ensuring high security, performance, and scalability from the outset. The platform aims to streamline operations for veterinary clinics through advanced features and a modern technology stack, with future phases expanding into comprehensive ERP functionalities, advanced clinical tools, and AI/AGI integration.
+This project is an enterprise-grade, multi-tenant Veterinary ERP SaaS platform aimed at providing a robust foundation for veterinary practice management. The initial phase focuses on establishing a production-ready infrastructure with 100% AGI-Grade Tenant Isolation to ensure high security, performance, and scalability. The platform is designed to streamline veterinary clinic operations with advanced features and a modern technology stack, with future plans for comprehensive ERP functionalities, advanced clinical tools, and AI/AGI integration to achieve significant market potential and business growth.
 
 ## User Preferences
 I prefer detailed explanations and a clear understanding of the architectural decisions. I want iterative development with a focus on core functionalities first. Ask before making major changes to the system architecture or core dependencies.
@@ -9,167 +9,53 @@ I prefer detailed explanations and a clear understanding of the architectural de
 ## System Architecture
 
 ### Monorepo Structure
-The project utilizes a monorepo structure, separating the frontend (`/client`), backend (`/server`), shared TypeScript types (`/types`), and development/deployment scripts (`/scripts`).
+The project uses a monorepo, separating the frontend (`/client`), backend (`/server`), shared TypeScript types (`/types`), and development/deployment scripts (`/scripts`).
 
 ### Technology Stack
--   **Frontend:** React 18, Vite, TypeScript, Tailwind CSS, Shadcn UI, Zustand for state management, React Query for data fetching, React Router v6 for routing, i18next for internationalization (Arabic RTL + English), Socket.IO Client for real-time communication.
--   **Backend:** Node.js 20, Express.js, TypeScript, Drizzle ORM for PostgreSQL, Socket.IO Server with Redis Adapter, Redis for caching, Zod for validation, Winston for logging, Prometheus for metrics, Helmet, CORS, Rate Limiting for security, node-cron for job scheduling.
+-   **Frontend:** React 18, Vite, TypeScript, Tailwind CSS, Shadcn UI, Zustand, React Query, React Router v6, i18next (Arabic RTL + English), Socket.IO Client.
+-   **Backend:** Node.js 20, Express.js, TypeScript, Drizzle ORM (PostgreSQL), Socket.IO Server with Redis Adapter, Redis, Zod, Winston, Prometheus, Helmet, CORS, Rate Limiting, node-cron.
 
 ### Master Brand Guidelines
-The platform adheres to a "Modern Medical Blue" design system.
--   **Color Palette:** Primary (#2563EB), Secondary (#0EA5E9), Accent (#14B8A6), Neutral (various shades of gray), and Status colors (Success, Error, Warning, Info).
--   **Typography:** Inter for English, Cairo for Arabic, with specific weights for headings and body text.
--   **Border Radius:** Standardized values (sm: 6px, md: 10px, lg: 16px, full: 999px).
+The platform adopts a "Modern Medical Blue" design system with a specific color palette, typography (Inter for English, Cairo for Arabic), and standardized border radii.
 
 ### Platform Core Layer (Enterprise Foundation)
-The Platform Core Layer provides enterprise-grade infrastructure following AWS/Stripe/Uber standards:
-
--   **Request Context Layer (`/server/src/core/context/`):**
-    -   AsyncLocalStorage-based request tracing with traceId, correlationId, requestId
-    -   Distributed tracing with sampling (percentage, error, force, adaptive)
-    -   Client metadata (IP, user agent, device fingerprint, forwarded-for chain)
-    -   Context propagation to all async operations via `RequestContext.run()`
-    -   Outbound header propagation for microservice communication
-
--   **Context Logger (`contextLogger`):**
-    -   Winston integration with automatic trace context injection
-    -   All logs include traceId, correlationId, tenantId, userId, branchId
-    -   Child logger support for sub-operations
-
--   **Health Check System (`/health`, `/health/ready`, `/health/live`):**
-    -   Kubernetes/load balancer compatible probes
-    -   Dependency checks (database, Redis) with degraded/healthy status
-    -   Structured JSON responses with system metadata
-
--   **Audit Logging System (`/server/src/core/audit/`):**
-    -   Immutable compliance trail with async writes
-    -   JSONB old/new/diff for change tracking
-    -   Severity levels (critical, high, medium, low, info)
-    -   Trace correlation for debugging
-
--   **API Versioning (`/api/v1/*`):**
-    -   Path-based versioning with Accept-Version header support
-    -   Version discovery endpoint at `/api`
-    -   Deprecation tracking ready for future versions
-
--   **Rate Limiting Service (`/server/src/core/ratelimit/`):**
-    -   Multi-tier limits (IP, user, tenant)
-    -   Sliding window algorithm with Redis backend
-    -   Graceful degradation to in-memory when Redis unavailable
-
--   **Tiered Caching (`/server/src/core/cache/`):**
-    -   L1 in-memory cache (60s TTL)
-    -   L2 Redis cache (5m TTL)
-    -   Namespace isolation for tenant/resource separation
-    -   Invalidation groups for atomic cache clearing
-
--   **Quota System (`/server/src/core/quota/`):**
-    -   Multi-tenant resource limits (users, branches, storage, API calls)
-    -   Plan tier support (basic, professional, enterprise, unlimited)
-    -   Usage tracking with period-based aggregation
-
--   **Event Bus Interface (`/server/src/core/events/`):**
-    -   Foundation for async processing and event-driven architecture
-    -   Subscription management with pattern matching
-    -   Error handling with dead letter queue support
+The platform features an enterprise-grade core layer, including:
+-   **Request Context Layer:** `AsyncLocalStorage`-based request tracing, distributed tracing, client metadata capture, and context propagation.
+-   **Context Logger:** Winston integration with automatic trace context, tenant, and user information injection.
+-   **Health Check System:** Kubernetes-compatible `/health`, `/health/ready`, `/health/live` probes with dependency checks.
+-   **Audit Logging System:** Immutable compliance trail with async writes, JSONB diff tracking, and severity levels.
+-   **API Versioning:** Path-based versioning (`/api/v1/*`) with `Accept-Version` header support.
+-   **Rate Limiting Service:** Multi-tier (IP, user, tenant) sliding window algorithm with Redis.
+-   **Tiered Caching:** L1 in-memory and L2 Redis caching with namespace isolation and invalidation groups.
+-   **Quota System:** Multi-tenant resource limits supporting various plan tiers.
+-   **Event Bus Interface:** Foundation for async processing and event-driven architecture.
 
 ### Enterprise Infrastructure & Security
--   **Tenant Isolation:** Achieved through `AsyncLocalStorage` for request-scoped tenant context, Socket.IO JWT authentication with scoped user context, packet middleware for blocking unauthorized events, strict scope validation, and database-level filtering (`and(...filters)` pattern).
--   **Caching:** Redis integration with a `CacheService` providing graceful degradation.
--   **Job Scheduling:** Implemented for routine tasks like token cleanup and DB maintenance.
--   **Logging & Monitoring:** Winston for structured logging and Prometheus for metrics.
--   **Security:** Comprehensive hardening with Helmet, CORS, Rate Limiting, and Token Rotation Security.
--   **DPF-AGI (Dynamic Permission Fabric with AGI Integration):**
-    -   A robust permission system with auto-registration of modules, screens, and actions.
-    -   High-performance evaluation with caching and tenant isolation.
-    -   AGI Interpreter for natural language to permission operations (English & Arabic).
-    -   Support for voice commands and multi-layer safety validation.
-    -   Production-ready static structure defined in `dpfStructure.ts` with an idempotent sync system for database consistency.
-    -   Comprehensive validation to ensure DPF integrity.
-    -   **RBAC UI Modules (Production-Ready):**
-        -   **Permission Matrix UI:** Hierarchical Module→Screen→Action permission assignment for roles with save/reset flows.
-        -   **User Role Assignment UI:** Complete role management with real-time updates, AGI natural language interpreter ("/agi" prefix), role impact preview showing BEFORE/AFTER permission diffs, conflict detection, and Socket.IO synchronization.
-        -   **React Query Integration:** Client-side caching with automatic invalidation on updates.
-        -   **Backend API Integration:** All permission calculations use authenticated backend APIs, no client-side heuristics.
+-   **Tenant Isolation:** Achieved via `AsyncLocalStorage` for request-scoped context, Socket.IO JWT authentication, and database-level filtering.
+-   **Caching:** Redis integration with graceful degradation.
+-   **Job Scheduling:** For routine maintenance tasks.
+-   **Logging & Monitoring:** Winston for structured logs and Prometheus for metrics.
+-   **Security:** Helmet, CORS, Rate Limiting, and Token Rotation.
+-   **DPF-AGI (Dynamic Permission Fabric with AGI Integration):** A robust, high-performance permission system with auto-registration, caching, tenant isolation, and AGI Interpreter for natural language to permission operations (English & Arabic). Includes production-ready RBAC UI modules for permission matrix management and user role assignment with real-time updates, AGI natural language interpretation, and role impact preview.
 
 ### Database Schema
--   **Enhanced Tables:** `tenants`, `business_lines`, `branches`, `users` are enhanced with additional fields and multi-level foreign key support to support the multi-tenant architecture and access control.
--   **New Tables:** `branch_capacity` for tracking user limits.
--   **DPF-AGI Tables:** 9 dedicated tables (`modules`, `screens`, `actions`, `permissions`, `roles`, `role_permissions`, `user_roles`, `agi_logs`, `voice_logs`) with extensive indexing for performance.
+Enhanced tables (`tenants`, `business_lines`, `branches`, `users`) and new tables (`branch_capacity`, `modules`, `screens`, `actions`, `permissions`, `roles`, `role_permissions`, `user_roles`, `agi_logs`, `voice_logs`) support multi-tenancy, access control, and DPF-AGI.
 
 ### Performance & Scalability
--   **Database Indexes:** 32 indexes across key tables (Tenants, Business Lines, Branches, Users, Roles, Permissions, Refresh Tokens) for significant query performance improvement.
--   **Scalability Features:** Redis adapter for Socket.IO horizontal scaling, graceful Redis degradation, and Neon Pooler for connection pooling.
--   **Observability:** Winston logging, Prometheus metrics, and standardized error responses.
+Optimized with 32 database indexes, Redis adapter for Socket.IO horizontal scaling, graceful Redis degradation, Neon Pooler for connection pooling, and comprehensive observability (Winston, Prometheus).
 
-## Recent Changes (November 2025)
-
--   **Multi-Tenant Hierarchy Foundation (COMPLETE - November 26, 2025):**
-    -   **Enhanced Database Schema:**
-        -   Tenants: subscriptionPlan, status, logoUrl, primaryColor, contactEmail, contactPhone, address, settings
-        -   Business Lines: businessLineType, contactEmail, contactPhone, settings, updatedAt
-        -   Branches: state, country, postalCode, phone, email, timezone, workingHours, settings, updatedAt
-        -   Users: code, name, firstName, lastName, phone, avatarUrl, status, scope, allowedBranchIds, preferences
-    -   **RBAC Scope System (`/server/src/services/ScopeService.ts`):**
-        -   Four scope levels: tenant (full access), business_line (BL + branches), branch (single), mixed (multiple selected)
-        -   Cascade permission checking with hierarchy-aware access control
-        -   Dynamic scope filter generation for database queries
-    -   **Hierarchy Service (`/server/src/services/HierarchyService.ts`):**
-        -   Cascade tenant creation (tenant→business line→branch→user in single transaction)
-        -   Automatic audit logging for all hierarchy operations
-        -   Validation and transaction safety with rollback support
-        -   Plan-based quota allocation (trial, standard, professional, enterprise)
-    -   **Hierarchy API Endpoints (`/api/v1/hierarchy/*`):**
-        -   POST /hierarchy/tenants - Create tenant with automatic quota setup
-        -   POST /hierarchy/business-lines - Create business line under tenant
-        -   POST /hierarchy/branches - Create branch under business line
-        -   POST /hierarchy/users - Create user under branch with cascade resolution
-        -   GET /hierarchy/tenants/:id/hierarchy - Full tenant structure with counts
-        -   GET /hierarchy/users/:id/context - User's resolved hierarchy context
-        -   GET /hierarchy/users/:id/scope - User's effective scope and filters
-    -   **Demo Tenant ("Petcare Plus Veterinary"):**
-        -   Code: PETCARE-001, Plan: Professional
-        -   2 Business Lines: Small Animal Clinic (SAC), Equine & Large Animal (ELA)
-        -   5 Branches: Main Hospital (SAC-HQ), North Clinic (SAC-N), South Clinic (SAC-S), Equine Center (ELA-EC), Mobile Unit (ELA-MU)
-        -   5 Users with varied scopes: Tenant Manager, 2 Business Line Vets, 2 Branch Staff
-        -   Login: Any user with password "Demo@2024!" (e.g., manager@petcareplus.vet)
-
--   **Multi-Tenant Admin UI (COMPLETE - November 26, 2025):**
-    -   **Tenants Module (`/client/src/pages/tenants/`):**
-        -   TenantsListPage: Real data table with search, plan/status badges, action buttons
-        -   CreateTenantPage: Full form with all tenant fields, validation, API integration
-        -   TenantDetailPage: Hierarchy view showing business lines and branches, stats cards
-        -   EditTenantPage: Update form with pre-populated data from API
-    -   **Business Lines Module (`/client/src/pages/business-lines/`):**
-        -   BusinessLinesListPage: Data table with tenant filter, type labels, delete confirmation
-        -   CreateBusinessLinePage: Form with tenant selector, business type dropdown
-    -   **Branches Module (`/client/src/pages/branches/`):**
-        -   BranchesListPage: Data table with business line filter, location display
-        -   CreateBranchPage: Form with address fields, timezone, business line selector
-    -   **Users Module (`/client/src/pages/users/`):**
-        -   UsersListPage: Data table with scope badges, role counts, action buttons for role management
-    -   **React Query Hooks (`/client/src/hooks/useHierarchy.ts`):**
-        -   Complete CRUD operations for Tenants, Business Lines, Branches, Users
-        -   Proper query key invalidation for cache management
-        -   Error handling and loading states
-    -   **Router Integration (`/client/src/routes/AppRouter.tsx`):**
-        -   All CRUD routes registered: /tenants, /business-lines, /branches, /users
-        -   Lazy loading with Suspense for code splitting
-
--   **User Role Assignment UI Module (COMPLETE):**
-    -   Created comprehensive user role management system with 7 new components/hooks
-    -   RoleImpactPreview: BEFORE/AFTER permission diff viewer with conflict detection
-    -   UserRoleAssignmentDrawer: Role selection with AGI natural language interpreter (English & Arabic)
-    -   UserRoleAssignmentPage: Full-featured page with Socket.IO real-time synchronization
-    -   useBatchRolePermissions: Authenticated batch API fetching for accurate permission calculations
-    -   Routes: /users/:userId/roles for role management
-    -   **Key Features:** "/agi" prefix command interpreter, Arabic language support, real-time updates, accurate permission diff calculations using backend API data
+### Multi-Panel Frontend Architecture
+Features a scope-based multi-panel design:
+-   **System Admin Panel (`/system/*`):** Dark theme, for `accessScope: 'system'`.
+-   **Tenant Admin Panel (`/admin/*`):** Light blue theme, for `accessScope: 'tenant'`.
+-   **User App Panel (`/app/*`):** Teal/green theme, for `accessScope: 'branch' | 'business_line' | 'mixed'`.
+Includes `ScopeRedirect` and `ProtectedRoute` for dynamic routing and access control based on user scope.
 
 ## External Dependencies
 
--   **Database:** Neon Serverless PostgreSQL (EU-Central-1)
+-   **Database:** Neon Serverless PostgreSQL
 -   **Real-time Communication:** Socket.IO
--   **Caching/Pub-Sub:** Redis (optional, graceful degradation in dev)
+-   **Caching/Pub-Sub:** Redis
 -   **UI Components:** Shadcn UI
 -   **Internationalization:** i18next
 -   **Monitoring:** Prometheus

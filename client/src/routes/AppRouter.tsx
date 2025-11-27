@@ -9,6 +9,7 @@ import UserAppLayout from '@/layouts/UserAppLayout';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import ScopeRedirect from '@/components/routing/ScopeRedirect';
 import ProtectedRoute from '@/components/routing/ProtectedRoute';
+import LegacyRedirect from '@/components/routing/LegacyRedirect';
 
 function LoadingFallback() {
   return (
@@ -421,7 +422,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/tenants/*',
-    element: <Navigate to="/system/tenants" replace />,
+    element: <LegacyRedirect baseFrom="/tenants" baseTo="/system/tenants" />,
   },
   {
     path: '/business-lines',
@@ -429,7 +430,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/business-lines/*',
-    element: <Navigate to="/admin/business-lines" replace />,
+    element: <LegacyRedirect baseFrom="/business-lines" baseTo="/admin/business-lines" />,
   },
   {
     path: '/branches',
@@ -437,7 +438,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/branches/*',
-    element: <Navigate to="/admin/branches" replace />,
+    element: <LegacyRedirect baseFrom="/branches" baseTo="/admin/branches" />,
   },
   {
     path: '/users',
@@ -445,7 +446,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/users/*',
-    element: <Navigate to="/admin/users" replace />,
+    element: <LegacyRedirect baseFrom="/users" baseTo="/admin/users" />,
   },
   {
     path: '/roles',
@@ -453,7 +454,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/roles/*',
-    element: <Navigate to="/admin/roles" replace />,
+    element: <LegacyRedirect baseFrom="/roles" baseTo="/admin/roles" />,
   },
 
   {
