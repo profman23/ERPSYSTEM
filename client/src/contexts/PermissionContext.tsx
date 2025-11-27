@@ -93,11 +93,25 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
       return;
     }
 
+    // CRITICAL: SYSTEM users have ALL permissions - skip API fetch
+    // This prevents errors from tenant-scoped endpoints and ensures
+    // SYSTEM admins always have full platform access
+    if (user.accessScope === 'system') {
+      console.log('✅ SYSTEM user detected - granting full permissions (bypassing API)');
+      setPermissionCodes(['*']); // Wildcard to indicate full access
+      setRolePermissions(['*']);
+      setPermissionMatrix([]);
+      setAllPermissions([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
       // Parallel fetch: Load both flat list AND hierarchical matrix
+      // These endpoints are tenant-scoped and work for tenant/branch users
       const [permissionsResponse, matrixResponse] = await Promise.all([
         axios.get(`${API_BASE}/tenant/permissions/all`, {
           headers: {

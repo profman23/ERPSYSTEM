@@ -418,43 +418,43 @@ const router = createBrowserRouter([
 
   {
     path: '/tenants',
-    element: <Navigate to="/system/tenants" replace />,
+    element: <LegacyRedirect baseFrom="/tenants" resource="tenants" />,
   },
   {
     path: '/tenants/*',
-    element: <LegacyRedirect baseFrom="/tenants" baseTo="/system/tenants" />,
+    element: <LegacyRedirect baseFrom="/tenants" resource="tenants" />,
   },
   {
     path: '/business-lines',
-    element: <Navigate to="/admin/business-lines" replace />,
+    element: <LegacyRedirect baseFrom="/business-lines" resource="business-lines" />,
   },
   {
     path: '/business-lines/*',
-    element: <LegacyRedirect baseFrom="/business-lines" baseTo="/admin/business-lines" />,
+    element: <LegacyRedirect baseFrom="/business-lines" resource="business-lines" />,
   },
   {
     path: '/branches',
-    element: <Navigate to="/admin/branches" replace />,
+    element: <LegacyRedirect baseFrom="/branches" resource="branches" />,
   },
   {
     path: '/branches/*',
-    element: <LegacyRedirect baseFrom="/branches" baseTo="/admin/branches" />,
+    element: <LegacyRedirect baseFrom="/branches" resource="branches" />,
   },
   {
     path: '/users',
-    element: <Navigate to="/admin/users" replace />,
+    element: <LegacyRedirect baseFrom="/users" resource="users" />,
   },
   {
     path: '/users/*',
-    element: <LegacyRedirect baseFrom="/users" baseTo="/admin/users" />,
+    element: <LegacyRedirect baseFrom="/users" resource="users" />,
   },
   {
     path: '/roles',
-    element: <Navigate to="/admin/roles" replace />,
+    element: <LegacyRedirect baseFrom="/roles" resource="roles" />,
   },
   {
     path: '/roles/*',
-    element: <LegacyRedirect baseFrom="/roles" baseTo="/admin/roles" />,
+    element: <LegacyRedirect baseFrom="/roles" resource="roles" />,
   },
 
   {
