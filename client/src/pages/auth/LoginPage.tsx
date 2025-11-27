@@ -71,15 +71,36 @@ export default function LoginPage() {
     };
   }, []);
 
+  /**
+   * Get the correct dashboard path based on user's access scope
+   * - system → /system/dashboard (System Admin Panel - dark theme)
+   * - tenant → /admin/dashboard (Tenant Admin Panel - light blue)
+   * - branch/business_line/mixed → /app/dashboard (User App Panel - teal/green)
+   */
+  const getScopeDashboardPath = (accessScope: string): string => {
+    switch (accessScope) {
+      case 'system':
+        return '/system/dashboard';
+      case 'tenant':
+        return '/admin/dashboard';
+      case 'business_line':
+      case 'branch':
+      case 'mixed':
+      default:
+        return '/app/dashboard';
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
     try {
-      await login(tenantCode, email, password);
-      // Redirect to dashboard on successful login
-      navigate('/dashboard');
+      const user = await login(tenantCode, email, password);
+      // Scope-based redirect: send user directly to their correct panel
+      const dashboardPath = getScopeDashboardPath(user.accessScope);
+      navigate(dashboardPath);
     } catch (err: any) {
       setError(err.message || 'Login failed. Please try again.');
     } finally {

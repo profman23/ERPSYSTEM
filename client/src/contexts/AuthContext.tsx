@@ -33,7 +33,7 @@ interface AuthContextType {
   accessToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (tenantCode: string, email: string, password: string) => Promise<void>;
+  login: (tenantCode: string, email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
   refreshAccessToken: () => Promise<string | null>;
 }
@@ -67,7 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  const login = async (tenantCode: string, email: string, password: string) => {
+  const login = async (tenantCode: string, email: string, password: string): Promise<User> => {
     try {
       const response = await axios.post(`${API_URL}/auth/login`, {
         tenantCode,
@@ -84,6 +84,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setAccessToken(accessToken);
       setUser(user);
+
+      // Return user for immediate use (e.g., scope-based redirect)
+      return user;
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Login failed. Please try again.';
       throw new Error(errorMessage);
