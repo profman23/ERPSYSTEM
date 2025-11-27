@@ -36,10 +36,11 @@ export const login = async (req: Request, res: Response) => {
     // This prevents cross-tenant account takeover
     // System users (tenantId IS NULL) can log in with any tenant code
     // Tenant users (tenantId = tenant.id) can only log in with their tenant
+    const normalizedEmail = email.toLowerCase().trim();
     const [user] = await db
       .select()
       .from(users)
-      .where(eq(users.email, email))
+      .where(eq(users.email, normalizedEmail))
       .limit(1);
 
     if (!user) {
@@ -52,7 +53,7 @@ export const login = async (req: Request, res: Response) => {
     // This prevents cross-tenant access
     if (user.accessScope !== 'system' && user.tenantId !== tenant.id) {
       return res.status(401).json({
-        error: 'Invalid email or password', // Generic error to prevent enumeration
+        error: 'Invalid email or password',
       });
     }
 
