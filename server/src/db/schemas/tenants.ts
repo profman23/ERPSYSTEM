@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, text, jsonb, integer } from 'drizzle-orm/pg-core';
 
 export const subscriptionPlanEnum = ['trial', 'standard', 'professional', 'enterprise'] as const;
 export type SubscriptionPlan = typeof subscriptionPlanEnum[number];
@@ -20,6 +20,8 @@ export const tenants = pgTable('tenants', {
   contactEmail: varchar('contact_email', { length: 255 }),
   contactPhone: varchar('contact_phone', { length: 50 }),
   address: text('address'),
+  allowedBusinessLines: integer('allowed_business_lines').notNull().default(5),
+  allowedBranches: integer('allowed_branches').notNull().default(10),
   settings: jsonb('settings').default({}),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
