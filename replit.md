@@ -46,10 +46,16 @@ Optimized with 32 database indexes, Redis adapter for Socket.IO horizontal scali
 
 ### Multi-Panel Frontend Architecture
 Features a scope-based multi-panel design:
--   **System Admin Panel (`/system/*`):** Dark theme, for `accessScope: 'system'`.
+-   **System Admin Panel (`/system/*`):** Dark theme (bg-[#0F172A], bg-[#1E293B]), for `accessScope: 'system'`.
 -   **Tenant Admin Panel (`/admin/*`):** Light blue theme, for `accessScope: 'tenant'`.
 -   **User App Panel (`/app/*`):** Teal/green theme, for `accessScope: 'branch' | 'business_line' | 'mixed'`.
 Includes `ScopeRedirect` and `ProtectedRoute` for dynamic routing and access control based on user scope.
+
+### System Panel User Management (Dec 2024)
+-   **SystemUsersListPage:** Dark-themed platform users list with UserTypeSelector modal for creating System Users or Tenant Admins
+-   **SystemCreateUserPage:** Dark-themed user creation form supporting two user types via URL query parameter (?type=system or ?type=tenant_admin)
+-   **Built-in Roles:** SYSTEM_ADMIN (platform-wide) and TENANT_ADMIN (tenant-scoped) with auto-grant permissions, marked as isProtected and isDefault
+-   **Demo Credentials:** superadmin@system.local / Admin@123 (Tenant Code: SYSTEM)
 
 ## External Dependencies
 

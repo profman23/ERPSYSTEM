@@ -66,6 +66,7 @@ const CreateBusinessLinePage = lazy(() => import('@/pages/business-lines/CreateB
 const CreateBranchPage = lazy(() => import('@/pages/branches/CreateBranchPage'));
 
 const CreateUserPage = lazy(() => import('@/pages/users/CreateUserPage'));
+const SystemCreateUserPage = lazy(() => import('@/pages/system/SystemCreateUserPage'));
 const RolePermissionsPage = lazy(() => import('@/pages/admin/RolePermissionsPage'));
 const UserRoleAssignmentPage = lazy(() => import('@/pages/admin/UserRoleAssignmentPage'));
 
@@ -161,7 +162,7 @@ const router = createBrowserRouter([
             path: 'users/create',
             element: (
               <Suspense fallback={<DarkLoadingFallback />}>
-                <CreateUserPage />
+                <SystemCreateUserPage />
               </Suspense>
             ),
           },

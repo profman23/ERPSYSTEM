@@ -1,5 +1,5 @@
-import UsersListPage from '@/pages/users/UsersListPage';
+import SystemUsersListPage from './SystemUsersListPage';
 
 export default function SystemUsersPage() {
-  return <UsersListPage />;
+  return <SystemUsersListPage />;
 }
