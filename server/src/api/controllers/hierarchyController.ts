@@ -1,10 +1,12 @@
 /**
  * Hierarchy Controller
  * Manages multi-tenant hierarchy: Tenant → Business Line → Branch → User
+ * Also handles system user and tenant admin creation
  */
 
 import { Request, Response } from 'express';
 import { HierarchyService } from '../../services/HierarchyService';
+import { SystemUserService } from '../../services/SystemUserService';
 import { ScopeService } from '../../services/ScopeService';
 import { contextLogger } from '../../core/context';
 import { z } from 'zod';
@@ -57,6 +59,24 @@ const createUserSchema = z.object({
   password: z.string().min(8),
   role: z.string().max(50).optional(),
   accessScope: z.enum(['tenant', 'business_line', 'branch', 'mixed']).optional(),
+});
+
+const createSystemUserSchema = z.object({
+  firstName: z.string().min(1).max(100),
+  lastName: z.string().min(1).max(100),
+  email: z.string().email(),
+  phone: z.string().max(50).optional(),
+  password: z.string().min(8),
+  roleCode: z.enum(['SYSTEM_ADMIN', 'SUPPORT_STAFF', 'BILLING_STAFF']),
+});
+
+const createTenantAdminSchema = z.object({
+  firstName: z.string().min(1).max(100),
+  lastName: z.string().min(1).max(100),
+  email: z.string().email(),
+  phone: z.string().max(50).optional(),
+  password: z.string().min(8),
+  tenantId: z.string().uuid(),
 });
 
 export const hierarchyController = {
@@ -254,6 +274,115 @@ export const hierarchyController = {
       res.status(500).json({
         success: false,
         error: error.message || 'Failed to get user scope',
+      });
+    }
+  },
+
+  /**
+   * Create a system-level user (SYSTEM PANEL only)
+   * System users have no branch/business line and accessScope = 'system'
+   */
+  async createSystemUser(req: Request, res: Response) {
+    try {
+      const user = (req as any).user;
+
+      if (user.accessScope !== 'system') {
+        return res.status(403).json({
+          success: false,
+          error: 'Forbidden: System access required',
+        });
+      }
+
+      const validation = createSystemUserSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: validation.error.errors,
+        });
+      }
+
+      const newUser = await SystemUserService.createSystemUser(validation.data);
+
+      res.status(201).json({
+        success: true,
+        data: newUser,
+        message: 'System user created successfully',
+      });
+    } catch (error: any) {
+      contextLogger.error('Failed to create system user', { error: error.message });
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to create system user',
+      });
+    }
+  },
+
+  /**
+   * Create a tenant admin user (SYSTEM PANEL only)
+   * Tenant admins have accessScope = 'tenant' and belong to a specific tenant
+   */
+  async createTenantAdmin(req: Request, res: Response) {
+    try {
+      const user = (req as any).user;
+
+      if (user.accessScope !== 'system') {
+        return res.status(403).json({
+          success: false,
+          error: 'Forbidden: System access required',
+        });
+      }
+
+      const validation = createTenantAdminSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: validation.error.errors,
+        });
+      }
+
+      const newUser = await SystemUserService.createTenantAdmin(validation.data);
+
+      res.status(201).json({
+        success: true,
+        data: newUser,
+        message: 'Tenant admin created successfully',
+      });
+    } catch (error: any) {
+      contextLogger.error('Failed to create tenant admin', { error: error.message });
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to create tenant admin',
+      });
+    }
+  },
+
+  /**
+   * Get available system user roles
+   */
+  async getSystemUserRoles(req: Request, res: Response) {
+    try {
+      const user = (req as any).user;
+
+      if (user.accessScope !== 'system') {
+        return res.status(403).json({
+          success: false,
+          error: 'Forbidden: System access required',
+        });
+      }
+
+      const roles = SystemUserService.getSystemUserRoles();
+
+      res.json({
+        success: true,
+        data: roles,
+      });
+    } catch (error: any) {
+      contextLogger.error('Failed to get system user roles', { error: error.message });
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to get system user roles',
       });
     }
   },

@@ -10,10 +10,13 @@ import {
   createPaginatedResponse,
   getSortOrder,
 } from '../../utils/pagination';
+import { seedTenantAdminRole } from '../../db/seed/seedSuperAdmin';
+import { seedDPFStructure } from '../../db/seed/seedDPFStructure';
 
 /**
  * Create a new tenant
  * Access: System admins only
+ * Auto-creates TENANT_ADMIN role and syncs DPF structure
  */
 export const createTenant = async (req: Request, res: Response, next: any) => {
   try {
@@ -55,6 +58,14 @@ export const createTenant = async (req: Request, res: Response, next: any) => {
         timezone: validatedData.timezone,
       })
       .returning();
+
+    // Auto-create TENANT_ADMIN role for this tenant
+    const tenantAdminRoleId = await seedTenantAdminRole(newTenant.id);
+    logger.info(`TENANT_ADMIN role created for tenant ${newTenant.code}: ${tenantAdminRoleId}`);
+
+    // Sync DPF structure for the new tenant
+    await seedDPFStructure(newTenant.id);
+    logger.info(`DPF structure synced for tenant ${newTenant.code}`);
 
     logger.info(`Tenant created: ${newTenant.code} by user ${user.userId}`);
 

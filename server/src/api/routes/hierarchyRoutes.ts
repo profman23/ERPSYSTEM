@@ -1,6 +1,7 @@
 /**
  * Hierarchy Routes
  * API routes for multi-tenant hierarchy management
+ * Includes system user and tenant admin creation
  */
 
 import { Router } from 'express';
@@ -16,6 +17,12 @@ router.post('/business-lines', authMiddleware, hierarchyController.createBusines
 router.post('/branches', authMiddleware, hierarchyController.createBranch);
 
 router.post('/users', authMiddleware, hierarchyController.createUser);
+
+router.post('/system-users', authMiddleware, hierarchyController.createSystemUser);
+
+router.post('/tenant-admins', authMiddleware, hierarchyController.createTenantAdmin);
+
+router.get('/system-user-roles', authMiddleware, hierarchyController.getSystemUserRoles);
 
 router.get('/tenants/:tenantId/hierarchy', authMiddleware, hierarchyController.getTenantHierarchy);
 
