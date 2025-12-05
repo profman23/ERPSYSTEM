@@ -106,6 +106,18 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
       return;
     }
 
+    // TENANT_ADMIN users also have ALL permissions within their tenant scope
+    // They are auto-granted the TENANT_ADMIN role with full tenant access
+    if (user.accessScope === 'tenant' && user.role === 'tenant_admin') {
+      console.log('✅ TENANT_ADMIN user detected - granting full tenant permissions');
+      setPermissionCodes(['*']); // Wildcard to indicate full tenant access
+      setRolePermissions(['*']);
+      setPermissionMatrix([]);
+      setAllPermissions([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -221,45 +233,50 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
   // CRITICAL: SYSTEM users (accessScope === 'system') have ALL permissions
   // ═══════════════════════════════════════════════════════════════
 
+  const isFullAccessUser = useMemo(() => {
+    return user?.accessScope === 'system' || 
+           (user?.accessScope === 'tenant' && user?.role === 'tenant_admin');
+  }, [user?.accessScope, user?.role]);
+
   const hasPermission = useCallback(
     (code: string): boolean => {
-      if (user?.accessScope === 'system') {
+      if (isFullAccessUser) {
         return true;
       }
       return permissionCodes.includes(code);
     },
-    [permissionCodes, user?.accessScope]
+    [permissionCodes, isFullAccessUser]
   );
 
   const hasAction = useCallback(
     (module: string, screen: string, action: string): boolean => {
-      if (user?.accessScope === 'system') {
+      if (isFullAccessUser) {
         return true;
       }
       const permissionCode = `${module}:${screen}:${action}`;
       return permissionCodes.includes(permissionCode);
     },
-    [permissionCodes, user?.accessScope]
+    [permissionCodes, isFullAccessUser]
   );
 
   const hasAnyPermission = useCallback(
     (codes: string[]): boolean => {
-      if (user?.accessScope === 'system') {
+      if (isFullAccessUser) {
         return true;
       }
       return codes.some(code => permissionCodes.includes(code));
     },
-    [permissionCodes, user?.accessScope]
+    [permissionCodes, isFullAccessUser]
   );
 
   const hasAllPermissions = useCallback(
     (codes: string[]): boolean => {
-      if (user?.accessScope === 'system') {
+      if (isFullAccessUser) {
         return true;
       }
       return codes.every(code => permissionCodes.includes(code));
     },
-    [permissionCodes, user?.accessScope]
+    [permissionCodes, isFullAccessUser]
   );
 
   const clearPermissions = useCallback(() => {

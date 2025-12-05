@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useUsers, useBranches, useBusinessLines, useTenants } from '@/hooks/useHierarchy';
 import { useAuth } from '@/contexts/AuthContext';
 import { useScopePath } from '@/hooks/useScopePath';
+import { UserTypeSelector } from '@/components/users/UserTypeSelector';
 
 const scopeColors: Record<string, 'default' | 'success' | 'warning' | 'info'> = {
   tenant: 'success',
@@ -36,6 +37,9 @@ export default function UsersListPage() {
   const branchIdFromParams = searchParams.get('branchId');
   
   const [searchQuery, setSearchQuery] = useState('');
+  const [showUserTypeSelector, setShowUserTypeSelector] = useState(false);
+  
+  const isSystemUser = currentUser?.accessScope === 'system';
   const [selectedTenantId, setSelectedTenantId] = useState(tenantIdFromParams || currentUser?.tenantId || '');
   const [selectedBusinessLineId, setSelectedBusinessLineId] = useState(businessLineIdFromParams || '');
   const [selectedBranchId, setSelectedBranchId] = useState(branchIdFromParams || '');
@@ -49,7 +53,8 @@ export default function UsersListPage() {
     if (selectedTenantId) filters.tenantId = selectedTenantId;
     if (selectedBusinessLineId) filters.businessLineId = selectedBusinessLineId;
     if (selectedBranchId) filters.branchId = selectedBranchId;
-    return Object.keys(filters).length > 0 ? filters : { tenantId: selectedTenantId || currentUser?.tenantId };
+    const fallbackTenantId = selectedTenantId || currentUser?.tenantId || undefined;
+    return Object.keys(filters).length > 0 ? filters : { tenantId: fallbackTenantId };
   }, [selectedTenantId, selectedBusinessLineId, selectedBranchId, currentUser?.tenantId]);
   
   const { data: users, isLoading, error } = useUsers(userFilters);
@@ -153,12 +158,22 @@ export default function UsersListPage() {
             Manage user accounts and access permissions
           </p>
         </div>
-        <Link to={getUsersCreatePath(selectedBranchId ? `branchId=${selectedBranchId}` : undefined)}>
-          <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
+        {isSystemUser ? (
+          <Button 
+            className="bg-[#2563EB] hover:bg-[#1E40AF]"
+            onClick={() => setShowUserTypeSelector(true)}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Add User
           </Button>
-        </Link>
+        ) : (
+          <Link to={getUsersCreatePath(selectedBranchId ? `branchId=${selectedBranchId}` : undefined)}>
+            <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
+              <Plus className="w-4 h-4 mr-2" />
+              Add User
+            </Button>
+          </Link>
+        )}
       </div>
 
       <Card>
@@ -360,6 +375,13 @@ export default function UsersListPage() {
           )}
         </CardContent>
       </Card>
+
+      {isSystemUser && (
+        <UserTypeSelector 
+          open={showUserTypeSelector} 
+          onOpenChange={setShowUserTypeSelector} 
+        />
+      )}
     </div>
   );
 }
