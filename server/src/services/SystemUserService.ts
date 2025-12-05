@@ -164,14 +164,26 @@ export class SystemUserService {
       tenantId: input.tenantId,
     }).returning();
 
-    const [tenantAdminRole] = await db
-      .select()
-      .from(dpfRoles)
-      .where(and(
+    let tenantAdminRole = await db.query.dpfRoles.findFirst({
+      where: and(
         eq(dpfRoles.tenantId, input.tenantId),
         eq(dpfRoles.roleCode, 'TENANT_ADMIN')
-      ))
-      .limit(1);
+      ),
+    });
+
+    if (!tenantAdminRole) {
+      const [newRole] = await db.insert(dpfRoles).values({
+        tenantId: input.tenantId,
+        roleCode: 'TENANT_ADMIN',
+        roleName: 'Tenant Administrator',
+        description: 'Full access to all tenant resources',
+        isProtected: 'true',
+        isBuiltIn: 'true',
+        isDefault: 'true',
+        isActive: 'true',
+      }).returning();
+      tenantAdminRole = newRole;
+    }
 
     if (tenantAdminRole) {
       await db.insert(dpfUserRoles).values({

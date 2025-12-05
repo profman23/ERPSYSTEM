@@ -23,6 +23,24 @@ export const scopeGuard = (requiredScope: AccessScope) => {
       return next();
     }
 
+    // TENANT_ADMIN users have full access within their tenant
+    // They can access all business lines and branches within their tenant
+    const isTenantAdmin = user.accessScope === 'tenant' && user.role === 'tenant_admin';
+    if (isTenantAdmin) {
+      // Tenant admins can access any resource within their tenant
+      // Only block cross-tenant access
+      if (requiredScope === 'tenant') {
+        const requestedTenantId = req.params.tenantId || req.body.tenantId;
+        if (requestedTenantId && user.tenantId !== requestedTenantId) {
+          return res.status(403).json({
+            error: 'Access denied. Cross-tenant access not allowed.',
+          });
+        }
+      }
+      // Allow access to all business lines and branches within their tenant
+      return next();
+    }
+
     // Check tenant-level isolation
     if (requiredScope === 'tenant') {
       const requestedTenantId = req.params.tenantId || req.body.tenantId;

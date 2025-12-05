@@ -19,7 +19,7 @@ const BUILT_IN_ROLES = {
     isSystemRole: 'true',
     isBuiltIn: 'true',
     isProtected: 'true',
-    isDefault: 'false',
+    isDefault: 'true',
   },
   TENANT_ADMIN: {
     roleCode: 'TENANT_ADMIN',
@@ -31,7 +31,7 @@ const BUILT_IN_ROLES = {
     isSystemRole: 'true',
     isBuiltIn: 'true',
     isProtected: 'true',
-    isDefault: 'false',
+    isDefault: 'true',
   },
 };
 
