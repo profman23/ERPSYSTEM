@@ -7,15 +7,21 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
 }
 
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, options, children, ...props }, ref) => {
+  ({ className, options, children, style, ...props }, ref) => {
     return (
       <div className="relative">
         <select
           ref={ref}
           className={cn(
-            'flex h-10 w-full appearance-none rounded-md border border-gray-300 bg-white px-3 py-2 pr-8 text-sm ring-offset-white focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+            'flex h-10 w-full appearance-none rounded-md border px-3 py-2 pr-8 text-sm ring-offset-white focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
             className
           )}
+          style={{
+            backgroundColor: style?.backgroundColor || 'var(--color-input-bg, white)',
+            borderColor: style?.borderColor || 'var(--color-border)',
+            color: style?.color || 'var(--color-text)',
+            ...style
+          }}
           {...props}
         >
           {options

@@ -1,5 +1,5 @@
-import TenantsListPage from '@/pages/tenants/TenantsListPage';
+import SystemTenantsListPage from './SystemTenantsListPage';
 
 export default function SystemTenantsPage() {
-  return <TenantsListPage />;
+  return <SystemTenantsListPage />;
 }

@@ -12,8 +12,8 @@ export default function SystemMetricsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">Platform Metrics</h1>
-        <p className="mt-2 text-gray-400">
+        <h1 className="text-3xl font-bold" style={{ color: 'var(--sys-text)' }}>Platform Metrics</h1>
+        <p className="mt-2" style={{ color: 'var(--sys-text-secondary)' }}>
           Real-time system performance and usage statistics
         </p>
       </div>
@@ -22,11 +22,18 @@ export default function SystemMetricsPage() {
         {metrics.map((metric) => {
           const Icon = metric.icon;
           return (
-            <Card key={metric.name} className="bg-[#1E293B] border-[#334155]">
+            <Card 
+              key={metric.name} 
+              className="border"
+              style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}
+            >
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-orange-400" />
+                  <div 
+                    className="w-10 h-10 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: 'rgba(139, 92, 246, 0.2)' }}
+                  >
+                    <Icon className="w-5 h-5" style={{ color: 'var(--sys-accent)' }} />
                   </div>
                   <span className={`px-2 py-1 text-xs rounded ${
                     metric.trend === 'low' ? 'bg-green-500/20 text-green-400' :
@@ -36,24 +43,27 @@ export default function SystemMetricsPage() {
                     {metric.trend}
                   </span>
                 </div>
-                <p className="text-2xl font-bold text-white">{metric.value}</p>
-                <p className="text-sm text-gray-400 mt-1">{metric.name}</p>
+                <p className="text-2xl font-bold" style={{ color: 'var(--sys-text)' }}>{metric.value}</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--sys-text-secondary)' }}>{metric.name}</p>
               </CardContent>
             </Card>
           );
         })}
       </div>
 
-      <Card className="bg-[#1E293B] border-[#334155]">
+      <Card className="border" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
         <CardHeader>
-          <CardTitle className="text-white">Performance Overview</CardTitle>
-          <CardDescription className="text-gray-400">
+          <CardTitle style={{ color: 'var(--sys-text)' }}>Performance Overview</CardTitle>
+          <CardDescription style={{ color: 'var(--sys-text-secondary)' }}>
             System performance charts will be displayed here
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-64 flex items-center justify-center border-2 border-dashed border-[#334155] rounded-lg">
-            <p className="text-gray-500">Performance charts - Coming in Phase 3</p>
+          <div 
+            className="h-64 flex items-center justify-center border-2 border-dashed rounded-lg"
+            style={{ borderColor: 'var(--sys-border)' }}
+          >
+            <p style={{ color: 'var(--sys-text-muted)' }}>Performance charts - Coming in Phase 3</p>
           </div>
         </CardContent>
       </Card>

@@ -1,0 +1,149 @@
+IMPORTANT:
+Apply ALL instructions below exactly. Do NOT skip or simplify anything.
+These changes are required for a fully scalable, multi-tenant ERP SaaS system.
+
+============================================================
+PART 1 — FIX SYSTEM vs TENANT ARCHITECTURE (CRITICAL)
+============================================================
+You must enforce strict multi-panel isolation with NO cross-routing:
+
+SYSTEM_ADMIN:
+  Allowed Panel → /system/*
+  Forbidden → /admin/*, /app/*
+TENANT_ADMIN:
+  Allowed Panel → /admin/*
+  Forbidden → /system/*, /app/*
+STAFF / BRANCH USERS:
+  Allowed Panel → /app/*
+  Forbidden → /system/*, /admin/*
+
+Update and standardize routing logic in:
+  - client/src/hooks/useScopePath.ts
+  - client/src/components/routing/LegacyRedirect.tsx
+  - client/src/routes/AppRouter.tsx
+  - server/src/middleware/scopeGuard.ts
+
+Routing must be deterministic, predictable, and isolated.
+
+============================================================
+PART 2 — FIX USER SCOPE MODEL (API + DB)
+============================================================
+Ensure user creation follows these rules:
+
+SYSTEM_USERS:
+  access_scope = "system"
+  tenant_id = SYSTEM tenant
+  branch_id = NULL
+  role = SYSTEM_ADMIN (or future system roles)
+
+TENANT_ADMIN_USERS:
+  access_scope = "tenant"
+  tenant_id = selected tenant
+  branch_id = NULL
+  role = TENANT_ADMIN
+
+BRANCH USERS (future):
+  access_scope = "branch"
+  tenant_id = selected tenant
+  branch_id = selected branch
+
+Fix backend user creation logic in:
+  - SystemUserService
+  - HierarchyService
+  - userController
+  - validation schemas
+
+============================================================
+PART 3 — SYSTEM PANEL THEME NORMALIZATION
+============================================================
+Every page under /system/* MUST use a unified, professional dark theme:
+
+Background:
+  bg-[#0D0D0D]
+
+Cards & surfaces:
+  bg-[#1A1A1A]
+  border-white/10
+
+Typography:
+  text-white
+  text-gray-300 for secondary
+
+Buttons (global rule):
+  bg-[#1F1F1F]
+  text-white
+  hover:bg-[#333]
+
+Fix ALL white backgrounds and mismatched colors.
+
+Pages to fix (mandatory):
+  - system/dashboard
+  - system/tenants
+  - system/tenants/create
+  - system/users
+  - system/users/create
+  - system/roles
+  - system/dpf-manager
+  - system/settings
+
+============================================================
+PART 4 — BUTTON & COMPONENT CONSISTENCY
+============================================================
+Create a SYSTEM UI token set:
+  --sys-bg: #0D0D0D
+  --sys-surface: #1A1A1A
+  --sys-border: rgba(255,255,255,0.1)
+  --sys-button: #1F1F1F
+  --sys-button-hover: #333
+  --sys-text: #fff
+  --sys-text-secondary: #aaa
+
+Apply these tokens to ALL SYSTEM PANEL components.
+
+============================================================
+PART 5 — USER CREATION FLOW (SYSTEM PANEL)
+============================================================
+When clicking “Add User” under platform users:
+  - Show user type modal (System User / Tenant Admin User)
+  - Based on selection, load the correct creation form
+
+Forms must:
+  - include correct role selection
+  - enforce correct access_scope
+  - restrict assignments to allowed user types only
+
+============================================================
+PART 6 — ROLE BEHAVIOR ENFORCEMENT
+============================================================
+SYSTEM_ADMIN:
+  ALWAYS has full permissions. No API calls.
+
+TENANT_ADMIN:
+  ALWAYS has full permissions within tenant.
+  No need to assign permissions manually.
+
+Staff roles (future):
+  normal DPF behavior.
+
+Implement auto-grant logic in PermissionContext.
+
+============================================================
+PART 7 — END-TO-END VALIDATION
+============================================================
+After implementing everything, verify:
+
+SYSTEM_ADMIN login:
+  → redirected to /system/dashboard
+  → sees system sidebar only
+  → no white backgrounds anywhere
+
+TENANT_ADMIN login:
+  → redirected to /admin/dashboard
+  → sees tenant admin sidebar
+  → cannot access /system/* or /app/*
+
+Button colors across System Panel must match.
+
+============================================================
+DO NOT SKIP ANY STEP. DO NOT USE SHORTCUTS.
+============================================================

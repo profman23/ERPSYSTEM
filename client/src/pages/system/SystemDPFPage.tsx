@@ -14,58 +14,58 @@ export default function SystemDPFPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">DPF Manager</h1>
-        <p className="mt-2 text-gray-400">
+        <h1 className="text-3xl font-bold" style={{ color: 'var(--sys-text)' }}>DPF Manager</h1>
+        <p className="mt-2" style={{ color: 'var(--sys-text-secondary)' }}>
           Dynamic Permission Fabric - Module, Screen & Action Management
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-[#1E293B] border-[#334155]">
+        <Card className="border" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                <Layers className="w-6 h-6 text-blue-400" />
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(139, 92, 246, 0.2)' }}>
+                <Layers className="w-6 h-6" style={{ color: 'var(--sys-accent)' }} />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">14</p>
-                <p className="text-sm text-gray-400">Modules</p>
+                <p className="text-2xl font-bold" style={{ color: 'var(--sys-text)' }}>14</p>
+                <p className="text-sm" style={{ color: 'var(--sys-text-secondary)' }}>Modules</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-[#1E293B] border-[#334155]">
+        <Card className="border" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                <Database className="w-6 h-6 text-purple-400" />
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)' }}>
+                <Database className="w-6 h-6 text-blue-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">22</p>
-                <p className="text-sm text-gray-400">Screens</p>
+                <p className="text-2xl font-bold" style={{ color: 'var(--sys-text)' }}>22</p>
+                <p className="text-sm" style={{ color: 'var(--sys-text-secondary)' }}>Screens</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-[#1E293B] border-[#334155]">
+        <Card className="border" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)' }}>
                 <Shield className="w-6 h-6 text-green-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">85</p>
-                <p className="text-sm text-gray-400">Actions</p>
+                <p className="text-2xl font-bold" style={{ color: 'var(--sys-text)' }}>85</p>
+                <p className="text-sm" style={{ color: 'var(--sys-text-secondary)' }}>Actions</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="bg-[#1E293B] border-[#334155]">
+      <Card className="border" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
         <CardHeader>
-          <CardTitle className="text-white">Permission Modules</CardTitle>
-          <CardDescription className="text-gray-400">
+          <CardTitle style={{ color: 'var(--sys-text)' }}>Permission Modules</CardTitle>
+          <CardDescription style={{ color: 'var(--sys-text-secondary)' }}>
             Registered modules in the Dynamic Permission Fabric
           </CardDescription>
         </CardHeader>
@@ -74,15 +74,21 @@ export default function SystemDPFPage() {
             {dpfModules.map((module) => (
               <div 
                 key={module.name} 
-                className="flex items-center justify-between p-4 rounded-lg bg-[#0F172A] hover:bg-[#1a2744] transition-colors cursor-pointer"
+                className="flex items-center justify-between p-4 rounded-lg transition-colors cursor-pointer"
+                style={{ backgroundColor: 'var(--sys-bg)' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--sys-surface-hover)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--sys-bg)'}
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white font-bold">
+                  <div 
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
+                    style={{ background: 'linear-gradient(135deg, var(--sys-accent), #7C3AED)' }}
+                  >
                     {module.name.charAt(0)}
                   </div>
                   <div>
-                    <p className="font-medium text-white">{module.name}</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="font-medium" style={{ color: 'var(--sys-text)' }}>{module.name}</p>
+                    <p className="text-sm" style={{ color: 'var(--sys-text-muted)' }}>
                       {module.screens} screens • {module.actions} actions
                     </p>
                   </div>

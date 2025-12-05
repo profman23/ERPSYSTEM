@@ -14,8 +14,8 @@ export default function SystemSettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">System Settings</h1>
-        <p className="mt-2 text-gray-400">
+        <h1 className="text-3xl font-bold" style={{ color: 'var(--sys-text)' }}>System Settings</h1>
+        <p className="mt-2" style={{ color: 'var(--sys-text-secondary)' }}>
           Configure platform-wide settings and preferences
         </p>
       </div>
@@ -26,16 +26,20 @@ export default function SystemSettingsPage() {
           return (
             <Card 
               key={section.name} 
-              className="bg-[#1E293B] border-[#334155] hover:border-[#475569] transition-colors cursor-pointer"
+              className="border transition-colors cursor-pointer hover:border-white/20"
+              style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}
             >
               <CardContent className="pt-6">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center">
-                    <Icon className="w-6 h-6 text-orange-400" />
+                  <div 
+                    className="w-12 h-12 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: 'rgba(139, 92, 246, 0.2)' }}
+                  >
+                    <Icon className="w-6 h-6" style={{ color: 'var(--sys-accent)' }} />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-white">{section.name}</h3>
-                    <p className="text-sm text-gray-400 mt-1">{section.description}</p>
+                    <h3 className="font-semibold" style={{ color: 'var(--sys-text)' }}>{section.name}</h3>
+                    <p className="text-sm mt-1" style={{ color: 'var(--sys-text-secondary)' }}>{section.description}</p>
                   </div>
                 </div>
               </CardContent>
@@ -44,25 +48,57 @@ export default function SystemSettingsPage() {
         })}
       </div>
 
-      <Card className="bg-[#1E293B] border-[#334155]">
+      <Card className="border" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
         <CardHeader>
-          <CardTitle className="text-white">Quick Actions</CardTitle>
-          <CardDescription className="text-gray-400">
+          <CardTitle style={{ color: 'var(--sys-text)' }}>Quick Actions</CardTitle>
+          <CardDescription style={{ color: 'var(--sys-text-secondary)' }}>
             Common administrative tasks
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">
-            <Button variant="outline" className="border-[#334155] text-gray-300 hover:bg-[#334155]">
+            <Button 
+              variant="outline" 
+              className="transition-colors"
+              style={{ 
+                backgroundColor: 'var(--sys-button)', 
+                borderColor: 'var(--sys-border)', 
+                color: 'var(--sys-text)' 
+              }}
+            >
               Clear Cache
             </Button>
-            <Button variant="outline" className="border-[#334155] text-gray-300 hover:bg-[#334155]">
+            <Button 
+              variant="outline" 
+              className="transition-colors"
+              style={{ 
+                backgroundColor: 'var(--sys-button)', 
+                borderColor: 'var(--sys-border)', 
+                color: 'var(--sys-text)' 
+              }}
+            >
               Sync DPF Structure
             </Button>
-            <Button variant="outline" className="border-[#334155] text-gray-300 hover:bg-[#334155]">
+            <Button 
+              variant="outline" 
+              className="transition-colors"
+              style={{ 
+                backgroundColor: 'var(--sys-button)', 
+                borderColor: 'var(--sys-border)', 
+                color: 'var(--sys-text)' 
+              }}
+            >
               Run Health Check
             </Button>
-            <Button variant="outline" className="border-[#334155] text-gray-300 hover:bg-[#334155]">
+            <Button 
+              variant="outline" 
+              className="transition-colors"
+              style={{ 
+                backgroundColor: 'var(--sys-button)', 
+                borderColor: 'var(--sys-border)', 
+                color: 'var(--sys-text)' 
+              }}
+            >
               View Audit Logs
             </Button>
           </div>

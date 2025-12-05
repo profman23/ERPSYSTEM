@@ -22,16 +22,14 @@ function getUserTypeInfo(type: UserType) {
       icon: Shield,
       title: 'Create System User',
       description: 'Platform-level user with system-wide access',
-      color: 'bg-purple-500/20 text-purple-400',
-      borderColor: 'border-purple-500/30',
+      accentColor: '#9333EA',
     };
   }
   return {
     icon: Building2,
     title: 'Create Tenant Admin',
     description: 'Organization administrator with full tenant access',
-    color: 'bg-blue-500/20 text-blue-400',
-    borderColor: 'border-blue-500/30',
+    accentColor: '#3B82F6',
   };
 }
 
@@ -166,33 +164,46 @@ export default function SystemCreateUserPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Link to="/system/users">
-          <Button variant="ghost" className="p-2 text-gray-400 hover:text-white hover:bg-[#334155]">
+          <Button 
+            variant="ghost" 
+            className="p-2"
+            style={{ color: 'var(--sys-text-secondary)' }}
+          >
             <ArrowLeft className="w-5 h-5" />
           </Button>
         </Link>
         <div className="flex items-center gap-4">
-          <div className={`p-3 rounded-lg ${typeInfo.color}`}>
+          <div 
+            className="p-3 rounded-lg"
+            style={{ 
+              background: `linear-gradient(135deg, ${typeInfo.accentColor}, ${userType === 'system' ? '#7C3AED' : '#2563EB'})`,
+              color: 'white'
+            }}
+          >
             <TypeIcon className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-white">
+            <h1 className="text-3xl font-bold" style={{ color: 'var(--sys-text)' }}>
               {typeInfo.title}
             </h1>
-            <p className="mt-1 text-gray-400">
+            <p className="mt-1" style={{ color: 'var(--sys-text-secondary)' }}>
               {typeInfo.description}
             </p>
           </div>
         </div>
       </div>
 
-      <div className={`p-4 rounded-lg border ${typeInfo.borderColor} bg-[#1E293B]`}>
+      <div 
+        className="p-4 rounded-lg border"
+        style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}
+      >
         <div className="flex items-start gap-3">
-          <TypeIcon className="w-5 h-5 mt-0.5 text-gray-400" />
+          <TypeIcon className="w-5 h-5 mt-0.5" style={{ color: 'var(--sys-text-secondary)' }} />
           <div>
-            <h4 className="font-medium text-white">
+            <h4 className="font-medium" style={{ color: 'var(--sys-text)' }}>
               {userType === 'system' ? 'System User Information' : 'Tenant Admin Information'}
             </h4>
-            <p className="text-sm mt-1 text-gray-400">
+            <p className="text-sm mt-1" style={{ color: 'var(--sys-text-secondary)' }}>
               {userType === 'system' 
                 ? 'System users have platform-wide access and are not assigned to any tenant or branch. They can manage all tenants and system configurations.'
                 : 'Tenant admins have full access to their assigned tenant. They are automatically granted the TENANT_ADMIN role with all permissions within their organization.'
@@ -203,21 +214,27 @@ export default function SystemCreateUserPage() {
       </div>
 
       {success && (
-        <div className="p-4 rounded-lg bg-green-500/20 border border-green-500/30 flex items-center gap-2 text-green-400">
+        <div 
+          className="p-4 rounded-lg border flex items-center gap-2"
+          style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', borderColor: 'rgba(34, 197, 94, 0.3)', color: '#22C55E' }}
+        >
           <Shield className="w-5 h-5" />
           <span>User created successfully! Redirecting...</span>
         </div>
       )}
 
       <form onSubmit={handleSubmit}>
-        <Card className="bg-[#1E293B] border-[#334155]">
+        <Card className="border" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
           <CardHeader>
-            <CardTitle className="text-white">User Information</CardTitle>
-            <CardDescription className="text-gray-400">Enter the basic details for the new user</CardDescription>
+            <CardTitle style={{ color: 'var(--sys-text)' }}>User Information</CardTitle>
+            <CardDescription style={{ color: 'var(--sys-text-secondary)' }}>Enter the basic details for the new user</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {error && (
-              <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center gap-2 text-red-400">
+              <div 
+                className="p-3 rounded-lg border flex items-center gap-2"
+                style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#EF4444' }}
+              >
                 <AlertCircle className="w-4 h-4" />
                 <span>{error}</span>
               </div>
@@ -225,76 +242,100 @@ export default function SystemCreateUserPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName" className="text-gray-300">First Name *</Label>
+                <Label htmlFor="firstName" style={{ color: 'var(--sys-text-secondary)' }}>First Name *</Label>
                 <Input
                   id="firstName"
                   value={formData.firstName}
                   onChange={(e) => handleChange('firstName', e.target.value)}
                   placeholder="Enter first name"
-                  className="bg-[#0F172A] border-[#334155] text-white placeholder:text-gray-500 focus:border-purple-500"
+                  style={{ 
+                    backgroundColor: 'var(--sys-bg)', 
+                    borderColor: 'var(--sys-border)', 
+                    color: 'var(--sys-text)' 
+                  }}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastName" className="text-gray-300">Last Name *</Label>
+                <Label htmlFor="lastName" style={{ color: 'var(--sys-text-secondary)' }}>Last Name *</Label>
                 <Input
                   id="lastName"
                   value={formData.lastName}
                   onChange={(e) => handleChange('lastName', e.target.value)}
                   placeholder="Enter last name"
-                  className="bg-[#0F172A] border-[#334155] text-white placeholder:text-gray-500 focus:border-purple-500"
+                  style={{ 
+                    backgroundColor: 'var(--sys-bg)', 
+                    borderColor: 'var(--sys-border)', 
+                    color: 'var(--sys-text)' 
+                  }}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-300">Email Address *</Label>
+                <Label htmlFor="email" style={{ color: 'var(--sys-text-secondary)' }}>Email Address *</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleChange('email', e.target.value)}
                   placeholder="user@example.com"
-                  className="bg-[#0F172A] border-[#334155] text-white placeholder:text-gray-500 focus:border-purple-500"
+                  style={{ 
+                    backgroundColor: 'var(--sys-bg)', 
+                    borderColor: 'var(--sys-border)', 
+                    color: 'var(--sys-text)' 
+                  }}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-gray-300">Phone Number</Label>
+                <Label htmlFor="phone" style={{ color: 'var(--sys-text-secondary)' }}>Phone Number</Label>
                 <Input
                   id="phone"
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => handleChange('phone', e.target.value)}
                   placeholder="+1 234 567 8900"
-                  className="bg-[#0F172A] border-[#334155] text-white placeholder:text-gray-500 focus:border-purple-500"
+                  style={{ 
+                    backgroundColor: 'var(--sys-bg)', 
+                    borderColor: 'var(--sys-border)', 
+                    color: 'var(--sys-text)' 
+                  }}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-gray-300">Password *</Label>
+                <Label htmlFor="password" style={{ color: 'var(--sys-text-secondary)' }}>Password *</Label>
                 <Input
                   id="password"
                   type="password"
                   value={formData.password}
                   onChange={(e) => handleChange('password', e.target.value)}
                   placeholder="Minimum 8 characters"
-                  className="bg-[#0F172A] border-[#334155] text-white placeholder:text-gray-500 focus:border-purple-500"
+                  style={{ 
+                    backgroundColor: 'var(--sys-bg)', 
+                    borderColor: 'var(--sys-border)', 
+                    color: 'var(--sys-text)' 
+                  }}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-gray-300">Confirm Password *</Label>
+                <Label htmlFor="confirmPassword" style={{ color: 'var(--sys-text-secondary)' }}>Confirm Password *</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
                   value={formData.confirmPassword}
                   onChange={(e) => handleChange('confirmPassword', e.target.value)}
                   placeholder="Repeat password"
-                  className={`bg-[#0F172A] border-[#334155] text-white placeholder:text-gray-500 focus:border-purple-500 ${passwordError ? 'border-red-500' : ''}`}
+                  style={{ 
+                    backgroundColor: 'var(--sys-bg)', 
+                    borderColor: passwordError ? 'var(--sys-error)' : 'var(--sys-border)', 
+                    color: 'var(--sys-text)' 
+                  }}
                 />
                 {passwordError && (
-                  <p className="text-sm text-red-400">{passwordError}</p>
+                  <p className="text-sm" style={{ color: 'var(--sys-error)' }}>{passwordError}</p>
                 )}
               </div>
             </div>
@@ -302,29 +343,36 @@ export default function SystemCreateUserPage() {
         </Card>
 
         {userType === 'system' && (
-          <Card className="mt-6 bg-[#1E293B] border-[#334155]">
+          <Card className="mt-6 border" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Shield className="w-5 h-5 text-purple-400" />
+              <CardTitle className="flex items-center gap-2" style={{ color: 'var(--sys-text)' }}>
+                <Shield className="w-5 h-5" style={{ color: 'var(--sys-accent)' }} />
                 System Role
               </CardTitle>
-              <CardDescription className="text-gray-400">Select the system-level role for this user</CardDescription>
+              <CardDescription style={{ color: 'var(--sys-text-secondary)' }}>Select the system-level role for this user</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="roleCode" className="text-gray-300">System Role *</Label>
+                <Label htmlFor="roleCode" style={{ color: 'var(--sys-text-secondary)' }}>System Role *</Label>
                 <Select
                   value={formData.roleCode}
                   onChange={(e) => handleChange('roleCode', e.target.value)}
-                  className="bg-[#0F172A] border-[#334155] text-white"
+                  style={{ 
+                    backgroundColor: 'var(--sys-bg)', 
+                    borderColor: 'var(--sys-border)', 
+                    color: 'var(--sys-text)' 
+                  }}
                 >
                   {systemRoleOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </Select>
               </div>
-              <div className="p-3 rounded-lg bg-[#0F172A] border border-[#334155]">
-                <p className="text-sm text-gray-400">
+              <div 
+                className="p-3 rounded-lg border"
+                style={{ backgroundColor: 'var(--sys-bg)', borderColor: 'var(--sys-border)' }}
+              >
+                <p className="text-sm" style={{ color: 'var(--sys-text-secondary)' }}>
                   System users are automatically assigned to the SYSTEM tenant and have platform-wide access based on their role.
                 </p>
               </div>
@@ -333,21 +381,25 @@ export default function SystemCreateUserPage() {
         )}
 
         {userType === 'tenant_admin' && (
-          <Card className="mt-6 bg-[#1E293B] border-[#334155]">
+          <Card className="mt-6 border" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2" style={{ color: 'var(--sys-text)' }}>
                 <Building2 className="w-5 h-5 text-blue-400" />
                 Tenant Assignment
               </CardTitle>
-              <CardDescription className="text-gray-400">Select the tenant this admin will manage</CardDescription>
+              <CardDescription style={{ color: 'var(--sys-text-secondary)' }}>Select the tenant this admin will manage</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-gray-300">Tenant *</Label>
+                <Label style={{ color: 'var(--sys-text-secondary)' }}>Tenant *</Label>
                 <Select
                   value={formData.tenantId}
                   onChange={(e) => handleChange('tenantId', e.target.value)}
-                  className="bg-[#0F172A] border-[#334155] text-white"
+                  style={{ 
+                    backgroundColor: 'var(--sys-bg)', 
+                    borderColor: 'var(--sys-border)', 
+                    color: 'var(--sys-text)' 
+                  }}
                 >
                   <option value="">Select Tenant</option>
                   {tenantOptions.map((opt) => (
@@ -355,13 +407,16 @@ export default function SystemCreateUserPage() {
                   ))}
                 </Select>
               </div>
-              <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+              <div 
+                className="p-3 rounded-lg border"
+                style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', borderColor: 'rgba(59, 130, 246, 0.3)' }}
+              >
                 <div className="flex items-center gap-2 text-blue-400 mb-2">
                   <Shield className="w-4 h-4" />
                   <span className="font-medium">TENANT_ADMIN Role</span>
                   <Badge className="bg-blue-600 text-white text-xs">Auto-Assigned</Badge>
                 </div>
-                <p className="text-sm text-blue-300/80">
+                <p className="text-sm" style={{ color: 'rgba(147, 197, 253, 0.8)' }}>
                   This user will be automatically assigned the TENANT_ADMIN role with full permissions within their tenant.
                 </p>
               </div>
@@ -371,14 +426,26 @@ export default function SystemCreateUserPage() {
 
         <div className="flex justify-end gap-3 mt-6">
           <Link to="/system/users">
-            <Button type="button" variant="outline" className="border-[#334155] text-gray-300 hover:bg-[#334155] hover:text-white">
+            <Button 
+              type="button" 
+              variant="outline"
+              style={{ 
+                backgroundColor: 'var(--sys-button)', 
+                borderColor: 'var(--sys-border)', 
+                color: 'var(--sys-text)' 
+              }}
+            >
               Cancel
             </Button>
           </Link>
           <Button
             type="submit"
-            className="bg-purple-600 hover:bg-purple-700 text-white"
             disabled={isSubmitting || success}
+            style={{ 
+              background: 'linear-gradient(135deg, var(--sys-accent), #7C3AED)', 
+              color: 'var(--sys-text)',
+              opacity: isSubmitting || success ? 0.5 : 1
+            }}
           >
             {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Create {userType === 'system' ? 'System User' : 'Tenant Admin'}

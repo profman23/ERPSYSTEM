@@ -27,6 +27,22 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
+
+    /* SYSTEM Panel Theme Tokens */
+    --sys-bg: #0D0D0D;
+    --sys-surface: #1A1A1A;
+    --sys-surface-hover: #242424;
+    --sys-border: rgba(255, 255, 255, 0.1);
+    --sys-button: #1F1F1F;
+    --sys-button-hover: #333333;
+    --sys-text: #ffffff;
+    --sys-text-secondary: #aaaaaa;
+    --sys-text-muted: #666666;
+    --sys-accent: #8B5CF6;
+    --sys-accent-hover: #7C3AED;
+    --sys-success: #22C55E;
+    --sys-warning: #F59E0B;
+    --sys-error: #EF4444;
   }
 }
 
