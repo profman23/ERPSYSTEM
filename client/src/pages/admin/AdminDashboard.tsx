@@ -1,5 +1,4 @@
-import { Building2, Users, GitBranch, Briefcase, TrendingUp, Calendar, Loader2 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Building2, Users, GitBranch, Briefcase, TrendingUp, Calendar, Loader2, AlertTriangle } from 'lucide-react';
 import { useAllBusinessLines, useAllBranchesNoFilter, useAllUsers } from '@/hooks/useHierarchy';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -15,7 +14,7 @@ export default function AdminDashboard() {
       value: businessLines?.length?.toString() || '0',
       icon: Briefcase,
       description: 'Active business units',
-      color: '#2563EB',
+      color: 'var(--tenant-accent)',
       loading: loadingBusinessLines
     },
     {
@@ -54,10 +53,10 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
+        <h1 className="text-3xl font-bold" style={{ color: 'var(--tenant-text)' }}>
           Admin Dashboard
         </h1>
-        <p className="mt-2" style={{ color: 'var(--color-text-secondary)' }}>
+        <p className="mt-2" style={{ color: 'var(--tenant-text-secondary)' }}>
           Welcome back! Here's an overview of your organization.
         </p>
       </div>
@@ -66,104 +65,210 @@ export default function AdminDashboard() {
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <Card key={stat.title} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardDescription>{stat.title}</CardDescription>
-                  <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: `${stat.color}15` }}
-                  >
-                    <Icon className="w-5 h-5" style={{ color: stat.color }} />
-                  </div>
+            <div 
+              key={stat.title} 
+              className="rounded-xl border p-6 transition-shadow hover:shadow-lg"
+              style={{ backgroundColor: 'var(--tenant-surface)', borderColor: 'var(--tenant-border)' }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm font-medium" style={{ color: 'var(--tenant-text-secondary)' }}>
+                  {stat.title}
+                </span>
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: `${stat.color}15` }}
+                >
+                  <Icon className="w-5 h-5" style={{ color: stat.color }} />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
-                  {stat.loading ? (
-                    <Loader2 className="w-6 h-6 animate-spin" style={{ color: stat.color }} />
-                  ) : (
-                    stat.value
-                  )}
-                </div>
-                <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
-                  {stat.description}
-                </p>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="text-3xl font-bold" style={{ color: 'var(--tenant-text)' }}>
+                {stat.loading ? (
+                  <Loader2 className="w-6 h-6 animate-spin" style={{ color: stat.color }} />
+                ) : (
+                  stat.value
+                )}
+              </div>
+              <p className="text-sm mt-1" style={{ color: 'var(--tenant-text-secondary)' }}>
+                {stat.description}
+              </p>
+            </div>
           );
         })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-blue-500" />
+        <div 
+          className="rounded-xl border p-6"
+          style={{ backgroundColor: 'var(--tenant-surface)', borderColor: 'var(--tenant-border)' }}
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <Calendar className="w-5 h-5" style={{ color: 'var(--tenant-accent)' }} />
+            <h2 className="text-lg font-semibold" style={{ color: 'var(--tenant-text)' }}>
               Recent Activity
-            </CardTitle>
-            <CardDescription>
-              Latest actions in your organization
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50">
-                  <div className="w-2 h-2 rounded-full bg-blue-500 mt-2" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-                      {activity.action}
-                    </p>
-                    <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>
-                      {activity.user} • {activity.time}
-                    </p>
-                  </div>
+            </h2>
+          </div>
+          <p className="text-sm mb-4" style={{ color: 'var(--tenant-text-secondary)' }}>
+            Latest actions in your organization
+          </p>
+          <div className="space-y-3">
+            {recentActivity.map((activity, index) => (
+              <div 
+                key={index} 
+                className="flex items-start gap-3 p-3 rounded-lg"
+                style={{ backgroundColor: 'var(--tenant-surface-hover)' }}
+              >
+                <div 
+                  className="w-2 h-2 rounded-full mt-2"
+                  style={{ backgroundColor: 'var(--tenant-accent)' }}
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-medium" style={{ color: 'var(--tenant-text)' }}>
+                    {activity.action}
+                  </p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--tenant-text-secondary)' }}>
+                    {activity.user} • {activity.time}
+                  </p>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+            ))}
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-teal-500" />
+        <div 
+          className="rounded-xl border p-6"
+          style={{ backgroundColor: 'var(--tenant-surface)', borderColor: 'var(--tenant-border)' }}
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <Users className="w-5 h-5" style={{ color: '#14B8A6' }} />
+            <h2 className="text-lg font-semibold" style={{ color: 'var(--tenant-text)' }}>
               Team Overview
-            </CardTitle>
-            <CardDescription>
-              Quick stats about your team
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
-                <span style={{ color: 'var(--color-text-secondary)' }}>Active Users</span>
-                <span className="font-semibold text-green-600">
-                  {users?.filter(u => u.isActive).length || 0}
-                </span>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
-                <span style={{ color: 'var(--color-text-secondary)' }}>Inactive Users</span>
-                <span className="font-semibold text-gray-500">
-                  {users?.filter(u => !u.isActive).length || 0}
-                </span>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
-                <span style={{ color: 'var(--color-text-secondary)' }}>Managers</span>
-                <span className="font-semibold text-blue-600">
-                  {users?.filter(u => u.role === 'manager' || u.role === 'admin').length || 0}
-                </span>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
-                <span style={{ color: 'var(--color-text-secondary)' }}>Staff</span>
-                <span className="font-semibold text-teal-600">
-                  {users?.filter(u => u.role === 'staff').length || 0}
-                </span>
-              </div>
+            </h2>
+          </div>
+          <p className="text-sm mb-4" style={{ color: 'var(--tenant-text-secondary)' }}>
+            Quick stats about your team
+          </p>
+          <div className="space-y-3">
+            <div 
+              className="flex items-center justify-between p-3 rounded-lg"
+              style={{ backgroundColor: 'var(--tenant-surface-hover)' }}
+            >
+              <span style={{ color: 'var(--tenant-text-secondary)' }}>Active Users</span>
+              <span className="font-semibold" style={{ color: 'var(--tenant-success)' }}>
+                {users?.filter(u => u.isActive).length || 0}
+              </span>
             </div>
-          </CardContent>
-        </Card>
+            <div 
+              className="flex items-center justify-between p-3 rounded-lg"
+              style={{ backgroundColor: 'var(--tenant-surface-hover)' }}
+            >
+              <span style={{ color: 'var(--tenant-text-secondary)' }}>Inactive Users</span>
+              <span className="font-semibold" style={{ color: 'var(--tenant-text-muted)' }}>
+                {users?.filter(u => !u.isActive).length || 0}
+              </span>
+            </div>
+            <div 
+              className="flex items-center justify-between p-3 rounded-lg"
+              style={{ backgroundColor: 'var(--tenant-surface-hover)' }}
+            >
+              <span style={{ color: 'var(--tenant-text-secondary)' }}>Managers</span>
+              <span className="font-semibold" style={{ color: 'var(--tenant-accent)' }}>
+                {users?.filter(u => u.role === 'manager' || u.role === 'admin').length || 0}
+              </span>
+            </div>
+            <div 
+              className="flex items-center justify-between p-3 rounded-lg"
+              style={{ backgroundColor: 'var(--tenant-surface-hover)' }}
+            >
+              <span style={{ color: 'var(--tenant-text-secondary)' }}>Staff</span>
+              <span className="font-semibold" style={{ color: '#14B8A6' }}>
+                {users?.filter(u => u.role === 'staff').length || 0}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div 
+        className="rounded-xl border p-6"
+        style={{ backgroundColor: 'var(--tenant-surface)', borderColor: 'var(--tenant-border)' }}
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <AlertTriangle className="w-5 h-5" style={{ color: 'var(--tenant-warning)' }} />
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--tenant-text)' }}>
+            Tenant Limits
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div 
+            className="p-4 rounded-lg"
+            style={{ backgroundColor: 'var(--tenant-surface-hover)' }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium" style={{ color: 'var(--tenant-text-secondary)' }}>
+                Business Lines
+              </span>
+              <Briefcase className="w-4 h-4" style={{ color: 'var(--tenant-accent)' }} />
+            </div>
+            <div className="text-2xl font-bold" style={{ color: 'var(--tenant-text)' }}>
+              {businessLines?.length || 0} / 5
+            </div>
+            <div className="w-full h-2 rounded-full mt-2" style={{ backgroundColor: 'var(--tenant-border)' }}>
+              <div 
+                className="h-full rounded-full transition-all"
+                style={{ 
+                  width: `${Math.min(((businessLines?.length || 0) / 5) * 100, 100)}%`,
+                  backgroundColor: 'var(--tenant-accent)'
+                }}
+              />
+            </div>
+          </div>
+          <div 
+            className="p-4 rounded-lg"
+            style={{ backgroundColor: 'var(--tenant-surface-hover)' }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium" style={{ color: 'var(--tenant-text-secondary)' }}>
+                Branches
+              </span>
+              <GitBranch className="w-4 h-4" style={{ color: '#0EA5E9' }} />
+            </div>
+            <div className="text-2xl font-bold" style={{ color: 'var(--tenant-text)' }}>
+              {branches?.length || 0} / 10
+            </div>
+            <div className="w-full h-2 rounded-full mt-2" style={{ backgroundColor: 'var(--tenant-border)' }}>
+              <div 
+                className="h-full rounded-full transition-all"
+                style={{ 
+                  width: `${Math.min(((branches?.length || 0) / 10) * 100, 100)}%`,
+                  backgroundColor: '#0EA5E9'
+                }}
+              />
+            </div>
+          </div>
+          <div 
+            className="p-4 rounded-lg"
+            style={{ backgroundColor: 'var(--tenant-surface-hover)' }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium" style={{ color: 'var(--tenant-text-secondary)' }}>
+                Users
+              </span>
+              <Users className="w-4 h-4" style={{ color: '#14B8A6' }} />
+            </div>
+            <div className="text-2xl font-bold" style={{ color: 'var(--tenant-text)' }}>
+              {users?.length || 0} / 50
+            </div>
+            <div className="w-full h-2 rounded-full mt-2" style={{ backgroundColor: 'var(--tenant-border)' }}>
+              <div 
+                className="h-full rounded-full transition-all"
+                style={{ 
+                  width: `${Math.min(((users?.length || 0) / 50) * 100, 100)}%`,
+                  backgroundColor: '#14B8A6'
+                }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
