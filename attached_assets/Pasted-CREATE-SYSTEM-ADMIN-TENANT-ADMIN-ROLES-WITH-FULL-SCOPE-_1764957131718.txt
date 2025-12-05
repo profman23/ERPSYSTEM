@@ -1,0 +1,171 @@
+CREATE SYSTEM ADMIN + TENANT ADMIN ROLES (WITH FULL SCOPE FIXES)
+
+I want you to implement the following changes in the RBAC system, SYSTEM PANEL, and ADMIN PANEL.
+This must be done cleanly, without breaking any existing Permission Matrix or User Role Assignment logic.
+
+1) CREATE TWO BUILT-IN ROLES ONLY (for now)
+A) SYSTEM ADMIN (Platform-Level)
+
+Belongs to SYSTEM tenant only
+
+Full access to all SYSTEM PANEL modules:
+
+system dashboard
+
+tenants
+
+platform users
+
+roles & permissions
+
+DPF manager
+
+platform metrics
+
+system settings
+
+SYSTEM ADMIN Permissions
+
+Should automatically have ALL permissions, without fetching tenant-scoped permissions.
+
+PermissionContext:
+→ If user.tenantId === SYSTEM → grant full-access.
+
+B) TENANT ADMIN (Tenant-Level)
+
+Belongs to regular tenant (not SYSTEM)
+
+Full access to ADMIN PANEL:
+
+business lines
+
+branches
+
+users
+
+roles
+
+tenant settings
+
+TENANT ADMIN Permissions
+
+Automatically receives ALL permissions inside their own tenant.
+
+No permission lookup errors should occur.
+
+SYSTEM permissions must never leak into tenants.
+
+2) FIX PLATFORM USERS ("Add User") BEHAVIOR
+
+Current issue:
+"Add User" under SYSTEM PANEL redirects incorrectly to /admin/users/create.
+
+Required fix:
+
+When clicking "Add User" under SYSTEM PANEL:
+
+The UI must ask:
+
+Select User Type:
+
+1) System User
+
+2) Tenant Admin User
+
+If “System User” selected:
+
+Allowed role list:
+
+System Admin
+
+Support Staff (placeholder for future)
+
+Billing Staff (placeholder for future)
+
+Allowed scope:
+
+SYSTEM PANEL only
+
+Should never show tenant/business line/branch selectors.
+
+If “Tenant Admin User” selected:
+
+Allowed role list:
+
+Tenant Admin (ONLY)
+
+Should show:
+
+dropdown of existing tenants
+
+Should NOT show:
+
+business line selector
+
+branch selector
+
+Tenant Admin must NOT be assigned to SYSTEM.
+
+3) ROUTING + SCOPING FIX
+SYSTEM USERS:
+
+Must always stay inside /system/*
+
+Must never redirect to /admin/* or /app/*
+
+TENANT ADMIN USERS:
+
+Must always stay inside /admin/*
+
+NORMAL TENANT USERS (future):
+
+Will stay inside /app/*
+
+Update:
+
+LegacyRedirect
+
+AppRouter
+
+PermissionContext
+
+Remove all hard-coded /admin/... redirects.
+
+4) DPF / PERMISSION BEHAVIOR CHANGES
+SYSTEM ADMIN:
+
+PermissionContext must skip API calls
+
+Must always return true for any action or module
+
+TENANT ADMIN:
+
+Auto-grant all permissions for their tenant
+
+No need to manually assign permissions
+
+Roles created from SYSTEM PANEL or TENANT PANEL must not trigger DPF sync.
+
+5) DO NOT CREATE ANY ADDITIONAL ROLES NOW
+
+Only implement:
+
+system_admin
+
+tenant_admin
+
+Other roles (doctor, nurse, accountant, etc.) will be added later during module development.
+
+Make sure everything remains future-proof.
+
+6) CONFIRMATION BEFORE EXECUTION
+
+Before implementing, you must:
+
+Scan the codebase
+
+Show me the list of files that will be modified
+
+Explain the architectural changes you will apply
+
+Then wait for my confirmation
