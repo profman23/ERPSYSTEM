@@ -46,15 +46,31 @@ Optimized with 32 database indexes, Redis adapter for Socket.IO horizontal scali
 
 ### Multi-Panel Frontend Architecture
 Features a scope-based multi-panel design:
--   **System Admin Panel (`/system/*`):** Dark theme (bg-[#0F172A], bg-[#1E293B]), for `accessScope: 'system'`.
+-   **System Admin Panel (`/system/*`):** Dark theme using CSS tokens (--sys-bg: #0D0D0D, --sys-surface: #1A1A1A, --sys-accent: #8B5CF6), for `accessScope: 'system'`.
 -   **Tenant Admin Panel (`/admin/*`):** Light blue theme, for `accessScope: 'tenant'`.
 -   **User App Panel (`/app/*`):** Teal/green theme, for `accessScope: 'branch' | 'business_line' | 'mixed'`.
 Includes `ScopeRedirect` and `ProtectedRoute` for dynamic routing and access control based on user scope.
 
+### System Panel CSS Token System (Dec 2024)
+Unified dark theme using CSS custom properties:
+-   `--sys-bg`: #0D0D0D (main background)
+-   `--sys-surface`: #1A1A1A (card/panel backgrounds)
+-   `--sys-surface-hover`: #252525 (hover states)
+-   `--sys-border`: #2A2A2A (borders)
+-   `--sys-text`: #F5F5F5 (primary text)
+-   `--sys-text-secondary`: #A3A3A3 (secondary text)
+-   `--sys-text-muted`: #737373 (muted text)
+-   `--sys-accent`: #8B5CF6 (purple accent color)
+-   `--sys-button`: #262626 (button backgrounds)
+-   `--sys-error`: #EF4444 (error states)
+
 ### System Panel User Management (Dec 2024)
 -   **SystemUsersListPage:** Dark-themed platform users list with UserTypeSelector modal for creating System Users or Tenant Admins
 -   **SystemCreateUserPage:** Dark-themed user creation form supporting two user types via URL query parameter (?type=system or ?type=tenant_admin)
--   **Built-in Roles:** SYSTEM_ADMIN (platform-wide) and TENANT_ADMIN (tenant-scoped) with auto-grant permissions, marked as isProtected and isDefault
+-   **SystemTenantsListPage:** Dark-themed tenants management page
+-   **SystemUserService:** Backend service for creating system users and tenant admins with correct scope/tenant assignments
+-   **Built-in Roles:** SYSTEM_ADMIN (platform-wide, accessScope: 'system', tenantId: null) and TENANT_ADMIN (tenant-scoped, accessScope: 'tenant', tenantId: specific) with auto-grant permissions, marked as isProtected and isDefault
+-   **Permission Auto-Grant:** PermissionContext grants wildcard ['*'] permissions for system and tenant_admin users
 -   **Demo Credentials:** superadmin@system.local / Admin@123 (Tenant Code: SYSTEM)
 
 ## External Dependencies
