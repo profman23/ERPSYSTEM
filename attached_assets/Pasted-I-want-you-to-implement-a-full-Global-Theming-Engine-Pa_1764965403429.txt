@@ -1,0 +1,148 @@
+I want you to implement a full **Global Theming Engine + Panel Token Layers + Unified Design System** for the entire ONX ERP frontend.  
+This must be done at an enterprise level with extremely high consistency, flexibility, and performance.
+
+---------------------------------------
+🎯 OBJECTIVE
+---------------------------------------
+Unify the entire UI under a fully token-driven architecture so that:
+- NO hardcoded colors remain anywhere in the system  
+- SYSTEM / TENANT ADMIN / APP panels each have their own theme layer  
+- All panels inherit from GLOBAL TOKENS  
+- Every component (Button, Card, Input, Sidebar, Table, etc.) uses tokens only  
+- Remove ALL remaining white backgrounds from SYSTEM PANEL  
+- Fix CreateTenantPage and ALL SYSTEM PAGES to use the new token system  
+- Ensure new user creation pages follow system theme  
+- Ensure routing fixes do NOT break theming logic
+
+This must be built to support:
+✔ 2000+ tenants  
+✔ unlimited theme changes in the future  
+✔ full UI stability during large expansions  
+✔ AGI-driven UI generation (theme-aware)
+
+---------------------------------------
+🎨 THEME STRUCTURE TO IMPLEMENT
+---------------------------------------
+
+1) GLOBAL TOKENS (root)
+   --color-bg
+   --color-surface
+   --color-accent
+   --color-text
+   --color-text-muted
+   --color-border
+   --color-card
+   --color-danger
+   --color-success
+   --color-warning
+
+2) PANEL TOKENS (override global values)
+   a) SYSTEM PANEL → dark theme  
+      --sys-bg  
+      --sys-surface  
+      --sys-accent  
+      --sys-text  
+
+   b) TENANT ADMIN PANEL → light-blue theme  
+      --tenant-bg  
+      --tenant-surface  
+      --tenant-accent  
+      --tenant-text  
+
+   c) APP PANEL → medical soft theme  
+      --app-bg  
+      --app-surface  
+      --app-accent  
+      --app-text  
+
+3) COMPONENT TOKENS (used by buttons, inputs, cards, tables)
+   Example:
+   --btn-bg
+   --btn-bg-hover
+   --btn-text
+   --input-bg
+   --input-border
+   --card-bg
+   --sidebar-bg
+
+---------------------------------------
+🛠 REQUIRED TASKS
+---------------------------------------
+
+### 1) Build Global Token Engine inside globals.css
+- Add global token definitions
+- Add panel-level token layers
+- Ensure tokens cascade based on `data-panel` value on <html>
+
+### 2) Add data-panel attributes automatically
+SYSTEM PANEL → <html data-panel="system">  
+TENANT ADMIN → <html data-panel="tenant">  
+APP PANEL → <html data-panel="app">
+
+Add logic in:
+- SystemAdminLayout
+- TenantAdminLayout
+- AppLayout
+
+### 3) Update ALL UI components to use tokens ONLY
+Buttons  
+Inputs  
+Select  
+Card  
+Sidebar  
+Tables  
+Modal  
+Forms  
+
+Remove all hardcoded:
+- bg-white
+- text-black
+- border-gray
+- bg-muted
+- bg-background
+
+Everything must become token-driven.
+
+### 4) Update all SYSTEM PANEL pages to full dark theme
+Fix:
+- SystemDashboard  
+- SystemTenantsPage + CreateTenantPage  
+- SystemUsersListPage  
+- SystemCreateUserPage  
+- SystemDPFPage  
+- SystemRolesPage  
+- SystemSettingsPage  
+- SystemMetricsPage
+
+Remove all remaining white areas.
+
+### 5) Fix TENANT ADMIN theme
+Apply tenant tokens to:
+- AdminDashboard
+- BusinessLines
+- Branches
+- Roles
+- Users
+- Tenant Settings
+
+### 6) Fix routing bugs where Tenant Admin is redirected to /app
+Ensure:
+TENANT ADMIN → /admin/* ALWAYS  
+SYSTEM ADMIN → /system/* ALWAYS  
+App users → /app/* ONLY
+
+### 7) Validate everything with screenshots before finishing
+
+---------------------------------------
+🏁 EXPECTED OUTCOME
+---------------------------------------
+After completion:
+
+1) The entire ERP UI will follow ONE design system.
+2) SYSTEM / TENANT / APP themes will switch instantly via tokens.
+3) No more white backgrounds anywhere in SYSTEM PANEL.
+4) All UI will become scalable, stable, and AGI-ready.
+5) Future branding changes will take **minutes**, not weeks.
+
+This is a high-priority core architecture task.  
+Proceed now and confirm each finished section.

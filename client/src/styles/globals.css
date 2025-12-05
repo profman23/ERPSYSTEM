@@ -7,6 +7,84 @@
 
 @layer base {
   :root {
+    --radius: 0.5rem;
+
+    /* ══════════════════════════════════════════════════════════════════
+       GLOBAL TOKEN LAYER - Base tokens inherited by all panels
+       ══════════════════════════════════════════════════════════════════ */
+    --color-bg: #F3F4F6;
+    --color-surface: #FFFFFF;
+    --color-surface-hover: #F9FAFB;
+    --color-border: #E5E7EB;
+    --color-text: #111827;
+    --color-text-secondary: #6B7280;
+    --color-text-muted: #9CA3AF;
+    --color-accent: #2563EB;
+    --color-accent-hover: #1D4ED8;
+    --color-success: #22C55E;
+    --color-warning: #F59E0B;
+    --color-danger: #EF4444;
+    --color-info: #3B82F6;
+
+    /* ══════════════════════════════════════════════════════════════════
+       COMPONENT TOKENS - Used by all UI components
+       ══════════════════════════════════════════════════════════════════ */
+    
+    /* Button Tokens */
+    --btn-primary-bg: var(--color-accent);
+    --btn-primary-bg-hover: var(--color-accent-hover);
+    --btn-primary-text: #FFFFFF;
+    --btn-secondary-bg: var(--color-surface);
+    --btn-secondary-bg-hover: var(--color-surface-hover);
+    --btn-secondary-text: var(--color-text);
+    --btn-secondary-border: var(--color-border);
+    --btn-ghost-bg: transparent;
+    --btn-ghost-bg-hover: var(--color-surface-hover);
+    --btn-ghost-text: var(--color-text-secondary);
+    --btn-danger-bg: var(--color-danger);
+    --btn-danger-bg-hover: #DC2626;
+    --btn-danger-text: #FFFFFF;
+
+    /* Input Tokens */
+    --input-bg: var(--color-surface);
+    --input-border: var(--color-border);
+    --input-border-focus: var(--color-accent);
+    --input-text: var(--color-text);
+    --input-placeholder: var(--color-text-muted);
+
+    /* Card Tokens */
+    --card-bg: var(--color-surface);
+    --card-border: var(--color-border);
+    --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+
+    /* Sidebar Tokens */
+    --sidebar-bg: var(--color-surface);
+    --sidebar-border: var(--color-border);
+    --sidebar-item-bg: transparent;
+    --sidebar-item-bg-hover: var(--color-surface-hover);
+    --sidebar-item-bg-active: var(--color-accent);
+    --sidebar-item-text: var(--color-text-secondary);
+    --sidebar-item-text-hover: var(--color-text);
+    --sidebar-item-text-active: #FFFFFF;
+
+    /* Table Tokens */
+    --table-header-bg: var(--color-surface-hover);
+    --table-header-text: var(--color-text-secondary);
+    --table-row-bg: var(--color-surface);
+    --table-row-bg-hover: var(--color-surface-hover);
+    --table-row-border: var(--color-border);
+    --table-cell-text: var(--color-text);
+
+    /* Modal Tokens */
+    --modal-bg: var(--color-surface);
+    --modal-border: var(--color-border);
+    --modal-overlay: rgba(0, 0, 0, 0.5);
+
+    /* Badge Tokens */
+    --badge-default-bg: var(--color-surface-hover);
+    --badge-default-text: var(--color-text-secondary);
+
+    /* Shadcn/UI compatibility tokens */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -15,79 +93,400 @@
     --popover-foreground: 222.2 84% 4.9%;
     --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 199.6 89.3% 48.2%;
+    --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 168 76% 42%;
+    --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+  }
 
-    /* SYSTEM Panel Theme Tokens (Dark Theme) */
-    --sys-bg: #0D0D0D;
-    --sys-surface: #1A1A1A;
-    --sys-surface-hover: #252525;
-    --sys-border: #2A2A2A;
-    --sys-button: #262626;
-    --sys-button-hover: #333333;
-    --sys-text: #F5F5F5;
-    --sys-text-secondary: #A3A3A3;
-    --sys-text-muted: #737373;
-    --sys-accent: #8B5CF6;
-    --sys-accent-hover: #7C3AED;
-    --sys-success: #22C55E;
-    --sys-warning: #F59E0B;
-    --sys-error: #EF4444;
+  /* ══════════════════════════════════════════════════════════════════════
+     SYSTEM PANEL THEME - Dark Purple Theme
+     Applied when: <html data-panel="system">
+     ══════════════════════════════════════════════════════════════════════ */
+  [data-panel="system"] {
+    --color-bg: #0D0D0D;
+    --color-surface: #1A1A1A;
+    --color-surface-hover: #252525;
+    --color-border: #2A2A2A;
+    --color-text: #F5F5F5;
+    --color-text-secondary: #A3A3A3;
+    --color-text-muted: #737373;
+    --color-accent: #8B5CF6;
+    --color-accent-hover: #7C3AED;
 
-    /* TENANT Admin Panel Theme Tokens (Light Blue Theme) */
-    --tenant-bg: #F8FAFC;
-    --tenant-surface: #FFFFFF;
-    --tenant-surface-hover: #F1F5F9;
-    --tenant-border: #E2E8F0;
-    --tenant-button: #FFFFFF;
-    --tenant-button-hover: #F1F5F9;
-    --tenant-text: #0F172A;
-    --tenant-text-secondary: #475569;
-    --tenant-text-muted: #94A3B8;
-    --tenant-accent: #2563EB;
-    --tenant-accent-hover: #1D4ED8;
-    --tenant-success: #22C55E;
-    --tenant-warning: #F59E0B;
-    --tenant-error: #EF4444;
+    /* System-specific component tokens */
+    --btn-primary-bg: linear-gradient(135deg, #8B5CF6, #7C3AED);
+    --btn-primary-bg-hover: linear-gradient(135deg, #7C3AED, #6D28D9);
+    --btn-secondary-bg: #262626;
+    --btn-secondary-bg-hover: #333333;
+    --btn-secondary-border: #2A2A2A;
+    --btn-ghost-bg-hover: #252525;
 
-    /* APP Panel Theme Tokens (Teal/Green Theme) */
-    --app-bg: #F0FDFA;
-    --app-surface: #FFFFFF;
-    --app-surface-hover: #ECFDF5;
-    --app-border: #D1FAE5;
-    --app-button: #FFFFFF;
-    --app-button-hover: #ECFDF5;
-    --app-text: #064E3B;
-    --app-text-secondary: #065F46;
-    --app-text-muted: #6EE7B7;
-    --app-accent: #14B8A6;
-    --app-accent-hover: #0D9488;
-    --app-success: #22C55E;
-    --app-warning: #F59E0B;
-    --app-error: #EF4444;
+    --input-bg: #0D0D0D;
+    --input-border: #2A2A2A;
+    --input-border-focus: #8B5CF6;
 
-    /* Legacy Color Variables */
-    --color-text: #1F2937;
-    --color-text-secondary: #6B7280;
-    --color-background: #F3F4F6;
+    --card-bg: #1A1A1A;
+    --card-border: #2A2A2A;
+    --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+
+    --sidebar-bg: #1A1A1A;
+    --sidebar-border: #2A2A2A;
+    --sidebar-item-bg-hover: #252525;
+    --sidebar-item-bg-active: linear-gradient(135deg, #8B5CF6, #7C3AED);
+    --sidebar-item-text: #A3A3A3;
+    --sidebar-item-text-hover: #F5F5F5;
+
+    --table-header-bg: #1A1A1A;
+    --table-header-text: #A3A3A3;
+    --table-row-bg: #1A1A1A;
+    --table-row-bg-hover: #252525;
+    --table-row-border: #2A2A2A;
+    --table-cell-text: #F5F5F5;
+
+    --modal-bg: #1A1A1A;
+    --modal-border: #2A2A2A;
+    --modal-overlay: rgba(0, 0, 0, 0.7);
+
+    --badge-default-bg: #262626;
+    --badge-default-text: #A3A3A3;
+
+    /* Shadcn overrides for dark mode */
+    --background: 0 0% 5%;
+    --foreground: 0 0% 96%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 96%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 263 70% 66%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 64%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 96%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 17%;
+    --input: 0 0% 17%;
+    --ring: 263 70% 66%;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     TENANT ADMIN PANEL THEME - Light Blue Theme
+     Applied when: <html data-panel="tenant">
+     ══════════════════════════════════════════════════════════════════════ */
+  [data-panel="tenant"] {
+    --color-bg: #F8FAFC;
+    --color-surface: #FFFFFF;
+    --color-surface-hover: #F1F5F9;
+    --color-border: #E2E8F0;
+    --color-text: #0F172A;
+    --color-text-secondary: #475569;
+    --color-text-muted: #94A3B8;
+    --color-accent: #2563EB;
+    --color-accent-hover: #1D4ED8;
+
+    /* Tenant-specific component tokens */
+    --btn-primary-bg: #2563EB;
+    --btn-primary-bg-hover: #1D4ED8;
+    --btn-secondary-bg: #FFFFFF;
+    --btn-secondary-bg-hover: #F1F5F9;
+    --btn-secondary-border: #E2E8F0;
+
+    --input-bg: #FFFFFF;
+    --input-border: #E2E8F0;
+    --input-border-focus: #2563EB;
+
+    --card-bg: #FFFFFF;
+    --card-border: #E2E8F0;
+    --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+
+    --sidebar-bg: #FFFFFF;
+    --sidebar-border: #E2E8F0;
+    --sidebar-item-bg-hover: #F1F5F9;
+    --sidebar-item-bg-active: #2563EB;
+    --sidebar-item-text: #475569;
+    --sidebar-item-text-hover: #0F172A;
+
+    --table-header-bg: #F8FAFC;
+    --table-header-text: #475569;
+    --table-row-bg: #FFFFFF;
+    --table-row-bg-hover: #F1F5F9;
+    --table-row-border: #E2E8F0;
+    --table-cell-text: #0F172A;
+
+    --modal-bg: #FFFFFF;
+    --modal-border: #E2E8F0;
+
+    --badge-default-bg: #F1F5F9;
+    --badge-default-text: #475569;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     APP PANEL THEME - Medical Soft Teal Theme
+     Applied when: <html data-panel="app">
+     ══════════════════════════════════════════════════════════════════════ */
+  [data-panel="app"] {
+    --color-bg: #F0FDFA;
+    --color-surface: #FFFFFF;
+    --color-surface-hover: #ECFDF5;
+    --color-border: #D1FAE5;
+    --color-text: #064E3B;
+    --color-text-secondary: #065F46;
+    --color-text-muted: #10B981;
+    --color-accent: #14B8A6;
+    --color-accent-hover: #0D9488;
+
+    /* App-specific component tokens */
+    --btn-primary-bg: #14B8A6;
+    --btn-primary-bg-hover: #0D9488;
+    --btn-secondary-bg: #FFFFFF;
+    --btn-secondary-bg-hover: #ECFDF5;
+    --btn-secondary-border: #D1FAE5;
+
+    --input-bg: #FFFFFF;
+    --input-border: #D1FAE5;
+    --input-border-focus: #14B8A6;
+
+    --card-bg: #FFFFFF;
+    --card-border: #D1FAE5;
+    --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+
+    --sidebar-bg: #FFFFFF;
+    --sidebar-border: #D1FAE5;
+    --sidebar-item-bg-hover: #ECFDF5;
+    --sidebar-item-bg-active: #14B8A6;
+    --sidebar-item-text: #065F46;
+    --sidebar-item-text-hover: #064E3B;
+
+    --table-header-bg: #F0FDFA;
+    --table-header-text: #065F46;
+    --table-row-bg: #FFFFFF;
+    --table-row-bg-hover: #ECFDF5;
+    --table-row-border: #D1FAE5;
+    --table-cell-text: #064E3B;
+
+    --modal-bg: #FFFFFF;
+    --modal-border: #D1FAE5;
+
+    --badge-default-bg: #ECFDF5;
+    --badge-default-text: #065F46;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     LEGACY TOKEN ALIASES - For backward compatibility
+     ══════════════════════════════════════════════════════════════════════ */
+  :root {
+    /* System Panel Aliases */
+    --sys-bg: var(--color-bg);
+    --sys-surface: var(--color-surface);
+    --sys-surface-hover: var(--color-surface-hover);
+    --sys-border: var(--color-border);
+    --sys-text: var(--color-text);
+    --sys-text-secondary: var(--color-text-secondary);
+    --sys-text-muted: var(--color-text-muted);
+    --sys-accent: var(--color-accent);
+    --sys-accent-hover: var(--color-accent-hover);
+    --sys-button: var(--btn-secondary-bg);
+    --sys-button-hover: var(--btn-secondary-bg-hover);
+    --sys-success: var(--color-success);
+    --sys-warning: var(--color-warning);
+    --sys-error: var(--color-danger);
+
+    /* Tenant Panel Aliases */
+    --tenant-bg: var(--color-bg);
+    --tenant-surface: var(--color-surface);
+    --tenant-surface-hover: var(--color-surface-hover);
+    --tenant-border: var(--color-border);
+    --tenant-text: var(--color-text);
+    --tenant-text-secondary: var(--color-text-secondary);
+    --tenant-text-muted: var(--color-text-muted);
+    --tenant-accent: var(--color-accent);
+    --tenant-accent-hover: var(--color-accent-hover);
+    --tenant-button: var(--btn-secondary-bg);
+    --tenant-button-hover: var(--btn-secondary-bg-hover);
+    --tenant-success: var(--color-success);
+    --tenant-warning: var(--color-warning);
+    --tenant-error: var(--color-danger);
+
+    /* App Panel Aliases */
+    --app-bg: var(--color-bg);
+    --app-surface: var(--color-surface);
+    --app-surface-hover: var(--color-surface-hover);
+    --app-border: var(--color-border);
+    --app-text: var(--color-text);
+    --app-text-secondary: var(--color-text-secondary);
+    --app-text-muted: var(--color-text-muted);
+    --app-accent: var(--color-accent);
+    --app-accent-hover: var(--color-accent-hover);
+    --app-button: var(--btn-secondary-bg);
+    --app-button-hover: var(--btn-secondary-bg-hover);
+    --app-success: var(--color-success);
+    --app-warning: var(--color-warning);
+    --app-error: var(--color-danger);
   }
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   UTILITY CLASSES - Token-driven utility classes
+   ══════════════════════════════════════════════════════════════════════════ */
+@layer utilities {
+  /* Background utilities */
+  .bg-panel { background-color: var(--color-bg); }
+  .bg-surface { background-color: var(--color-surface); }
+  .bg-surface-hover { background-color: var(--color-surface-hover); }
+  .bg-accent { background-color: var(--color-accent); }
+  
+  /* Text utilities */
+  .text-panel { color: var(--color-text); }
+  .text-secondary { color: var(--color-text-secondary); }
+  .text-muted { color: var(--color-text-muted); }
+  .text-accent { color: var(--color-accent); }
+  
+  /* Border utilities */
+  .border-panel { border-color: var(--color-border); }
+  .border-accent { border-color: var(--color-accent); }
+  
+  /* Card utilities */
+  .card-panel {
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    box-shadow: var(--card-shadow);
+    border-radius: var(--radius);
+  }
+  
+  /* Button utilities */
+  .btn-primary {
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+  }
+  .btn-primary:hover {
+    background: var(--btn-primary-bg-hover);
+  }
+  .btn-secondary {
+    background-color: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover {
+    background-color: var(--btn-secondary-bg-hover);
+  }
+  .btn-ghost {
+    background-color: var(--btn-ghost-bg);
+    color: var(--btn-ghost-text);
+  }
+  .btn-ghost:hover {
+    background-color: var(--btn-ghost-bg-hover);
+  }
+
+  /* Input utilities */
+  .input-panel {
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--input-text);
+  }
+  .input-panel::placeholder {
+    color: var(--input-placeholder);
+  }
+  .input-panel:focus {
+    border-color: var(--input-border-focus);
+    outline: none;
+    ring: 2px;
+    ring-color: var(--input-border-focus);
+  }
+
+  /* Table utilities */
+  .table-header {
+    background-color: var(--table-header-bg);
+    color: var(--table-header-text);
+  }
+  .table-row {
+    background-color: var(--table-row-bg);
+    border-bottom: 1px solid var(--table-row-border);
+  }
+  .table-row:hover {
+    background-color: var(--table-row-bg-hover);
+  }
+  .table-cell {
+    color: var(--table-cell-text);
+  }
+
+  /* Sidebar utilities */
+  .sidebar-panel {
+    background-color: var(--sidebar-bg);
+    border-color: var(--sidebar-border);
+  }
+  .sidebar-item {
+    background-color: var(--sidebar-item-bg);
+    color: var(--sidebar-item-text);
+  }
+  .sidebar-item:hover {
+    background-color: var(--sidebar-item-bg-hover);
+    color: var(--sidebar-item-text-hover);
+  }
+  .sidebar-item-active {
+    background: var(--sidebar-item-bg-active);
+    color: var(--sidebar-item-text-active);
+  }
+
+  /* Modal utilities */
+  .modal-panel {
+    background-color: var(--modal-bg);
+    border: 1px solid var(--modal-border);
+  }
+  .modal-overlay {
+    background-color: var(--modal-overlay);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BASE STYLES - Applied globally
+   ══════════════════════════════════════════════════════════════════════════ */
 @layer base {
   * {
-    @apply border-border;
+    border-color: var(--color-border);
   }
+  
   body {
-    @apply bg-bg text-text;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* RTL Support - Arabic font */
+  [dir="rtl"] body,
+  [lang="ar"] body {
+    font-family: 'Cairo', sans-serif;
+  }
+
+  /* Focus ring styles */
+  *:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* Scrollbar styling for dark mode */
+  [data-panel="system"] ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  [data-panel="system"] ::-webkit-scrollbar-track {
+    background: #1A1A1A;
+  }
+  [data-panel="system"] ::-webkit-scrollbar-thumb {
+    background: #333333;
+    border-radius: 4px;
+  }
+  [data-panel="system"] ::-webkit-scrollbar-thumb:hover {
+    background: #444444;
   }
 }

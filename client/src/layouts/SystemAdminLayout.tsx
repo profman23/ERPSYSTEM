@@ -25,6 +25,13 @@ export default function SystemAdminLayout() {
   const { user, logout } = useAuth();
 
   useEffect(() => {
+    document.documentElement.setAttribute('data-panel', 'system');
+    return () => {
+      document.documentElement.removeAttribute('data-panel');
+    };
+  }, []);
+
+  useEffect(() => {
     const checkRTL = () => {
       const dir = document.documentElement.getAttribute('dir') || 'ltr';
       const lang = document.documentElement.lang || 'en';
@@ -79,36 +86,26 @@ export default function SystemAdminLayout() {
   };
 
   return (
-    <div 
-      className={`min-h-screen flex ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}
-      style={{ backgroundColor: 'var(--sys-bg)' }}
-    >
+    <div className={`min-h-screen flex bg-panel ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
       <aside
         className={`
           ${isSidebarOpen ? 'translate-x-0' : isRTL ? 'translate-x-full' : '-translate-x-full'}
           ${isMobile ? 'fixed inset-y-0 z-50 w-64' : 'relative w-64'}
           ${isRTL ? 'border-l' : 'border-r'}
           transition-transform duration-300 ease-in-out
-          flex flex-col
+          flex flex-col bg-surface border-panel
         `}
-        style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}
       >
-        <div 
-          className={`h-16 flex items-center px-6 border-b ${isRTL ? 'flex-row-reverse' : ''}`}
-          style={{ borderColor: 'var(--sys-border)' }}
-        >
+        <div className={`h-16 flex items-center px-6 border-b border-panel ${isRTL ? 'flex-row-reverse' : ''}`}>
           <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div 
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, var(--sys-accent), #7C3AED)' }}
-            >
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-accent">
               <Globe className="w-5 h-5 text-white" />
             </div>
             <div className={isRTL ? 'text-right' : 'text-left'}>
-              <h1 className="text-sm font-bold" style={{ color: 'var(--sys-text)' }}>
+              <h1 className="text-sm font-bold text-panel">
                 {isRTL ? 'لوحة النظام' : 'System Admin'}
               </h1>
-              <p className="text-xs" style={{ color: 'var(--sys-text-secondary)' }}>
+              <p className="text-xs text-secondary">
                 {isRTL ? 'إدارة المنصة' : 'Platform Control'}
               </p>
             </div>
@@ -128,26 +125,8 @@ export default function SystemAdminLayout() {
                 className={`
                   flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
                   ${isRTL ? 'flex-row-reverse' : ''}
+                  ${active ? 'sidebar-item-active' : 'sidebar-item'}
                 `}
-                style={active 
-                  ? { 
-                      background: 'linear-gradient(135deg, var(--sys-accent), #7C3AED)', 
-                      color: 'var(--sys-text)' 
-                    } 
-                  : { color: 'var(--sys-text-secondary)' }
-                }
-                onMouseEnter={(e) => {
-                  if (!active) {
-                    e.currentTarget.style.backgroundColor = 'var(--sys-surface-hover)';
-                    e.currentTarget.style.color = 'var(--sys-text)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!active) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.color = 'var(--sys-text-secondary)';
-                  }
-                }}
               >
                 <Icon className="w-5 h-5" />
                 <span>{isRTL ? item.nameAr : item.name}</span>
@@ -159,19 +138,10 @@ export default function SystemAdminLayout() {
           })}
         </nav>
 
-        <div className="p-4 border-t" style={{ borderColor: 'var(--sys-border)' }}>
+        <div className="p-4 border-t border-panel">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
-            style={{ color: 'var(--sys-text-secondary)' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--sys-surface-hover)';
-              e.currentTarget.style.color = 'var(--sys-text)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = 'var(--sys-text-secondary)';
-            }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium sidebar-item transition-colors"
           >
             <LogOut className="w-5 h-5" />
             <span>{isRTL ? 'تسجيل الخروج' : 'Logout'}</span>
@@ -181,60 +151,42 @@ export default function SystemAdminLayout() {
 
       {isMobile && isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40"
+          className="fixed inset-0 modal-overlay z-40"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header 
-          className="h-16 border-b flex items-center px-6"
-          style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}
-        >
+        <header className="h-16 border-b border-panel flex items-center px-6 bg-surface">
           <div className={`flex items-center gap-4 flex-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="lg:hidden p-2 rounded-lg transition-colors"
-              style={{ color: 'var(--sys-text-secondary)' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--sys-surface-hover)';
-                e.currentTarget.style.color = 'var(--sys-text)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'var(--sys-text-secondary)';
-              }}
+              className="lg:hidden p-2 rounded-lg transition-colors btn-ghost"
             >
               {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
 
             <div className="flex items-center gap-2">
-              <span 
-                className="px-2 py-1 text-xs font-bold rounded"
-                style={{ backgroundColor: 'rgba(139, 92, 246, 0.2)', color: 'var(--sys-accent)' }}
-              >
+              <span className="px-2 py-1 text-xs font-bold rounded bg-accent/20 text-accent">
                 SYSTEM
               </span>
-              <h2 className="text-lg font-semibold" style={{ color: 'var(--sys-text)' }}>
+              <h2 className="text-lg font-semibold text-panel">
                 {isRTL ? 'لوحة تحكم النظام' : 'System Control Panel'}
               </h2>
             </div>
           </div>
 
           <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className="text-sm" style={{ color: 'var(--sys-text-secondary)' }}>
+            <div className="text-sm text-secondary">
               {user?.email || 'System Admin'}
             </div>
-            <div 
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-              style={{ background: 'linear-gradient(135deg, var(--sys-accent), #7C3AED)' }}
-            >
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold bg-accent">
               S
             </div>
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto p-6" style={{ backgroundColor: 'var(--sys-bg)' }}>
+        <main className="flex-1 overflow-auto p-6 bg-panel">
           <Outlet />
         </main>
       </div>

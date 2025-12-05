@@ -68,7 +68,7 @@ interface DialogContentProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
-  ({ className, children, onClose, ...props }, ref) => {
+  ({ className, children, onClose, style, ...props }, ref) => {
     const { open, setOpen } = useDialog();
 
     const handleClose = () => {
@@ -81,22 +81,29 @@ export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <div
-          className="fixed inset-0 bg-black/50"
+          className="fixed inset-0"
+          style={{ backgroundColor: 'var(--modal-overlay)' }}
           onClick={handleClose}
         />
         <div
           ref={ref}
           className={cn(
-            'relative z-50 w-full max-w-lg rounded-lg border border-border bg-white p-6 shadow-lg',
+            'relative z-50 w-full max-w-lg rounded-lg border p-6 shadow-lg',
             'animate-in fade-in-0 zoom-in-95 duration-200',
             className
           )}
+          style={{
+            backgroundColor: 'var(--modal-bg)',
+            borderColor: 'var(--modal-border)',
+            ...style
+          }}
           {...props}
         >
           {children}
           <button
             onClick={handleClose}
-            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-primary"
+            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2"
+            style={{ color: 'var(--color-text-muted)' }}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -133,10 +140,11 @@ export const DialogHeader = React.forwardRef<HTMLDivElement, React.HTMLAttribute
 DialogHeader.displayName = 'DialogHeader';
 
 export const DialogTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
-  ({ className, ...props }, ref) => (
+  ({ className, style, ...props }, ref) => (
     <h2
       ref={ref}
       className={cn('text-lg font-semibold leading-none tracking-tight', className)}
+      style={{ color: 'var(--color-text)', ...style }}
       {...props}
     />
   )
