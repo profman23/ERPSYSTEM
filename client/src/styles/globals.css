@@ -333,6 +333,13 @@
     --app-success: var(--color-success);
     --app-warning: var(--color-warning);
     --app-error: var(--color-danger);
+    --app-info: var(--color-info);
+
+    /* Tenant Panel Info Alias */
+    --tenant-info: var(--color-info);
+
+    /* System Panel Info Alias */
+    --sys-info: var(--color-info);
   }
 }
 

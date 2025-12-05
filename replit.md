@@ -51,18 +51,44 @@ Features a scope-based multi-panel design:
 -   **User App Panel (`/app/*`):** Teal/green theme, for `accessScope: 'branch' | 'business_line' | 'mixed'`.
 Includes `ScopeRedirect` and `ProtectedRoute` for dynamic routing and access control based on user scope.
 
-### System Panel CSS Token System (Dec 2024)
-Unified dark theme using CSS custom properties:
--   `--sys-bg`: #0D0D0D (main background)
--   `--sys-surface`: #1A1A1A (card/panel backgrounds)
--   `--sys-surface-hover`: #252525 (hover states)
--   `--sys-border`: #2A2A2A (borders)
--   `--sys-text`: #F5F5F5 (primary text)
--   `--sys-text-secondary`: #A3A3A3 (secondary text)
--   `--sys-text-muted`: #737373 (muted text)
--   `--sys-accent`: #8B5CF6 (purple accent color)
--   `--sys-button`: #262626 (button backgrounds)
--   `--sys-error`: #EF4444 (error states)
+### Global Theming Engine (Dec 2024)
+Enterprise-grade cascading CSS token system with three-layer architecture:
+
+**Layer 1 - Global Semantic Tokens (--color-*):**
+Base tokens inherited by all panels, providing semantic meaning:
+- `--color-bg`, `--color-surface`, `--color-surface-hover`
+- `--color-border`, `--color-text`, `--color-text-secondary`, `--color-text-muted`
+- `--color-accent`, `--color-accent-hover`
+- `--color-success`, `--color-warning`, `--color-danger`, `--color-info`
+
+**Layer 2 - Component Tokens:**
+Used by all UI components for consistent styling:
+- Button: `--btn-primary-bg`, `--btn-secondary-bg`, `--btn-ghost-bg`, `--btn-danger-bg`
+- Input: `--input-bg`, `--input-border`, `--input-border-focus`
+- Card: `--card-bg`, `--card-border`, `--card-shadow`
+- Sidebar: `--sidebar-bg`, `--sidebar-item-bg-hover`, `--sidebar-item-bg-active`
+- Table: `--table-header-bg`, `--table-row-bg`, `--table-row-bg-hover`
+- Modal: `--modal-bg`, `--modal-border`, `--modal-overlay`
+
+**Layer 3 - Panel-Specific Themes (via data-panel attribute):**
+
+*System Panel* (`[data-panel="system"]`) - Dark Purple Theme:
+- Background: #0D0D0D, Surface: #1A1A1A, Accent: #8B5CF6 (Purple)
+- Legacy aliases: `--sys-bg`, `--sys-surface`, `--sys-accent`, etc.
+
+*Tenant Panel* (`[data-panel="tenant"]`) - Light Blue Theme:
+- Background: #F8FAFC, Surface: #FFFFFF, Accent: #2563EB (Blue)
+- Legacy aliases: `--tenant-bg`, `--tenant-surface`, `--tenant-accent`, etc.
+
+*App Panel* (`[data-panel="app"]`) - Medical Soft Teal Theme:
+- Background: #F0FDFA, Surface: #FFFFFF, Accent: #14B8A6 (Teal)
+- Legacy aliases: `--app-bg`, `--app-surface`, `--app-accent`, etc.
+
+**Usage Pattern:**
+1. Layouts set `data-panel` attribute on `<html>` element
+2. CSS tokens automatically cascade based on active panel
+3. Components use generic `--color-*` or `--btn-*` tokens
+4. Pages can use legacy `--sys-*`, `--tenant-*`, `--app-*` aliases for panel-specific styling
 
 ### System Panel User Management (Dec 2024)
 -   **SystemUsersListPage:** Dark-themed platform users list with UserTypeSelector modal for creating System Users or Tenant Admins

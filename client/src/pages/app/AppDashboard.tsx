@@ -1,4 +1,4 @@
-import { Calendar, ClipboardList, Users, Clock, Stethoscope, Bell } from 'lucide-react';
+import { Calendar, ClipboardList, Clock, Stethoscope, Bell } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,9 +7,9 @@ export default function AppDashboard() {
   const { user } = useAuth();
 
   const todayStats = [
-    { title: 'Appointments', value: '8', icon: Calendar, color: '#14B8A6' },
-    { title: 'Pending Tasks', value: '3', icon: ClipboardList, color: '#F59E0B' },
-    { title: 'Patients Today', value: '12', icon: Stethoscope, color: '#3B82F6' },
+    { title: 'Appointments', value: '8', icon: Calendar, color: 'var(--app-accent)' },
+    { title: 'Pending Tasks', value: '3', icon: ClipboardList, color: 'var(--app-warning)' },
+    { title: 'Patients Today', value: '12', icon: Stethoscope, color: 'var(--app-info)' },
   ];
 
   const upcomingAppointments = [
@@ -29,14 +29,17 @@ export default function AppDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--app-text)' }}>
             Good morning, {user?.name || 'Doctor'}!
           </h1>
-          <p className="mt-1 text-gray-500">
+          <p className="mt-1" style={{ color: 'var(--app-text-secondary)' }}>
             Here's your schedule for today
           </p>
         </div>
-        <Button className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600">
+        <Button 
+          className="text-white"
+          style={{ background: 'linear-gradient(135deg, var(--app-accent), var(--app-accent-hover))' }}
+        >
           <Calendar className="w-4 h-4 mr-2" />
           View Full Schedule
         </Button>
@@ -46,16 +49,20 @@ export default function AppDashboard() {
         {todayStats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <Card key={stat.title} className="border-0 shadow-sm hover:shadow-md transition-shadow">
+            <Card 
+              key={stat.title} 
+              className="border shadow-sm hover:shadow-md transition-shadow"
+              style={{ backgroundColor: 'var(--app-surface)', borderColor: 'var(--app-border)' }}
+            >
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">{stat.title}</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                    <p className="text-sm" style={{ color: 'var(--app-text-secondary)' }}>{stat.title}</p>
+                    <p className="text-3xl font-bold mt-1" style={{ color: 'var(--app-text)' }}>{stat.value}</p>
                   </div>
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center"
-                    style={{ backgroundColor: `${stat.color}15` }}
+                    style={{ backgroundColor: `color-mix(in srgb, ${stat.color} 15%, transparent)` }}
                   >
                     <Icon className="w-6 h-6" style={{ color: stat.color }} />
                   </div>
@@ -67,33 +74,42 @@ export default function AppDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 border-0 shadow-sm">
+        <Card 
+          className="lg:col-span-2 border shadow-sm"
+          style={{ backgroundColor: 'var(--app-surface)', borderColor: 'var(--app-border)' }}
+        >
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-teal-500" />
+            <CardTitle className="flex items-center gap-2" style={{ color: 'var(--app-text)' }}>
+              <Clock className="w-5 h-5" style={{ color: 'var(--app-accent)' }} />
               Upcoming Appointments
             </CardTitle>
-            <CardDescription>Your schedule for today</CardDescription>
+            <CardDescription style={{ color: 'var(--app-text-secondary)' }}>
+              Your schedule for today
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {upcomingAppointments.map((apt, index) => (
                 <div 
                   key={index} 
-                  className="flex items-center justify-between p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                  className="flex items-center justify-between p-4 rounded-xl transition-colors cursor-pointer"
+                  style={{ backgroundColor: 'var(--app-surface-hover)' }}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center text-white font-bold">
+                    <div 
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                      style={{ background: 'linear-gradient(135deg, var(--app-accent), var(--app-accent-hover))' }}
+                    >
                       {apt.patient.charAt(0)}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{apt.patient}</p>
-                      <p className="text-sm text-gray-500">{apt.owner}</p>
+                      <p className="font-medium" style={{ color: 'var(--app-text)' }}>{apt.patient}</p>
+                      <p className="text-sm" style={{ color: 'var(--app-text-secondary)' }}>{apt.owner}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-teal-600">{apt.time}</p>
-                    <p className="text-sm text-gray-500">{apt.type}</p>
+                    <p className="font-semibold" style={{ color: 'var(--app-accent)' }}>{apt.time}</p>
+                    <p className="text-sm" style={{ color: 'var(--app-text-secondary)' }}>{apt.type}</p>
                   </div>
                 </div>
               ))}
@@ -101,30 +117,43 @@ export default function AppDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-sm">
+        <Card 
+          className="border shadow-sm"
+          style={{ backgroundColor: 'var(--app-surface)', borderColor: 'var(--app-border)' }}
+        >
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="w-5 h-5 text-orange-500" />
+            <CardTitle className="flex items-center gap-2" style={{ color: 'var(--app-text)' }}>
+              <Bell className="w-5 h-5" style={{ color: 'var(--app-warning)' }} />
               Notifications
             </CardTitle>
-            <CardDescription>Recent updates</CardDescription>
+            <CardDescription style={{ color: 'var(--app-text-secondary)' }}>
+              Recent updates
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {notifications.map((notification, index) => (
                 <div 
                   key={index} 
-                  className={`p-3 rounded-lg ${
-                    notification.type === 'warning' ? 'bg-amber-50' :
-                    notification.type === 'reminder' ? 'bg-blue-50' : 'bg-gray-50'
-                  }`}
+                  className="p-3 rounded-lg"
+                  style={{ 
+                    backgroundColor: notification.type === 'warning' 
+                      ? 'rgba(245, 158, 11, 0.1)' 
+                      : notification.type === 'reminder' 
+                        ? 'rgba(59, 130, 246, 0.1)' 
+                        : 'var(--app-surface-hover)'
+                  }}
                 >
-                  <p className="text-sm text-gray-900">{notification.message}</p>
-                  <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
+                  <p className="text-sm" style={{ color: 'var(--app-text)' }}>{notification.message}</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--app-text-muted)' }}>{notification.time}</p>
                 </div>
               ))}
             </div>
-            <Button variant="ghost" className="w-full mt-4 text-teal-600 hover:text-teal-700">
+            <Button 
+              variant="ghost" 
+              className="w-full mt-4"
+              style={{ color: 'var(--app-accent)' }}
+            >
               View All Notifications
             </Button>
           </CardContent>
