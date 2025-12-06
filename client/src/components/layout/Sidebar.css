@@ -1,0 +1,36 @@
+.sidebar-container {
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+}
+
+.sidebar-header {
+  border-bottom: 1px solid var(--sidebar-border);
+}
+
+.sidebar-logo {
+  color: var(--color-accent);
+}
+
+.sidebar-item {
+  color: var(--sidebar-item-text);
+  background-color: var(--sidebar-item-bg);
+}
+
+.sidebar-item:hover {
+  color: var(--sidebar-item-text-hover);
+  background-color: var(--sidebar-item-bg-hover);
+}
+
+.sidebar-item.active,
+.sidebar-item[aria-current="page"] {
+  color: var(--sidebar-item-text-active);
+  background-color: var(--sidebar-item-bg-active);
+}
+
+.sidebar-footer {
+  border-top: 1px solid var(--sidebar-border);
+}
+
+.sidebar-footer-text {
+  color: var(--color-text-secondary);
+}

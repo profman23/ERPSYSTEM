@@ -44,6 +44,19 @@
     --btn-danger-bg: var(--color-danger);
     --btn-danger-bg-hover: #DC2626;
     --btn-danger-text: #FFFFFF;
+    
+    /* Text on colored backgrounds */
+    --color-text-on-accent: #FFFFFF;
+    --color-text-on-danger: #FFFFFF;
+    --color-text-on-success: #FFFFFF;
+    --color-text-on-warning: #1F2937;
+    --color-text-on-info: #FFFFFF;
+    
+    /* Light backgrounds for status colors */
+    --color-danger-bg-light: #FEF2F2;
+    --color-success-bg-light: #F0FDF4;
+    --color-warning-bg-light: #FFFBEB;
+    --color-info-bg-light: #EFF6FF;
 
     /* Input Tokens */
     --input-bg: var(--color-surface);
@@ -60,6 +73,7 @@
     /* Sidebar Tokens */
     --sidebar-bg: var(--color-surface);
     --sidebar-border: var(--color-border);
+    --sidebar-text: var(--color-text);
     --sidebar-item-bg: transparent;
     --sidebar-item-bg-hover: var(--color-surface-hover);
     --sidebar-item-bg-active: var(--color-accent);

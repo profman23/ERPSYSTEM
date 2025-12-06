@@ -1,8 +1,10 @@
+import './Sidebar.css';
+
 const Sidebar = () => {
   return (
-    <aside className="w-64 bg-surface border-r border-border flex flex-col">
-      <div className="p-6 border-b border-border">
-        <h1 className="text-xl font-heading font-bold text-primary">
+    <aside className="sidebar-container w-64 flex flex-col">
+      <div className="sidebar-header p-6">
+        <h1 className="sidebar-logo text-xl font-bold">
           VetERP
         </h1>
       </div>
@@ -10,18 +12,15 @@ const Sidebar = () => {
       <nav className="flex-1 p-4">
         <ul className="space-y-2">
           <li>
-            <a
-              href="/"
-              className="block px-4 py-2 rounded-md text-text hover:bg-primary hover:text-white transition-all"
-            >
+            <a href="/" className="sidebar-item block px-4 py-2 rounded-md transition-all">
               Dashboard
             </a>
           </li>
         </ul>
       </nav>
       
-      <div className="p-4 border-t border-border">
-        <p className="text-xs text-text-secondary">
+      <div className="sidebar-footer p-4">
+        <p className="text-xs sidebar-footer-text">
           Phase 1 - Foundation Only
         </p>
       </div>

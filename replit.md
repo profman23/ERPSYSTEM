@@ -84,11 +84,55 @@ Used by all UI components for consistent styling:
 - Background: #F0FDFA, Surface: #FFFFFF, Accent: #14B8A6 (Teal)
 - Legacy aliases: `--app-bg`, `--app-surface`, `--app-accent`, etc.
 
+**Layer 4 - Text-on-Color Tokens:**
+For text displayed on colored backgrounds:
+- `--color-text-on-accent`, `--color-text-on-danger`, `--color-text-on-success`
+- `--color-text-on-warning`, `--color-text-on-info`
+
 **Usage Pattern:**
 1. Layouts set `data-panel` attribute on `<html>` element
 2. CSS tokens automatically cascade based on active panel
 3. Components use generic `--color-*` or `--btn-*` tokens
 4. Pages can use legacy `--sys-*`, `--tenant-*`, `--app-*` aliases for panel-specific styling
+
+### Multi-Tenant Branding Layer (Dec 2024)
+Dynamic tenant branding with CSS variable injection for runtime customization:
+
+**ThemeProvider Features:**
+- `loadTenantBranding(branding)`: Inject custom tenant colors at login
+- `clearTenantBranding()`: Remove tenant branding on logout
+- Secure validation: Hex/RGB/HSL color validation, font family sanitization
+- Logo URL validation (HTTPS or relative paths only)
+- Sidebar style options: 'dark', 'light', 'accent'
+
+**TenantBranding Interface:**
+```typescript
+interface TenantBranding {
+  primary?: string;      // Overrides --color-accent
+  secondary?: string;    // Overrides --btn-secondary-bg
+  background?: string;   // Overrides --color-bg
+  surface?: string;      // Overrides --color-surface
+  accent?: string;       // Direct accent color
+  accentHover?: string;  // Accent hover state
+  radius?: string;       // Border radius (e.g., "0.5rem")
+  logo?: string;         // Brand logo URL
+  fontFamily?: string;   // Custom font family
+  sidebarStyle?: 'dark' | 'light' | 'accent';
+  success?: string;      // Success color override
+  warning?: string;      // Warning color override
+  danger?: string;       // Danger color override
+  info?: string;         // Info color override
+}
+```
+
+**Security:** All branding values are validated before CSS injection to prevent CSS injection attacks.
+
+**Contrast-Aware Colors:** The system automatically calculates appropriate text colors based on background luminance:
+- Uses WCAG-compliant luminance calculation for accessibility
+- Light backgrounds get dark text (#1F2937), dark backgrounds get white text (#FFFFFF)
+- Light background variants (--color-*-bg-light) are auto-generated from status colors
+
+**Font Support:** Currently supports system fonts only. Custom web fonts require Google Fonts URL loading (future enhancement).
 
 ### System Panel User Management (Dec 2024)
 -   **SystemUsersListPage:** Dark-themed platform users list with UserTypeSelector modal for creating System Users or Tenant Admins

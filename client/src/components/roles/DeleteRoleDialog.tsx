@@ -101,7 +101,7 @@ export function DeleteRoleDialog({
             variant="outline"
             onClick={onConfirm}
             disabled={hasUsers || isProtected || isDeleting}
-            style={{ backgroundColor: 'var(--color-danger)', color: 'white' }}
+            style={{ backgroundColor: 'var(--btn-danger-bg)', color: 'var(--btn-danger-text)' }}
           >
             {isDeleting ? 'Deleting...' : 'Delete Role'}
           </Button>

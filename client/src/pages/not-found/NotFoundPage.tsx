@@ -36,7 +36,7 @@ export default function NotFoundPage() {
             <div className="flex justify-center">
               <div 
                 className="w-20 h-20 rounded-full flex items-center justify-center"
-                style={{ backgroundColor: 'color-mix(in srgb, var(--color-danger) 15%, transparent)' }}
+                style={{ backgroundColor: 'var(--color-danger-bg-light)' }}
               >
                 <AlertCircle className="w-10 h-10" style={{ color: 'var(--color-danger)' }} />
               </div>
@@ -59,8 +59,8 @@ export default function NotFoundPage() {
             <div className={`flex flex-col sm:flex-row gap-3 justify-center ${isRTL ? 'sm:flex-row-reverse' : ''}`}>
               <Link to="/dashboard">
                 <Button 
-                  className="w-full sm:w-auto text-white"
-                  style={{ backgroundColor: 'var(--color-accent)' }}
+                  className="w-full sm:w-auto"
+                  style={{ backgroundColor: 'var(--color-accent)', color: 'var(--color-text-on-accent)' }}
                 >
                   <Home className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                   {isRTL ? 'الذهاب إلى لوحة التحكم' : 'Go to Dashboard'}
