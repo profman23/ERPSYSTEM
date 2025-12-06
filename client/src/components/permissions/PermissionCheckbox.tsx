@@ -14,15 +14,15 @@ interface PermissionCheckboxProps {
   actionType?: string;
 }
 
-const actionTypeColors: Record<string, string> = {
-  CREATE: 'text-green-600 dark:text-green-400',
-  READ: 'text-blue-600 dark:text-blue-400',
-  UPDATE: 'text-yellow-600 dark:text-yellow-400',
-  DELETE: 'text-red-600 dark:text-red-400',
-  EXPORT: 'text-purple-600 dark:text-purple-400',
-  IMPORT: 'text-indigo-600 dark:text-indigo-400',
-  APPROVE: 'text-orange-600 dark:text-orange-400',
-  CUSTOM: 'text-gray-600 dark:text-gray-400',
+const actionTypeStyles: Record<string, React.CSSProperties> = {
+  CREATE: { color: 'var(--color-success)' },
+  READ: { color: 'var(--color-info)' },
+  UPDATE: { color: 'var(--color-warning)' },
+  DELETE: { color: 'var(--color-danger)' },
+  EXPORT: { color: 'var(--color-accent)' },
+  IMPORT: { color: 'var(--color-accent)' },
+  APPROVE: { color: 'var(--color-warning)' },
+  CUSTOM: { color: 'var(--color-text-secondary)' },
 };
 
 export function PermissionCheckbox({
@@ -32,17 +32,18 @@ export function PermissionCheckbox({
   checked,
   onCheckedChange,
   disabled = false,
-  indeterminate = false,
+  indeterminate: _indeterminate = false,
   level = 'action',
   actionType,
 }: PermissionCheckboxProps) {
+  void _indeterminate;
   const levelStyles = {
     module: 'font-semibold text-base',
     screen: 'font-medium text-sm',
     action: 'font-normal text-sm',
   };
 
-  const actionColor = actionType ? actionTypeColors[actionType] || actionTypeColors.CUSTOM : '';
+  const actionStyle = actionType ? actionTypeStyles[actionType] || actionTypeStyles.CUSTOM : {};
 
   return (
     <div className="flex items-center space-x-2">
@@ -51,20 +52,19 @@ export function PermissionCheckbox({
         checked={checked}
         onCheckedChange={onCheckedChange}
         disabled={disabled}
-        className={cn(indeterminate && 'data-[state=checked]:bg-gray-400')}
       />
       <Label
         htmlFor={id}
         className={cn(
           levelStyles[level],
-          actionColor,
           'cursor-pointer select-none',
           disabled && 'opacity-50 cursor-not-allowed'
         )}
+        style={actionStyle}
       >
         {label}
         {labelAr && (
-          <span className="text-gray-500 dark:text-gray-400 ml-2 text-xs">
+          <span className="ml-2 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
             ({labelAr})
           </span>
         )}

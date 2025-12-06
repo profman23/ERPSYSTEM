@@ -4,14 +4,6 @@ import { Home, ArrowLeft, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
-/**
- * NotFoundPage - 404 Error page for invalid routes
- * 
- * Features:
- * - RTL support
- * - Clean error message
- * - Navigation back to dashboard
- */
 export default function NotFoundPage() {
   const [isRTL, setIsRTL] = useState(false);
 
@@ -34,18 +26,22 @@ export default function NotFoundPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] flex items-center justify-center p-6">
+    <div 
+      className="min-h-screen flex items-center justify-center p-6"
+      style={{ backgroundColor: 'var(--color-bg)' }}
+    >
       <Card className="max-w-lg w-full shadow-xl">
         <CardContent className="pt-12 pb-12">
           <div className="text-center space-y-6">
-            {/* Error Icon */}
             <div className="flex justify-center">
-              <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FEE2E2' }}>
-                <AlertCircle className="w-10 h-10" style={{ color: '#EF4444' }} />
+              <div 
+                className="w-20 h-20 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: 'color-mix(in srgb, var(--color-danger) 15%, transparent)' }}
+              >
+                <AlertCircle className="w-10 h-10" style={{ color: 'var(--color-danger)' }} />
               </div>
             </div>
 
-            {/* Error Code */}
             <div>
               <h1 className="text-6xl font-bold mb-2" style={{ color: 'var(--color-text)' }}>
                 404
@@ -60,10 +56,12 @@ export default function NotFoundPage() {
               </p>
             </div>
 
-            {/* Action Buttons */}
             <div className={`flex flex-col sm:flex-row gap-3 justify-center ${isRTL ? 'sm:flex-row-reverse' : ''}`}>
               <Link to="/dashboard">
-                <Button className="bg-[#2563EB] hover:bg-[#1E40AF] w-full sm:w-auto">
+                <Button 
+                  className="w-full sm:w-auto text-white"
+                  style={{ backgroundColor: 'var(--color-accent)' }}
+                >
                   <Home className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                   {isRTL ? 'الذهاب إلى لوحة التحكم' : 'Go to Dashboard'}
                 </Button>
@@ -76,8 +74,7 @@ export default function NotFoundPage() {
               </Link>
             </div>
 
-            {/* Help Text */}
-            <div className="pt-6 border-t border-gray-200">
+            <div className="pt-6" style={{ borderTopWidth: '1px', borderTopStyle: 'solid', borderTopColor: 'var(--color-border)' }}>
               <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
                 {isRTL 
                   ? 'إذا كنت تعتقد أن هذا خطأ، يرجى الاتصال بالدعم.'

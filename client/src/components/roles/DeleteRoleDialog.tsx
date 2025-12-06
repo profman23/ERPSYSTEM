@@ -47,12 +47,12 @@ export function DeleteRoleDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="font-medium mb-2">{role.roleName}</h4>
-            <p className="text-sm text-gray-600">{role.description || 'No description'}</p>
+          <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-surface-hover)' }}>
+            <h4 className="font-medium mb-2" style={{ color: 'var(--color-text)' }}>{role.roleName}</h4>
+            <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{role.description || 'No description'}</p>
             <div className="mt-2 text-sm">
-              <span className="text-gray-500">Code:</span>{' '}
-              <code className="bg-white px-2 py-1 rounded text-xs">{role.roleCode}</code>
+              <span style={{ color: 'var(--color-text-muted)' }}>Code:</span>{' '}
+              <code className="px-2 py-1 rounded text-xs" style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}>{role.roleCode}</code>
             </div>
           </div>
 
@@ -101,7 +101,7 @@ export function DeleteRoleDialog({
             variant="outline"
             onClick={onConfirm}
             disabled={hasUsers || isProtected || isDeleting}
-            className="bg-red-500 text-white hover:bg-red-600"
+            style={{ backgroundColor: 'var(--color-danger)', color: 'white' }}
           >
             {isDeleting ? 'Deleting...' : 'Delete Role'}
           </Button>

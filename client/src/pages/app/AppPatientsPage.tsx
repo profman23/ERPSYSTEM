@@ -16,56 +16,69 @@ export default function AppPatientsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Patients</h1>
-          <p className="mt-1 text-gray-500">Manage patient records and medical history</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--app-text)' }}>Patients</h1>
+          <p className="mt-1" style={{ color: 'var(--app-text-secondary)' }}>Manage patient records and medical history</p>
         </div>
-        <Button className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600">
+        <Button 
+          className="text-white"
+          style={{ background: 'linear-gradient(135deg, var(--app-accent), var(--app-accent-hover))' }}
+        >
           <Plus className="w-4 h-4 mr-2" />
           Add Patient
         </Button>
       </div>
 
-      <Card className="border-0 shadow-sm">
+      <Card 
+        className="border-0 shadow-sm"
+        style={{ backgroundColor: 'var(--app-surface)', borderColor: 'var(--app-border)' }}
+      >
         <CardContent className="pt-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--app-text-muted)' }} />
             <Input placeholder="Search patients by name, owner, or species..." className="pl-10" />
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border-0 shadow-sm">
+      <Card 
+        className="border-0 shadow-sm"
+        style={{ backgroundColor: 'var(--app-surface)', borderColor: 'var(--app-border)' }}
+      >
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Stethoscope className="w-5 h-5 text-teal-500" />
+          <CardTitle className="flex items-center gap-2" style={{ color: 'var(--app-text)' }}>
+            <Stethoscope className="w-5 h-5" style={{ color: 'var(--app-accent)' }} />
             Patient Records
           </CardTitle>
-          <CardDescription>{patients.length} patients registered</CardDescription>
+          <CardDescription style={{ color: 'var(--app-text-secondary)' }}>{patients.length} patients registered</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {patients.map((patient) => (
               <div 
                 key={patient.id}
-                className="flex items-center justify-between p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                className="flex items-center justify-between p-4 rounded-xl transition-colors cursor-pointer"
+                style={{ backgroundColor: 'var(--app-surface-hover)' }}
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold">
+                  <div 
+                    className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold"
+                    style={{ background: 'linear-gradient(135deg, var(--app-info), var(--app-accent))' }}
+                  >
                     {patient.name.charAt(0)}
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{patient.name}</p>
-                    <p className="text-sm text-gray-500">{patient.species} • {patient.breed}</p>
+                    <p className="font-medium" style={{ color: 'var(--app-text)' }}>{patient.name}</p>
+                    <p className="text-sm" style={{ color: 'var(--app-text-secondary)' }}>{patient.species} • {patient.breed}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-8">
                   <div className="text-right">
-                    <p className="text-sm font-medium text-gray-700">{patient.owner}</p>
-                    <p className="text-xs text-gray-500">{patient.age}</p>
+                    <p className="text-sm font-medium" style={{ color: 'var(--app-text)' }}>{patient.owner}</p>
+                    <p className="text-xs" style={{ color: 'var(--app-text-secondary)' }}>{patient.age}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-gray-500">Last visit</p>
-                    <p className="text-sm text-teal-600">{patient.lastVisit}</p>
+                    <p className="text-xs" style={{ color: 'var(--app-text-secondary)' }}>Last visit</p>
+                    <p className="text-sm" style={{ color: 'var(--app-accent)' }}>{patient.lastVisit}</p>
                   </div>
                 </div>
               </div>

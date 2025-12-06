@@ -5,21 +5,51 @@ export interface AlertProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'success' | 'warning' | 'error' | 'info';
 }
 
+const getVariantStyles = (variant: string) => {
+  switch (variant) {
+    case 'success':
+      return {
+        backgroundColor: 'color-mix(in srgb, var(--color-success) 10%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--color-success) 30%, transparent)',
+        color: 'var(--color-success)',
+      };
+    case 'warning':
+      return {
+        backgroundColor: 'color-mix(in srgb, var(--color-warning) 10%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--color-warning) 30%, transparent)',
+        color: 'var(--color-warning)',
+      };
+    case 'error':
+      return {
+        backgroundColor: 'color-mix(in srgb, var(--color-danger) 10%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--color-danger) 30%, transparent)',
+        color: 'var(--color-danger)',
+      };
+    case 'info':
+      return {
+        backgroundColor: 'color-mix(in srgb, var(--color-info) 10%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--color-info) 30%, transparent)',
+        color: 'var(--color-info)',
+      };
+    default:
+      return {
+        backgroundColor: 'var(--color-surface)',
+        borderColor: 'var(--color-border)',
+        color: 'var(--color-text)',
+      };
+  }
+};
+
 export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
-  ({ className, variant = 'default', ...props }, ref) => {
+  ({ className, variant = 'default', style, ...props }, ref) => {
+    const variantStyles = getVariantStyles(variant);
+    
     return (
       <div
         ref={ref}
         role="alert"
-        className={cn(
-          'relative w-full rounded-lg border p-4',
-          variant === 'default' && 'bg-white border-gray-200',
-          variant === 'success' && 'bg-green-50 border-green-200 text-green-900',
-          variant === 'warning' && 'bg-yellow-50 border-yellow-200 text-yellow-900',
-          variant === 'error' && 'bg-red-50 border-red-200 text-red-900',
-          variant === 'info' && 'bg-blue-50 border-blue-200 text-blue-900',
-          className
-        )}
+        className={cn('relative w-full rounded-lg border p-4', className)}
+        style={{ ...variantStyles, ...style }}
         {...props}
       />
     );

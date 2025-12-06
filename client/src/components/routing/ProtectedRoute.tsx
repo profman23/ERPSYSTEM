@@ -13,10 +13,13 @@ export default function ProtectedRoute({ allowedScopes, redirectTo }: ProtectedR
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div 
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: 'var(--color-bg)' }}
+      >
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto" />
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <Loader2 className="w-8 h-8 animate-spin mx-auto" style={{ color: 'var(--color-accent)' }} />
+          <p className="mt-4" style={{ color: 'var(--color-text-secondary)' }}>Loading...</p>
         </div>
       </div>
     );

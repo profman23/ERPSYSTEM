@@ -32,13 +32,18 @@ export function Tabs({ value, onValueChange, children, className, ...props }: Ta
 }
 
 export const TabsList = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+  ({ className, style, ...props }, ref) => (
     <div
       ref={ref}
       className={cn(
-        'inline-flex h-10 items-center justify-center rounded-md bg-gray-100 p-1 text-gray-600',
+        'inline-flex h-10 items-center justify-center rounded-md p-1',
         className
       )}
+      style={{
+        backgroundColor: 'var(--color-surface-hover)',
+        color: 'var(--color-text-secondary)',
+        ...style,
+      }}
       {...props}
     />
   )
@@ -50,7 +55,7 @@ interface TabsTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement>
 }
 
 export const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
-  ({ className, value, ...props }, ref) => {
+  ({ className, value, style, ...props }, ref) => {
     const { value: selectedValue, onValueChange } = useTabs();
     const isSelected = value === selectedValue;
 
@@ -60,13 +65,16 @@ export const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>
         type="button"
         className={cn(
           'inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium',
-          'ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+          'transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
           'disabled:pointer-events-none disabled:opacity-50',
-          isSelected
-            ? 'bg-white text-gray-900 shadow-sm'
-            : 'text-gray-600 hover:bg-white/50',
           className
         )}
+        style={{
+          backgroundColor: isSelected ? 'var(--color-surface)' : 'transparent',
+          color: isSelected ? 'var(--color-text)' : 'var(--color-text-secondary)',
+          boxShadow: isSelected ? '0 1px 2px 0 rgb(0 0 0 / 0.05)' : 'none',
+          ...style,
+        }}
         onClick={() => onValueChange(value)}
         {...props}
       />
@@ -89,7 +97,7 @@ export const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
       <div
         ref={ref}
         className={cn(
-          'mt-2 ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+          'mt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
           className
         )}
         {...props}

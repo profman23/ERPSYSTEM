@@ -16,20 +16,26 @@ export default function AppAppointmentsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Appointments</h1>
-          <p className="mt-1 text-gray-500">Manage your scheduled appointments</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--app-text)' }}>Appointments</h1>
+          <p className="mt-1" style={{ color: 'var(--app-text-secondary)' }}>Manage your scheduled appointments</p>
         </div>
-        <Button className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600">
+        <Button 
+          className="text-white"
+          style={{ background: 'linear-gradient(135deg, var(--app-accent), var(--app-accent-hover))' }}
+        >
           <Plus className="w-4 h-4 mr-2" />
           New Appointment
         </Button>
       </div>
 
-      <Card className="border-0 shadow-sm">
+      <Card 
+        className="border-0 shadow-sm"
+        style={{ backgroundColor: 'var(--app-surface)', borderColor: 'var(--app-border)' }}
+      >
         <CardContent className="pt-6">
           <div className="flex gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--app-text-muted)' }} />
               <Input placeholder="Search appointments..." className="pl-10" />
             </div>
             <Button variant="outline">
@@ -40,38 +46,49 @@ export default function AppAppointmentsPage() {
         </CardContent>
       </Card>
 
-      <Card className="border-0 shadow-sm">
+      <Card 
+        className="border-0 shadow-sm"
+        style={{ backgroundColor: 'var(--app-surface)', borderColor: 'var(--app-border)' }}
+      >
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-teal-500" />
+          <CardTitle className="flex items-center gap-2" style={{ color: 'var(--app-text)' }}>
+            <Calendar className="w-5 h-5" style={{ color: 'var(--app-accent)' }} />
             Today's Appointments
           </CardTitle>
-          <CardDescription>{appointments.length} appointments scheduled</CardDescription>
+          <CardDescription style={{ color: 'var(--app-text-secondary)' }}>{appointments.length} appointments scheduled</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {appointments.map((apt) => (
               <div 
                 key={apt.id}
-                className="flex items-center justify-between p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                className="flex items-center justify-between p-4 rounded-xl transition-colors cursor-pointer"
+                style={{ backgroundColor: 'var(--app-surface-hover)' }}
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center text-white font-bold">
+                  <div 
+                    className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold"
+                    style={{ background: 'linear-gradient(135deg, var(--app-accent), var(--app-accent-hover))' }}
+                  >
                     {apt.patient.charAt(0)}
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{apt.patient} ({apt.species})</p>
-                    <p className="text-sm text-gray-500">{apt.owner}</p>
+                    <p className="font-medium" style={{ color: 'var(--app-text)' }}>{apt.patient} ({apt.species})</p>
+                    <p className="text-sm" style={{ color: 'var(--app-text-secondary)' }}>{apt.owner}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-6">
                   <div className="text-right">
-                    <p className="font-semibold text-teal-600">{apt.time}</p>
-                    <p className="text-sm text-gray-500">{apt.type}</p>
+                    <p className="font-semibold" style={{ color: 'var(--app-accent)' }}>{apt.time}</p>
+                    <p className="text-sm" style={{ color: 'var(--app-text-secondary)' }}>{apt.type}</p>
                   </div>
-                  <span className={`px-3 py-1 text-xs rounded-full font-medium ${
-                    apt.status === 'confirmed' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'
-                  }`}>
+                  <span 
+                    className="px-3 py-1 text-xs rounded-full font-medium"
+                    style={{ 
+                      backgroundColor: `color-mix(in srgb, ${apt.status === 'confirmed' ? 'var(--app-success)' : 'var(--app-warning)'} 20%, transparent)`,
+                      color: apt.status === 'confirmed' ? 'var(--app-success)' : 'var(--app-warning)'
+                    }}
+                  >
                     {apt.status}
                   </span>
                 </div>

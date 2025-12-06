@@ -14,8 +14,8 @@ export default function AppReportsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-          <p className="mt-1 text-gray-500">View and download performance reports</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--app-text)' }}>Reports</h1>
+          <p className="mt-1" style={{ color: 'var(--app-text-secondary)' }}>View and download performance reports</p>
         </div>
         <Button variant="outline">
           <Calendar className="w-4 h-4 mr-2" />
@@ -24,73 +24,97 @@ export default function AppReportsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="border-0 shadow-sm bg-gradient-to-br from-teal-50 to-emerald-50">
+        <Card 
+          className="border-0 shadow-sm"
+          style={{ background: `linear-gradient(to bottom right, color-mix(in srgb, var(--app-accent) 10%, transparent), color-mix(in srgb, var(--app-success) 10%, transparent))` }}
+        >
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-teal-600 font-medium">Appointments This Week</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">47</p>
-                <p className="text-sm text-green-600 mt-1 flex items-center gap-1">
+                <p className="text-sm font-medium" style={{ color: 'var(--app-accent)' }}>Appointments This Week</p>
+                <p className="text-3xl font-bold mt-1" style={{ color: 'var(--app-text)' }}>47</p>
+                <p className="text-sm mt-1 flex items-center gap-1" style={{ color: 'var(--app-success)' }}>
                   <TrendingUp className="w-4 h-4" />
                   +12% from last week
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-teal-600" />
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: `color-mix(in srgb, var(--app-accent) 20%, transparent)` }}
+              >
+                <Calendar className="w-6 h-6" style={{ color: 'var(--app-accent)' }} />
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-cyan-50">
+        <Card 
+          className="border-0 shadow-sm"
+          style={{ background: `linear-gradient(to bottom right, color-mix(in srgb, var(--app-info) 10%, transparent), color-mix(in srgb, var(--app-accent) 10%, transparent))` }}
+        >
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-blue-600 font-medium">Reports Generated</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">12</p>
-                <p className="text-sm text-gray-500 mt-1">This month</p>
+                <p className="text-sm font-medium" style={{ color: 'var(--app-info)' }}>Reports Generated</p>
+                <p className="text-3xl font-bold mt-1" style={{ color: 'var(--app-text)' }}>12</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--app-text-secondary)' }}>This month</p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-                <FileText className="w-6 h-6 text-blue-600" />
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: `color-mix(in srgb, var(--app-info) 20%, transparent)` }}
+              >
+                <FileText className="w-6 h-6" style={{ color: 'var(--app-info)' }} />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="border-0 shadow-sm">
+      <Card 
+        className="border-0 shadow-sm"
+        style={{ backgroundColor: 'var(--app-surface)', borderColor: 'var(--app-border)' }}
+      >
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-teal-500" />
+          <CardTitle className="flex items-center gap-2" style={{ color: 'var(--app-text)' }}>
+            <FileText className="w-5 h-5" style={{ color: 'var(--app-accent)' }} />
             Available Reports
           </CardTitle>
-          <CardDescription>Generate and download reports</CardDescription>
+          <CardDescription style={{ color: 'var(--app-text-secondary)' }}>Generate and download reports</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {reports.map((report, index) => (
               <div 
                 key={index}
-                className="flex items-center justify-between p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                className="flex items-center justify-between p-4 rounded-xl transition-colors"
+                style={{ backgroundColor: 'var(--app-surface-hover)' }}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    report.type === 'daily' ? 'bg-blue-100' :
-                    report.type === 'weekly' ? 'bg-purple-100' :
-                    report.type === 'monthly' ? 'bg-green-100' : 'bg-orange-100'
-                  }`}>
-                    <FileText className={`w-5 h-5 ${
-                      report.type === 'daily' ? 'text-blue-600' :
-                      report.type === 'weekly' ? 'text-purple-600' :
-                      report.type === 'monthly' ? 'text-green-600' : 'text-orange-600'
-                    }`} />
+                  <div 
+                    className="w-10 h-10 rounded-lg flex items-center justify-center"
+                    style={{ 
+                      backgroundColor: `color-mix(in srgb, ${
+                        report.type === 'daily' ? 'var(--app-info)' :
+                        report.type === 'weekly' ? 'var(--color-accent)' :
+                        report.type === 'monthly' ? 'var(--app-success)' : 'var(--app-warning)'
+                      } 20%, transparent)` 
+                    }}
+                  >
+                    <FileText 
+                      className="w-5 h-5" 
+                      style={{ 
+                        color: report.type === 'daily' ? 'var(--app-info)' :
+                          report.type === 'weekly' ? 'var(--color-accent)' :
+                          report.type === 'monthly' ? 'var(--app-success)' : 'var(--app-warning)'
+                      }} 
+                    />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{report.name}</p>
-                    <p className="text-sm text-gray-500">{report.description}</p>
+                    <p className="font-medium" style={{ color: 'var(--app-text)' }}>{report.name}</p>
+                    <p className="text-sm" style={{ color: 'var(--app-text-secondary)' }}>{report.description}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className="text-sm text-gray-500">{report.date}</span>
+                  <span className="text-sm" style={{ color: 'var(--app-text-secondary)' }}>{report.date}</span>
                   <Button variant="ghost" size="sm">
                     <Download className="w-4 h-4" />
                   </Button>

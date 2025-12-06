@@ -111,7 +111,8 @@ export function PermissionTree({
                         <AccordionItem
                           key={screenKey}
                           value={screenKey}
-                          className="border-l-2 border-gray-200 dark:border-gray-700 pl-4 mb-2"
+                          className="border-l-2 pl-4 mb-2"
+                          style={{ borderColor: 'var(--color-border)' }}
                         >
                           <AccordionTrigger className="hover:no-underline py-2" value={screenKey}>
                             <div className="flex items-center justify-between w-full pr-4">
