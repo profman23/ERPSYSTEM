@@ -62,12 +62,97 @@ const getLuminance = (r: number, g: number, b: number): number => {
   return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
 };
 
+const getContrastRatio = (l1: number, l2: number): number => {
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+};
+
+const DARK_TEXT = '#1F2937';
+const LIGHT_TEXT = '#FFFFFF';
+const WCAG_AA_THRESHOLD = 4.5;
+
 const getContrastTextColor = (bgColor: string): string => {
   const rgb = hexToRgb(bgColor);
-  if (!rgb) return '#FFFFFF';
+  if (!rgb) return LIGHT_TEXT;
   
-  const luminance = getLuminance(rgb.r, rgb.g, rgb.b);
-  return luminance > 0.179 ? '#1F2937' : '#FFFFFF';
+  const bgLuminance = getLuminance(rgb.r, rgb.g, rgb.b);
+  const darkTextLuminance = getLuminance(0x1F, 0x29, 0x37);
+  const lightTextLuminance = getLuminance(0xFF, 0xFF, 0xFF);
+  
+  const darkContrast = getContrastRatio(bgLuminance, darkTextLuminance);
+  const lightContrast = getContrastRatio(bgLuminance, lightTextLuminance);
+  
+  return darkContrast > lightContrast ? DARK_TEXT : LIGHT_TEXT;
+};
+
+const ensureWcagContrast = (bgColor: string, preferredTextColor: string): { bg: string; text: string } => {
+  const bgRgb = hexToRgb(bgColor);
+  if (!bgRgb) return { bg: bgColor, text: preferredTextColor };
+  
+  const bgLuminance = getLuminance(bgRgb.r, bgRgb.g, bgRgb.b);
+  const darkTextLuminance = getLuminance(0x1F, 0x29, 0x37);
+  const lightTextLuminance = getLuminance(0xFF, 0xFF, 0xFF);
+  
+  const darkContrast = getContrastRatio(bgLuminance, darkTextLuminance);
+  const lightContrast = getContrastRatio(bgLuminance, lightTextLuminance);
+  
+  if (Math.max(darkContrast, lightContrast) >= WCAG_AA_THRESHOLD) {
+    return { 
+      bg: bgColor, 
+      text: darkContrast > lightContrast ? DARK_TEXT : LIGHT_TEXT 
+    };
+  }
+  
+  return { bg: bgColor, text: darkContrast > lightContrast ? DARK_TEXT : LIGHT_TEXT };
+};
+
+const adjustColorForContrast = (
+  bgColor: string, 
+  preferredTextColor: string, 
+  direction: 'lighten' | 'darken'
+): { bg: string; text: string } => {
+  const bgRgb = hexToRgb(bgColor);
+  if (!bgRgb) return ensureWcagContrast(bgColor, preferredTextColor);
+  
+  let { r, g, b } = bgRgb;
+  
+  for (let i = 0; i < 30; i++) {
+    const currentBg = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    const bgLuminance = getLuminance(r, g, b);
+    
+    const darkTextLuminance = getLuminance(0x1F, 0x29, 0x37);
+    const lightTextLuminance = getLuminance(0xFF, 0xFF, 0xFF);
+    
+    const darkContrast = getContrastRatio(bgLuminance, darkTextLuminance);
+    const lightContrast = getContrastRatio(bgLuminance, lightTextLuminance);
+    const bestContrast = Math.max(darkContrast, lightContrast);
+    const bestText = darkContrast > lightContrast ? DARK_TEXT : LIGHT_TEXT;
+    
+    if (bestContrast >= WCAG_AA_THRESHOLD) {
+      return { bg: currentBg, text: bestText };
+    }
+    
+    if (direction === 'lighten') {
+      r = Math.min(255, Math.round(r + (255 - r) * 0.08));
+      g = Math.min(255, Math.round(g + (255 - g) * 0.08));
+      b = Math.min(255, Math.round(b + (255 - b) * 0.08));
+    } else {
+      r = Math.max(0, Math.round(r * 0.92));
+      g = Math.max(0, Math.round(g * 0.92));
+      b = Math.max(0, Math.round(b * 0.92));
+    }
+  }
+  
+  const finalBg = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  const finalLuminance = getLuminance(r, g, b);
+  const darkContrast = getContrastRatio(finalLuminance, getLuminance(0x1F, 0x29, 0x37));
+  const lightContrast = getContrastRatio(finalLuminance, getLuminance(0xFF, 0xFF, 0xFF));
+  
+  return { 
+    bg: finalBg, 
+    text: darkContrast > lightContrast ? DARK_TEXT : LIGHT_TEXT 
+  };
 };
 
 const getLightBgColor = (color: string): string => {
@@ -82,7 +167,7 @@ const getLightBgColor = (color: string): string => {
 const isValidHexColor = (value: string): boolean => {
   if (!value || typeof value !== 'string') return false;
   const sanitized = value.trim();
-  const hexPattern = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$/;
+  const hexPattern = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
   return hexPattern.test(sanitized);
 };
 
@@ -178,26 +263,69 @@ const injectTenantBrandingCSS = (branding: TenantBranding) => {
   const accentColor = sanitized.primary || sanitized.accent;
   
   if (accentColor) {
-    cssVars.push(`--color-accent: ${accentColor}`);
-    cssVars.push(`--btn-primary-bg: ${accentColor}`);
-    cssVars.push(`--tenant-accent: ${accentColor}`);
-    cssVars.push(`--app-accent: ${accentColor}`);
-    cssVars.push(`--color-text-on-accent: ${getContrastTextColor(accentColor)}`);
-    cssVars.push(`--btn-primary-text: ${getContrastTextColor(accentColor)}`);
-    cssVars.push(`--sidebar-item-text-active: ${getContrastTextColor(accentColor)}`);
+    const accentRgb = hexToRgb(accentColor);
+    if (accentRgb) {
+      const accentLuminance = getLuminance(accentRgb.r, accentRgb.g, accentRgb.b);
+      const preferredTextColor = accentLuminance > 0.179 ? DARK_TEXT : LIGHT_TEXT;
+      const accentResult = adjustColorForContrast(accentColor, preferredTextColor, accentLuminance > 0.5 ? 'darken' : 'lighten');
+      
+      cssVars.push(`--color-accent: ${accentResult.bg}`);
+      cssVars.push(`--btn-primary-bg: ${accentResult.bg}`);
+      cssVars.push(`--tenant-accent: ${accentResult.bg}`);
+      cssVars.push(`--app-accent: ${accentResult.bg}`);
+      cssVars.push(`--color-text-on-accent: ${accentResult.text}`);
+      cssVars.push(`--btn-primary-text: ${accentResult.text}`);
+      cssVars.push(`--sidebar-item-text-active: ${accentResult.text}`);
+    }
   }
   
   if (sanitized.accentHover) {
-    cssVars.push(`--color-accent-hover: ${sanitized.accentHover}`);
-    cssVars.push(`--btn-primary-bg-hover: ${sanitized.accentHover}`);
-    cssVars.push(`--tenant-accent-hover: ${sanitized.accentHover}`);
-    cssVars.push(`--app-accent-hover: ${sanitized.accentHover}`);
+    const hoverRgb = hexToRgb(sanitized.accentHover);
+    if (hoverRgb) {
+      const hoverLuminance = getLuminance(hoverRgb.r, hoverRgb.g, hoverRgb.b);
+      const preferredHoverText = hoverLuminance > 0.179 ? DARK_TEXT : LIGHT_TEXT;
+      const hoverResult = adjustColorForContrast(sanitized.accentHover, preferredHoverText, hoverLuminance > 0.5 ? 'darken' : 'lighten');
+      
+      cssVars.push(`--color-accent-hover: ${hoverResult.bg}`);
+      cssVars.push(`--btn-primary-bg-hover: ${hoverResult.bg}`);
+      cssVars.push(`--tenant-accent-hover: ${hoverResult.bg}`);
+      cssVars.push(`--app-accent-hover: ${hoverResult.bg}`);
+      cssVars.push(`--btn-primary-text-hover: ${hoverResult.text}`);
+    }
+  } else if (accentColor) {
+    const accentRgb = hexToRgb(accentColor);
+    if (accentRgb) {
+      const accentLuminance = getLuminance(accentRgb.r, accentRgb.g, accentRgb.b);
+      const preferredText = accentLuminance > 0.179 ? DARK_TEXT : LIGHT_TEXT;
+      const accentHoverResult = adjustColorForContrast(accentColor, preferredText, 'darken');
+      
+      cssVars.push(`--color-accent-hover: ${accentHoverResult.bg}`);
+      cssVars.push(`--btn-primary-bg-hover: ${accentHoverResult.bg}`);
+      cssVars.push(`--tenant-accent-hover: ${accentHoverResult.bg}`);
+      cssVars.push(`--app-accent-hover: ${accentHoverResult.bg}`);
+      cssVars.push(`--btn-primary-text-hover: ${accentHoverResult.text}`);
+    }
   }
   
   if (sanitized.secondary) {
-    cssVars.push(`--btn-secondary-bg: ${sanitized.secondary}`);
-    cssVars.push(`--btn-secondary-text: ${getContrastTextColor(sanitized.secondary)}`);
-    cssVars.push(`--btn-secondary-bg-hover: ${getLightBgColor(sanitized.secondary)}`);
+    const secondaryRgb = hexToRgb(sanitized.secondary);
+    if (secondaryRgb) {
+      const secondaryLuminance = getLuminance(secondaryRgb.r, secondaryRgb.g, secondaryRgb.b);
+      const preferredSecondaryText = secondaryLuminance > 0.179 ? DARK_TEXT : LIGHT_TEXT;
+      
+      const baseDirection: 'lighten' | 'darken' = secondaryLuminance > 0.5 ? 'darken' : 'lighten';
+      const baseResult = adjustColorForContrast(sanitized.secondary, preferredSecondaryText, baseDirection);
+      
+      const baseRgb = hexToRgb(baseResult.bg);
+      const baseLuminance = baseRgb ? getLuminance(baseRgb.r, baseRgb.g, baseRgb.b) : secondaryLuminance;
+      const hoverDirection: 'lighten' | 'darken' = baseLuminance > 0.5 ? 'darken' : 'lighten';
+      const hoverResult = adjustColorForContrast(baseResult.bg, baseResult.text, hoverDirection);
+      
+      cssVars.push(`--btn-secondary-bg: ${baseResult.bg}`);
+      cssVars.push(`--btn-secondary-text: ${baseResult.text}`);
+      cssVars.push(`--btn-secondary-bg-hover: ${hoverResult.bg}`);
+      cssVars.push(`--btn-secondary-text-hover: ${hoverResult.text}`);
+    }
   }
   
   if (sanitized.background) {
@@ -218,28 +346,53 @@ const injectTenantBrandingCSS = (branding: TenantBranding) => {
   }
   
   if (sanitized.success) {
-    cssVars.push(`--color-success: ${sanitized.success}`);
-    cssVars.push(`--color-text-on-success: ${getContrastTextColor(sanitized.success)}`);
-    cssVars.push(`--color-success-bg-light: ${getLightBgColor(sanitized.success)}`);
+    const successRgb = hexToRgb(sanitized.success);
+    if (successRgb) {
+      const successLuminance = getLuminance(successRgb.r, successRgb.g, successRgb.b);
+      const preferredText = successLuminance > 0.179 ? DARK_TEXT : LIGHT_TEXT;
+      const successResult = adjustColorForContrast(sanitized.success, preferredText, successLuminance > 0.5 ? 'darken' : 'lighten');
+      cssVars.push(`--color-success: ${successResult.bg}`);
+      cssVars.push(`--color-text-on-success: ${successResult.text}`);
+      cssVars.push(`--color-success-bg-light: ${getLightBgColor(successResult.bg)}`);
+    }
   }
   
   if (sanitized.warning) {
-    cssVars.push(`--color-warning: ${sanitized.warning}`);
-    cssVars.push(`--color-text-on-warning: ${getContrastTextColor(sanitized.warning)}`);
-    cssVars.push(`--color-warning-bg-light: ${getLightBgColor(sanitized.warning)}`);
+    const warningRgb = hexToRgb(sanitized.warning);
+    if (warningRgb) {
+      const warningLuminance = getLuminance(warningRgb.r, warningRgb.g, warningRgb.b);
+      const preferredText = warningLuminance > 0.179 ? DARK_TEXT : LIGHT_TEXT;
+      const warningResult = adjustColorForContrast(sanitized.warning, preferredText, warningLuminance > 0.5 ? 'darken' : 'lighten');
+      cssVars.push(`--color-warning: ${warningResult.bg}`);
+      cssVars.push(`--color-text-on-warning: ${warningResult.text}`);
+      cssVars.push(`--color-warning-bg-light: ${getLightBgColor(warningResult.bg)}`);
+    }
   }
   
   if (sanitized.danger) {
-    cssVars.push(`--color-danger: ${sanitized.danger}`);
-    cssVars.push(`--btn-danger-bg: ${sanitized.danger}`);
-    cssVars.push(`--color-text-on-danger: ${getContrastTextColor(sanitized.danger)}`);
-    cssVars.push(`--color-danger-bg-light: ${getLightBgColor(sanitized.danger)}`);
+    const dangerRgb = hexToRgb(sanitized.danger);
+    if (dangerRgb) {
+      const dangerLuminance = getLuminance(dangerRgb.r, dangerRgb.g, dangerRgb.b);
+      const preferredText = dangerLuminance > 0.179 ? DARK_TEXT : LIGHT_TEXT;
+      const dangerResult = adjustColorForContrast(sanitized.danger, preferredText, dangerLuminance > 0.5 ? 'darken' : 'lighten');
+      cssVars.push(`--color-danger: ${dangerResult.bg}`);
+      cssVars.push(`--btn-danger-bg: ${dangerResult.bg}`);
+      cssVars.push(`--color-text-on-danger: ${dangerResult.text}`);
+      cssVars.push(`--btn-danger-text: ${dangerResult.text}`);
+      cssVars.push(`--color-danger-bg-light: ${getLightBgColor(dangerResult.bg)}`);
+    }
   }
   
   if (sanitized.info) {
-    cssVars.push(`--color-info: ${sanitized.info}`);
-    cssVars.push(`--color-text-on-info: ${getContrastTextColor(sanitized.info)}`);
-    cssVars.push(`--color-info-bg-light: ${getLightBgColor(sanitized.info)}`);
+    const infoRgb = hexToRgb(sanitized.info);
+    if (infoRgb) {
+      const infoLuminance = getLuminance(infoRgb.r, infoRgb.g, infoRgb.b);
+      const preferredText = infoLuminance > 0.179 ? DARK_TEXT : LIGHT_TEXT;
+      const infoResult = adjustColorForContrast(sanitized.info, preferredText, infoLuminance > 0.5 ? 'darken' : 'lighten');
+      cssVars.push(`--color-info: ${infoResult.bg}`);
+      cssVars.push(`--color-text-on-info: ${infoResult.text}`);
+      cssVars.push(`--color-info-bg-light: ${getLightBgColor(infoResult.bg)}`);
+    }
   }
   
   if (sanitized.fontFamily) {
@@ -258,16 +411,55 @@ const injectTenantBrandingCSS = (branding: TenantBranding) => {
     cssVars.push(`--sidebar-item-bg-hover: rgba(255, 255, 255, 0.05)`);
     cssVars.push(`--sidebar-item-bg-active: rgba(255, 255, 255, 0.1)`);
   } else if (sanitized.sidebarStyle === 'accent' && accentColor) {
-    const textColor = getContrastTextColor(accentColor);
-    cssVars.push(`--sidebar-bg: ${accentColor}`);
-    cssVars.push(`--sidebar-border: ${accentColor}`);
-    cssVars.push(`--sidebar-text: ${textColor}`);
-    cssVars.push(`--sidebar-item-text: ${textColor === '#FFFFFF' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(31, 41, 55, 0.8)'}`);
-    cssVars.push(`--sidebar-item-text-hover: ${textColor}`);
-    cssVars.push(`--sidebar-item-text-active: ${textColor}`);
-    cssVars.push(`--sidebar-item-bg: transparent`);
-    cssVars.push(`--sidebar-item-bg-hover: ${textColor === '#FFFFFF' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`);
-    cssVars.push(`--sidebar-item-bg-active: ${textColor === '#FFFFFF' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'}`);
+    const accentRgb = hexToRgb(accentColor);
+    if (accentRgb) {
+      const sidebarLuminance = getLuminance(accentRgb.r, accentRgb.g, accentRgb.b);
+      const preferredText = sidebarLuminance > 0.179 ? DARK_TEXT : LIGHT_TEXT;
+      const sidebarResult = adjustColorForContrast(accentColor, preferredText, sidebarLuminance > 0.5 ? 'darken' : 'lighten');
+      
+      const textColor = sidebarResult.text;
+      const bgRgb = hexToRgb(sidebarResult.bg);
+      
+      if (bgRgb) {
+        let hoverBg: string;
+        let activeBg: string;
+        
+        if (textColor === LIGHT_TEXT) {
+          const hoverR = Math.min(255, bgRgb.r + 15);
+          const hoverG = Math.min(255, bgRgb.g + 15);
+          const hoverB = Math.min(255, bgRgb.b + 15);
+          hoverBg = `#${hoverR.toString(16).padStart(2, '0')}${hoverG.toString(16).padStart(2, '0')}${hoverB.toString(16).padStart(2, '0')}`;
+          
+          const activeR = Math.min(255, bgRgb.r + 30);
+          const activeG = Math.min(255, bgRgb.g + 30);
+          const activeB = Math.min(255, bgRgb.b + 30);
+          activeBg = `#${activeR.toString(16).padStart(2, '0')}${activeG.toString(16).padStart(2, '0')}${activeB.toString(16).padStart(2, '0')}`;
+        } else {
+          const hoverR = Math.max(0, bgRgb.r - 15);
+          const hoverG = Math.max(0, bgRgb.g - 15);
+          const hoverB = Math.max(0, bgRgb.b - 15);
+          hoverBg = `#${hoverR.toString(16).padStart(2, '0')}${hoverG.toString(16).padStart(2, '0')}${hoverB.toString(16).padStart(2, '0')}`;
+          
+          const activeR = Math.max(0, bgRgb.r - 30);
+          const activeG = Math.max(0, bgRgb.g - 30);
+          const activeB = Math.max(0, bgRgb.b - 30);
+          activeBg = `#${activeR.toString(16).padStart(2, '0')}${activeG.toString(16).padStart(2, '0')}${activeB.toString(16).padStart(2, '0')}`;
+        }
+        
+        const hoverResult = adjustColorForContrast(hoverBg, textColor, textColor === LIGHT_TEXT ? 'darken' : 'lighten');
+        const activeResult = adjustColorForContrast(activeBg, textColor, textColor === LIGHT_TEXT ? 'darken' : 'lighten');
+        
+        cssVars.push(`--sidebar-bg: ${sidebarResult.bg}`);
+        cssVars.push(`--sidebar-border: ${sidebarResult.bg}`);
+        cssVars.push(`--sidebar-text: ${textColor}`);
+        cssVars.push(`--sidebar-item-text: ${textColor}`);
+        cssVars.push(`--sidebar-item-text-hover: ${textColor}`);
+        cssVars.push(`--sidebar-item-text-active: ${textColor}`);
+        cssVars.push(`--sidebar-item-bg: ${sidebarResult.bg}`);
+        cssVars.push(`--sidebar-item-bg-hover: ${hoverResult.bg}`);
+        cssVars.push(`--sidebar-item-bg-active: ${activeResult.bg}`);
+      }
+    }
   } else if (sanitized.sidebarStyle === 'light') {
     cssVars.push(`--sidebar-bg: #FFFFFF`);
     cssVars.push(`--sidebar-border: #E5E7EB`);

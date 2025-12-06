@@ -127,10 +127,28 @@ interface TenantBranding {
 
 **Security:** All branding values are validated before CSS injection to prevent CSS injection attacks.
 
-**Contrast-Aware Colors:** The system automatically calculates appropriate text colors based on background luminance:
-- Uses WCAG-compliant luminance calculation for accessibility
-- Light backgrounds get dark text (#1F2937), dark backgrounds get white text (#FFFFFF)
-- Light background variants (--color-*-bg-light) are auto-generated from status colors
+**WCAG AA Contrast Enforcement (Dec 2024):**
+The system guarantees ≥4.5:1 contrast ratio for ALL tenant-customizable color tokens:
+
+1. **adjustColorForContrast() Algorithm:**
+   - Iteratively adjusts background color (up to 30 iterations, 8% per step)
+   - Checks contrast against both dark (#1F2937) and light (#FFFFFF) text
+   - Always selects the text color with best contrast ratio
+   - Returns only when ≥4.5:1 WCAG AA threshold is met
+
+2. **Tokens Processed:**
+   - Primary/Accent buttons (base + hover)
+   - Secondary buttons (base + hover)
+   - Sidebar accent style (base + hover + active)
+   - Status colors (success, warning, danger, info)
+
+3. **Color Input Restriction:**
+   - Only 3/6-digit hex colors (#RGB or #RRGGBB) are accepted
+   - No alpha channel support to ensure reliable contrast calculation
+
+4. **Automatic Hover Derivation:**
+   - If accentHover not provided, automatically darkens accent by 15%
+   - Hover states are independently processed through adjustColorForContrast()
 
 **Font Support:** Currently supports system fonts only. Custom web fonts require Google Fonts URL loading (future enhancement).
 
