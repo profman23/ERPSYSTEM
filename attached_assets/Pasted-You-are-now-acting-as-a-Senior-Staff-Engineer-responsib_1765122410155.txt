@@ -1,0 +1,237 @@
+You are now acting as a Senior Staff Engineer responsible for hardening and finalizing the entire front-end architecture of ONX CORE — a large-scale multi-tenant SaaS system.
+
+Your goal is to perform a full-system refactor pass that achieves enterprise-grade stability, consistency, theming, and routing correctness at the level of Meta, Uber, Stripe, Shopify, SAP, and Spotify.
+
+This is not a feature request.
+This is a system-wide architectural overhaul with zero room for partial fixes.
+
+You must execute ALL phases below exactly and in order.
+
+==================================================
+PHASE 0 — SYSTEM DIAGNOSIS (MANDATORY FIRST)
+
+Scan the ENTIRE codebase and detect:
+
+Routing inconsistencies between:
+
+/system/*
+
+/admin/*
+
+/app/*
+
+Any incorrect redirect:
+
+Tenant Admin → /app (WRONG)
+
+System Admin → /admin or /app (WRONG)
+
+Any user scope leakage (system user inside tenant, tenant user inside system)
+
+Hardcoded:
+
+colors
+
+backgrounds
+
+shadows
+
+borders
+
+radiuses
+
+spacing
+
+Any remaining white UI surfaces in ANY panel
+
+Any UI component not using the global token system
+
+Any form/page not using the correct panel identity
+
+Produce a task list and immediately begin execution.
+
+==================================================
+PHASE 1 — GLOBAL THEMING ENGINE (ENTERPRISE STANDARD)
+
+Implement a complete multi-layer design token engine:
+
+GLOBAL TOKENS (root):
+--color-bg
+--color-surface
+--color-text
+--color-border
+--color-accent
+
+PANEL TOKENS (via <html data-panel="system|tenant|app">):
+SYSTEM PANEL → dark enterprise theme
+TENANT PANEL → light control-center admin theme
+APP PANEL → medical teal application theme
+
+COMPONENT TOKENS:
+--button-bg
+--button-bg-hover
+--button-text
+--input-bg
+--input-border
+--card-bg
+--sidebar-bg
+--sidebar-hover-bg
+--sidebar-active-bg
+
+REQUIREMENTS:
+✓ No Tailwind color classes allowed
+✓ No bg-white, text-white, bg-gray-, shadow-, border-*
+✓ All UI must adapt through tokens automatically
+✓ WCAG AA contrast enforcement for all text/background
+✓ This system must scale to 3000+ tenant themes effortlessly
+
+==================================================
+PHASE 2 — COMPONENT NORMALIZATION (GLOBAL)
+
+Refactor ALL core components to become fully token-driven:
+
+Button
+
+Input
+
+Select
+
+Card
+
+Dialog
+
+Table
+
+Sidebar
+
+Header
+
+Badge
+
+Tabs
+
+Alerts
+
+Checkbox
+
+Form wrappers
+
+REQUIREMENTS:
+✓ Zero white backgrounds
+✓ Zero hardcoded Tailwind colors
+✓ Token-only styling
+✓ Automatic dark/light adaptation
+✓ Remove duplicated or legacy components
+✓ Every page must use these normalized components
+
+==================================================
+PHASE 3 — ROUTING ISOLATION (CRITICAL)
+
+Fix routing logic so:
+
+SYSTEM ADMIN → always locked to /system/*
+TENANT ADMIN → always locked to /admin/*
+USER APP → always locked to /app/*
+
+REQUIREMENTS:
+✓ Fix ScopeRedirect
+✓ Fix ProtectedRoute
+✓ Fix LegacyRedirect
+✓ Fix useScopePath
+✓ Enforce tenantCode rules
+✓ Enforce access_scope rules
+✓ Add backend guards in middleware
+
+==================================================
+PHASE 4 — CREATE TENANT (FULL FIX)
+
+Rewrite CreateTenantPage using the new component + token system:
+
+Fields:
+
+tenantName
+
+tenantCode
+
+allowedBusinessLines
+
+allowedBranches
+
+brandingColorPrimary
+
+brandingColorAccent
+
+REQUIREMENTS:
+✓ Dark theme (system panel identity)
+✓ No white backgrounds
+✓ Use normalized components only
+✓ Store and validate limits correctly
+✓ Prepare for subscription plans in future
+
+==================================================
+PHASE 5 — TENANT ADMIN REDIRECTION FIX
+
+Fix bug where Tenant Admin is routed to /app instead of /admin.
+
+Correct behavior:
+Tenant Admin → /admin/dashboard
+
+==================================================
+PHASE 6 — PANEL CONSISTENCY PASS
+
+Ensure ALL panels follow strict consistency rules:
+
+SYSTEM PANEL:
+✓ Enterprise dark theme
+✓ Consistent spacing, card surfaces, headers
+
+TENANT PANEL:
+✓ Admin control center style
+✓ No white UI
+✓ Consistent card + table + sidebar
+
+APP PANEL:
+✓ Medical teal theme
+✓ Unified look across all patient/appointment modules
+
+==================================================
+PHASE 7 — SCALABILITY + PERFORMANCE HARDENING
+
+Prepare the UI for 3000+ tenants and real-time theme updates:
+
+REQUIREMENTS:
+✓ Token engine must update in O(1)
+✓ No inline styles
+✓ No per-component overrides
+✓ No style duplication
+✓ All themes cascade from the panel root
+
+==================================================
+DELIVERABLES
+
+At the end you must provide:
+
+A complete list of all files changed
+
+A summary of architectural improvements
+
+Problems eliminated
+
+Guarantees achieved
+
+Confirmation the system now meets enterprise UI/UX standards
+
+==================================================
+QUALITY BAR (DO NOT FALL BELOW THIS)
+
+Your implementation must match the engineering standards of:
+
+✓ Uber Base Web
+✓ Stripe Dashboard
+✓ Meta Panels
+✓ Shopify Polaris
+✓ SAP Fiori
+
+Begin execution now.
+Do NOT skip or partially implement any phase.
+Complete the full architectural overhaul.
