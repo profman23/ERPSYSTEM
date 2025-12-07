@@ -1,9 +1,7 @@
-import { Building2, Users, GitBranch, Briefcase, TrendingUp, Calendar, Loader2, AlertTriangle } from 'lucide-react';
+import { Users, GitBranch, Briefcase, TrendingUp, Calendar, Loader2, AlertTriangle } from 'lucide-react';
 import { useAllBusinessLines, useAllBranchesNoFilter, useAllUsers } from '@/hooks/useHierarchy';
-import { useAuth } from '@/contexts/AuthContext';
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
   const { data: businessLines, isLoading: loadingBusinessLines } = useAllBusinessLines();
   const { data: branches, isLoading: loadingBranches } = useAllBranchesNoFilter();
   const { data: users, isLoading: loadingUsers } = useAllUsers();
@@ -14,7 +12,7 @@ export default function AdminDashboard() {
       value: businessLines?.length?.toString() || '0',
       icon: Briefcase,
       description: 'Active business units',
-      color: 'var(--tenant-accent)',
+      colorVar: 'var(--tenant-accent)',
       loading: loadingBusinessLines
     },
     {
@@ -22,7 +20,7 @@ export default function AdminDashboard() {
       value: branches?.length?.toString() || '0',
       icon: GitBranch,
       description: 'Physical locations',
-      color: '#0EA5E9',
+      colorVar: 'var(--color-info)',
       loading: loadingBranches
     },
     {
@@ -30,7 +28,7 @@ export default function AdminDashboard() {
       value: users?.length?.toString() || '0',
       icon: Users,
       description: 'Team members',
-      color: '#14B8A6',
+      colorVar: 'var(--color-accent)',
       loading: loadingUsers
     },
     {
@@ -38,7 +36,7 @@ export default function AdminDashboard() {
       value: '+12%',
       icon: TrendingUp,
       description: 'This month',
-      color: '#22C55E',
+      colorVar: 'var(--color-success)',
       loading: false
     }
   ];
@@ -76,14 +74,14 @@ export default function AdminDashboard() {
                 </span>
                 <div
                   className="w-10 h-10 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: `${stat.color}15` }}
+                  style={{ backgroundColor: `color-mix(in srgb, ${stat.colorVar} 15%, transparent)` }}
                 >
-                  <Icon className="w-5 h-5" style={{ color: stat.color }} />
+                  <Icon className="w-5 h-5" style={{ color: stat.colorVar }} />
                 </div>
               </div>
               <div className="text-3xl font-bold" style={{ color: 'var(--tenant-text)' }}>
                 {stat.loading ? (
-                  <Loader2 className="w-6 h-6 animate-spin" style={{ color: stat.color }} />
+                  <Loader2 className="w-6 h-6 animate-spin" style={{ color: stat.colorVar }} />
                 ) : (
                   stat.value
                 )}
@@ -139,7 +137,7 @@ export default function AdminDashboard() {
           style={{ backgroundColor: 'var(--tenant-surface)', borderColor: 'var(--tenant-border)' }}
         >
           <div className="flex items-center gap-2 mb-4">
-            <Users className="w-5 h-5" style={{ color: '#14B8A6' }} />
+            <Users className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             <h2 className="text-lg font-semibold" style={{ color: 'var(--tenant-text)' }}>
               Team Overview
             </h2>
@@ -180,7 +178,7 @@ export default function AdminDashboard() {
               style={{ backgroundColor: 'var(--tenant-surface-hover)' }}
             >
               <span style={{ color: 'var(--tenant-text-secondary)' }}>Staff</span>
-              <span className="font-semibold" style={{ color: '#14B8A6' }}>
+              <span className="font-semibold" style={{ color: 'var(--color-accent)' }}>
                 {users?.filter(u => u.role === 'staff').length || 0}
               </span>
             </div>
@@ -230,7 +228,7 @@ export default function AdminDashboard() {
               <span className="text-sm font-medium" style={{ color: 'var(--tenant-text-secondary)' }}>
                 Branches
               </span>
-              <GitBranch className="w-4 h-4" style={{ color: '#0EA5E9' }} />
+              <GitBranch className="w-4 h-4" style={{ color: 'var(--color-info)' }} />
             </div>
             <div className="text-2xl font-bold" style={{ color: 'var(--tenant-text)' }}>
               {branches?.length || 0} / 10
@@ -240,7 +238,7 @@ export default function AdminDashboard() {
                 className="h-full rounded-full transition-all"
                 style={{ 
                   width: `${Math.min(((branches?.length || 0) / 10) * 100, 100)}%`,
-                  backgroundColor: '#0EA5E9'
+                  backgroundColor: 'var(--color-info)'
                 }}
               />
             </div>
@@ -253,7 +251,7 @@ export default function AdminDashboard() {
               <span className="text-sm font-medium" style={{ color: 'var(--tenant-text-secondary)' }}>
                 Users
               </span>
-              <Users className="w-4 h-4" style={{ color: '#14B8A6' }} />
+              <Users className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
             </div>
             <div className="text-2xl font-bold" style={{ color: 'var(--tenant-text)' }}>
               {users?.length || 0} / 50
@@ -263,7 +261,7 @@ export default function AdminDashboard() {
                 className="h-full rounded-full transition-all"
                 style={{ 
                   width: `${Math.min(((users?.length || 0) / 50) * 100, 100)}%`,
-                  backgroundColor: '#14B8A6'
+                  backgroundColor: 'var(--color-accent)'
                 }}
               />
             </div>

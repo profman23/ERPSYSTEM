@@ -159,16 +159,13 @@ export default function UsersListPage() {
           </p>
         </div>
         {isSystemUser ? (
-          <Button 
-            className="bg-[#2563EB] hover:bg-[#1E40AF]"
-            onClick={() => setShowUserTypeSelector(true)}
-          >
+          <Button onClick={() => setShowUserTypeSelector(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Add User
           </Button>
         ) : (
           <Link to={getUsersCreatePath(selectedBranchId ? `branchId=${selectedBranchId}` : undefined)}>
-            <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
+            <Button>
               <Plus className="w-4 h-4 mr-2" />
               Add User
             </Button>
@@ -181,7 +178,7 @@ export default function UsersListPage() {
           <div className="space-y-4">
             <div className="flex gap-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9CA3AF' }} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--color-text-muted)' }} />
                 <Input
                   placeholder="Search users by name, email, or code..."
                   className="pl-10"
@@ -245,16 +242,19 @@ export default function UsersListPage() {
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-[#2563EB]" />
+              <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--color-accent)' }} />
               <span className="ml-3" style={{ color: 'var(--color-text-secondary)' }}>Loading...</span>
             </div>
           ) : error ? (
             <div className="text-center py-12">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
-                <AlertCircle className="w-8 h-8 text-red-600" />
+              <div 
+                className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
+                style={{ backgroundColor: 'var(--color-danger-bg-light)' }}
+              >
+                <AlertCircle className="w-8 h-8" style={{ color: 'var(--color-danger)' }} />
               </div>
-              <h3 className="text-lg font-semibold mb-2 text-red-600">Error Loading Users</h3>
-              <p className="text-gray-600 mb-4">
+              <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-danger)' }}>Error Loading Users</h3>
+              <p className="mb-4" style={{ color: 'var(--color-text-secondary)' }}>
                 {(error as any)?.message || 'Failed to load users. Please try again.'}
               </p>
               <Button variant="outline" onClick={() => window.location.reload()}>
@@ -263,7 +263,7 @@ export default function UsersListPage() {
             </div>
           ) : filteredUsers.length === 0 ? (
             <div className="text-center py-12" style={{ color: 'var(--color-text-secondary)' }}>
-              <Users className="w-16 h-16 mx-auto mb-4" style={{ color: '#9CA3AF' }} />
+              <Users className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--color-text-muted)' }} />
               <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
                 {searchQuery ? 'No Matching Users' : 'No Users Yet'}
               </h3>
@@ -272,7 +272,7 @@ export default function UsersListPage() {
               </p>
               {!searchQuery && (
                 <Link to={getUsersCreatePath()}>
-                  <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
+                  <Button>
                     <Plus className="w-4 h-4 mr-2" />
                     Add User
                   </Button>
@@ -300,21 +300,27 @@ export default function UsersListPage() {
                         {u.avatarUrl ? (
                           <img src={u.avatarUrl} alt={getUserDisplayName(u)} className="w-9 h-9 rounded-full object-cover" />
                         ) : (
-                          <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center">
-                            <User className="w-4 h-4 text-purple-600" />
+                          <div 
+                            className="w-9 h-9 rounded-full flex items-center justify-center"
+                            style={{ backgroundColor: 'color-mix(in srgb, var(--color-accent) 15%, transparent)' }}
+                          >
+                            <User className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
                           </div>
                         )}
                         <div>
                           <p className="font-medium">{getUserDisplayName(u)}</p>
-                          <p className="text-xs text-gray-500">{u.email}</p>
+                          <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{u.email}</p>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       {u.code ? (
-                        <code className="text-sm bg-gray-100 px-2 py-1 rounded">{u.code}</code>
+                        <code 
+                          className="text-sm px-2 py-1 rounded"
+                          style={{ backgroundColor: 'var(--color-surface-hover)' }}
+                        >{u.code}</code>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span style={{ color: 'var(--color-text-muted)' }}>-</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -323,7 +329,7 @@ export default function UsersListPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {u.phone || <span className="text-gray-400">-</span>}
+                      {u.phone || <span style={{ color: 'var(--color-text-muted)' }}>-</span>}
                     </TableCell>
                     <TableCell>
                       {u.roleCount ? (
@@ -332,7 +338,7 @@ export default function UsersListPage() {
                           {u.roleCount} role{u.roleCount !== 1 ? 's' : ''}
                         </span>
                       ) : (
-                        <span className="text-gray-400">No roles</span>
+                        <span style={{ color: 'var(--color-text-muted)' }}>No roles</span>
                       )}
                     </TableCell>
                     <TableCell className="text-center">

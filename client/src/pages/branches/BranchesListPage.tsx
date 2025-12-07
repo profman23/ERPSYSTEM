@@ -107,7 +107,7 @@ export default function BranchesListPage() {
           </p>
         </div>
         <Link to={`/branches/create${selectedBusinessLineId ? `?businessLineId=${selectedBusinessLineId}` : ''}`}>
-          <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
+          <Button>
             <Plus className="w-4 h-4 mr-2" />
             Add Branch
           </Button>
@@ -119,7 +119,7 @@ export default function BranchesListPage() {
           <div className="space-y-4">
             <div className="flex gap-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9CA3AF' }} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--color-text-muted)' }} />
                 <Input
                   placeholder="Search branches by name, code, or location..."
                   className="pl-10"
@@ -169,16 +169,19 @@ export default function BranchesListPage() {
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-[#2563EB]" />
+              <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--color-accent)' }} />
               <span className="ml-3" style={{ color: 'var(--color-text-secondary)' }}>Loading...</span>
             </div>
           ) : error ? (
             <div className="text-center py-12">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
-                <AlertCircle className="w-8 h-8 text-red-600" />
+              <div 
+                className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
+                style={{ backgroundColor: 'color-mix(in srgb, var(--color-danger) 15%, transparent)' }}
+              >
+                <AlertCircle className="w-8 h-8" style={{ color: 'var(--color-danger)' }} />
               </div>
-              <h3 className="text-lg font-semibold mb-2 text-red-600">Error Loading Branches</h3>
-              <p className="text-gray-600 mb-4">
+              <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-danger)' }}>Error Loading Branches</h3>
+              <p className="mb-4" style={{ color: 'var(--color-text-secondary)' }}>
                 {(error as any)?.message || 'Failed to load branches. Please try again.'}
               </p>
               <Button variant="outline" onClick={() => window.location.reload()}>
@@ -187,7 +190,7 @@ export default function BranchesListPage() {
             </div>
           ) : !selectedBusinessLineId ? (
             <div className="text-center py-12" style={{ color: 'var(--color-text-secondary)' }}>
-              <MapPin className="w-16 h-16 mx-auto mb-4" style={{ color: '#9CA3AF' }} />
+              <MapPin className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--color-text-muted)' }} />
               <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
                 Select a Business Line
               </h3>
@@ -197,7 +200,7 @@ export default function BranchesListPage() {
             </div>
           ) : filteredBranches.length === 0 ? (
             <div className="text-center py-12" style={{ color: 'var(--color-text-secondary)' }}>
-              <MapPin className="w-16 h-16 mx-auto mb-4" style={{ color: '#9CA3AF' }} />
+              <MapPin className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--color-text-muted)' }} />
               <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
                 {searchQuery ? 'No Matching Branches' : 'No Branches Yet'}
               </h3>
@@ -206,7 +209,7 @@ export default function BranchesListPage() {
               </p>
               {!searchQuery && (
                 <Link to="/branches/create">
-                  <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
+                  <Button>
                     <Plus className="w-4 h-4 mr-2" />
                     Add Branch
                   </Button>
@@ -231,19 +234,22 @@ export default function BranchesListPage() {
                   <TableRow key={branch.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                          <MapPin className="w-4 h-4 text-green-600" />
+                        <div 
+                          className="w-8 h-8 rounded-full flex items-center justify-center"
+                          style={{ backgroundColor: 'color-mix(in srgb, var(--color-success) 15%, transparent)' }}
+                        >
+                          <MapPin className="w-4 h-4" style={{ color: 'var(--color-success)' }} />
                         </div>
                         <div>
                           <p className="font-medium">{branch.name}</p>
                           {branch.address && (
-                            <p className="text-xs text-gray-500 truncate max-w-[200px]">{branch.address}</p>
+                            <p className="text-xs truncate max-w-[200px]" style={{ color: 'var(--color-text-secondary)' }}>{branch.address}</p>
                           )}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <code className="text-sm bg-gray-100 px-2 py-1 rounded">{branch.code}</code>
+                      <code className="text-sm px-2 py-1 rounded" style={{ backgroundColor: 'var(--color-surface-hover)' }}>{branch.code}</code>
                     </TableCell>
                     <TableCell>
                       {[branch.city, branch.state, branch.country].filter(Boolean).join(', ') || '-'}
@@ -251,8 +257,8 @@ export default function BranchesListPage() {
                     <TableCell>
                       <div className="text-sm">
                         {branch.email && <p>{branch.email}</p>}
-                        {branch.phone && <p className="text-gray-500">{branch.phone}</p>}
-                        {!branch.email && !branch.phone && <span className="text-gray-400">-</span>}
+                        {branch.phone && <p style={{ color: 'var(--color-text-secondary)' }}>{branch.phone}</p>}
+                        {!branch.email && !branch.phone && <span style={{ color: 'var(--color-text-muted)' }}>-</span>}
                       </div>
                     </TableCell>
                     <TableCell className="text-center">{branch.userCount ?? '-'}</TableCell>
@@ -305,7 +311,14 @@ export default function BranchesListPage() {
             </DialogDescription>
           </DialogHeader>
           {deleteError && (
-            <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+            <div 
+              className="p-3 rounded-lg text-sm"
+              style={{ 
+                backgroundColor: 'color-mix(in srgb, var(--color-danger) 10%, transparent)',
+                borderColor: 'var(--color-danger)',
+                color: 'var(--color-danger)'
+              }}
+            >
               {deleteError}
             </div>
           )}
@@ -314,7 +327,7 @@ export default function BranchesListPage() {
               Cancel
             </Button>
             <Button
-              className="bg-red-600 hover:bg-red-700"
+              variant="destructive"
               onClick={handleDelete}
               disabled={deleteMutation.isPending}
             >

@@ -14,7 +14,7 @@ export default function SystemDashboard() {
       value: tenants?.length?.toString() || '0',
       icon: Building2,
       description: 'Active organizations',
-      color: '#8B5CF6',
+      colorVar: 'var(--sys-accent)',
       loading: loadingTenants
     },
     {
@@ -22,7 +22,7 @@ export default function SystemDashboard() {
       value: businessLines?.length?.toString() || '0',
       icon: GitBranch,
       description: 'Across all tenants',
-      color: '#F59E0B',
+      colorVar: 'var(--color-warning)',
       loading: loadingBusinessLines
     },
     {
@@ -30,7 +30,7 @@ export default function SystemDashboard() {
       value: branches?.length?.toString() || '0',
       icon: Building2,
       description: 'Physical locations',
-      color: '#22C55E',
+      colorVar: 'var(--color-success)',
       loading: loadingBranches
     },
     {
@@ -38,7 +38,7 @@ export default function SystemDashboard() {
       value: users?.length?.toString() || '0',
       icon: Users,
       description: 'Registered users',
-      color: '#3B82F6',
+      colorVar: 'var(--color-info)',
       loading: loadingUsers
     }
   ];
@@ -65,7 +65,7 @@ export default function SystemDashboard() {
           return (
             <Card 
               key={stat.title} 
-              className="border transition-colors hover:border-white/20"
+              className="border transition-colors"
               style={{ 
                 backgroundColor: 'var(--sys-surface)', 
                 borderColor: 'var(--sys-border)' 
@@ -76,16 +76,16 @@ export default function SystemDashboard() {
                   <CardDescription style={{ color: 'var(--sys-text-secondary)' }}>{stat.title}</CardDescription>
                   <div
                     className="w-10 h-10 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: `${stat.color}20` }}
+                    style={{ backgroundColor: `color-mix(in srgb, ${stat.colorVar} 15%, transparent)` }}
                   >
-                    <Icon className="w-5 h-5" style={{ color: stat.color }} />
+                    <Icon className="w-5 h-5" style={{ color: stat.colorVar }} />
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold" style={{ color: 'var(--sys-text)' }}>
                   {stat.loading ? (
-                    <Loader2 className="w-6 h-6 animate-spin" style={{ color: stat.color }} />
+                    <Loader2 className="w-6 h-6 animate-spin" style={{ color: stat.colorVar }} />
                   ) : (
                     stat.value
                   )}
@@ -120,16 +120,22 @@ export default function SystemDashboard() {
                   style={{ backgroundColor: 'var(--sys-bg)' }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full ${
-                      metric.status === 'healthy' ? 'bg-green-500' : 
-                      metric.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
-                    }`} />
+                    <div 
+                      className="w-2 h-2 rounded-full"
+                      style={{ 
+                        backgroundColor: metric.status === 'healthy' ? 'var(--color-success)' : 
+                          metric.status === 'warning' ? 'var(--color-warning)' : 'var(--color-danger)'
+                      }}
+                    />
                     <span style={{ color: 'var(--sys-text-secondary)' }}>{metric.name}</span>
                   </div>
-                  <span className={`text-sm font-medium ${
-                    metric.status === 'healthy' ? 'text-green-400' : 
-                    metric.status === 'warning' ? 'text-yellow-400' : 'text-red-400'
-                  }`}>
+                  <span 
+                    className="text-sm font-medium"
+                    style={{ 
+                      color: metric.status === 'healthy' ? 'var(--color-success)' : 
+                        metric.status === 'warning' ? 'var(--color-warning)' : 'var(--color-danger)'
+                    }}
+                  >
                     {metric.value}
                   </span>
                 </div>
@@ -144,7 +150,7 @@ export default function SystemDashboard() {
         >
           <CardHeader>
             <CardTitle className="flex items-center gap-2" style={{ color: 'var(--sys-text)' }}>
-              <Server className="w-5 h-5 text-blue-500" />
+              <Server className="w-5 h-5" style={{ color: 'var(--color-info)' }} />
               Recent Tenants
             </CardTitle>
             <CardDescription style={{ color: 'var(--sys-text-secondary)' }}>
@@ -166,8 +172,8 @@ export default function SystemDashboard() {
                   >
                     <div className="flex items-center gap-3">
                       <div 
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
-                        style={{ backgroundColor: tenant.primaryColor || '#8B5CF6' }}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"
+                        style={{ backgroundColor: tenant.primaryColor || 'var(--sys-accent)', color: 'var(--color-text-on-accent)' }}
                       >
                         {tenant.name.charAt(0)}
                       </div>
@@ -176,9 +182,15 @@ export default function SystemDashboard() {
                         <p className="text-xs" style={{ color: 'var(--sys-text-muted)' }}>{tenant.code}</p>
                       </div>
                     </div>
-                    <span className={`px-2 py-1 text-xs rounded ${
-                      tenant.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
-                    }`}>
+                    <span 
+                      className="px-2 py-1 text-xs rounded"
+                      style={{
+                        backgroundColor: tenant.status === 'active' 
+                          ? 'color-mix(in srgb, var(--color-success) 20%, transparent)' 
+                          : 'color-mix(in srgb, var(--color-text-muted) 20%, transparent)',
+                        color: tenant.status === 'active' ? 'var(--color-success)' : 'var(--color-text-muted)'
+                      }}
+                    >
                       {tenant.status}
                     </span>
                   </div>

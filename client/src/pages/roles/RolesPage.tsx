@@ -41,9 +41,9 @@ export default function RolesPage() {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <Shield className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">Access Denied</h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <Shield className="mx-auto h-12 w-12" style={{ color: 'var(--color-text-muted)' }} />
+          <h3 className="mt-2 text-sm font-medium" style={{ color: 'var(--color-text)' }}>Access Denied</h3>
+          <p className="mt-1 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
             You don't have permission to view roles.
           </p>
         </div>
@@ -96,7 +96,7 @@ export default function RolesPage() {
         <CardContent>
           <div className="mb-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style={{ color: 'var(--color-text-muted)' }} />
               <Input
                 placeholder="Search roles..."
                 value={search}
@@ -107,13 +107,13 @@ export default function RolesPage() {
           </div>
 
           {isLoading ? (
-            <div className="text-center py-8 text-gray-500">Loading roles...</div>
+            <div className="text-center py-8" style={{ color: 'var(--color-text-secondary)' }}>Loading roles...</div>
           ) : error ? (
-            <div className="text-center py-8 text-red-500">
+            <div className="text-center py-8" style={{ color: 'var(--color-danger)' }}>
               Error loading roles. Please try again.
             </div>
           ) : !data?.data.length ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8" style={{ color: 'var(--color-text-secondary)' }}>
               No roles found. {canCreate && 'Create your first role to get started.'}
             </div>
           ) : (
@@ -135,7 +135,10 @@ export default function RolesPage() {
                     <TableRow key={role.id}>
                       <TableCell className="font-medium">{role.roleName}</TableCell>
                       <TableCell>
-                        <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+                        <code 
+                          className="text-xs px-2 py-1 rounded"
+                          style={{ backgroundColor: 'var(--color-surface-hover)' }}
+                        >
                           {role.roleCode}
                         </code>
                       </TableCell>
@@ -197,7 +200,7 @@ export default function RolesPage() {
 
               {data.pagination.totalPages > 1 && (
                 <div className="mt-4 flex items-center justify-between">
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
                     Page {data.pagination.page} of {data.pagination.totalPages} ({data.pagination.total} total)
                   </div>
                   <div className="flex gap-2">
