@@ -72,20 +72,6 @@ const DARK_TEXT = '#1F2937';
 const LIGHT_TEXT = '#FFFFFF';
 const WCAG_AA_THRESHOLD = 4.5;
 
-const getContrastTextColor = (bgColor: string): string => {
-  const rgb = hexToRgb(bgColor);
-  if (!rgb) return LIGHT_TEXT;
-  
-  const bgLuminance = getLuminance(rgb.r, rgb.g, rgb.b);
-  const darkTextLuminance = getLuminance(0x1F, 0x29, 0x37);
-  const lightTextLuminance = getLuminance(0xFF, 0xFF, 0xFF);
-  
-  const darkContrast = getContrastRatio(bgLuminance, darkTextLuminance);
-  const lightContrast = getContrastRatio(bgLuminance, lightTextLuminance);
-  
-  return darkContrast > lightContrast ? DARK_TEXT : LIGHT_TEXT;
-};
-
 const ensureWcagContrast = (bgColor: string, preferredTextColor: string): { bg: string; text: string } => {
   const bgRgb = hexToRgb(bgColor);
   if (!bgRgb) return { bg: bgColor, text: preferredTextColor };
