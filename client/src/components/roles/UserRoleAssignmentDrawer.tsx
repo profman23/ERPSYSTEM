@@ -245,7 +245,10 @@ export function UserRoleAssignmentDrawer({
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search 
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4"
+                  style={{ color: 'var(--color-text-muted)' }}
+                />
                 <Input
                   placeholder="Search roles..."
                   value={searchQuery}
@@ -255,11 +258,23 @@ export function UserRoleAssignmentDrawer({
               </div>
             </div>
 
-            <div className="rounded-lg border p-4 bg-blue-50 border-blue-200">
+            <div 
+              className="rounded-lg border p-4"
+              style={{
+                backgroundColor: 'var(--alert-info-bg)',
+                borderColor: 'var(--alert-info-border)',
+              }}
+            >
               <div className="flex items-start gap-2 mb-2">
-                <Sparkles className="h-4 w-4 text-blue-600 mt-0.5" />
+                <Sparkles 
+                  className="h-4 w-4 mt-0.5"
+                  style={{ color: 'var(--color-info)' }}
+                />
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-blue-900 mb-1">
+                  <p 
+                    className="text-sm font-semibold mb-1"
+                    style={{ color: 'var(--alert-info-text)' }}
+                  >
                     AI Command Interpreter
                   </p>
                   <Input
@@ -269,7 +284,6 @@ export function UserRoleAssignmentDrawer({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') interpretAgiCommand();
                     }}
-                    className="bg-white"
                   />
                 </div>
               </div>
@@ -296,24 +310,33 @@ export function UserRoleAssignmentDrawer({
 
           <div className="space-y-2">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-semibold">
+              <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
                 Available Roles ({filteredRoles.length})
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
                 {selectedRoleIds.size} selected
               </p>
             </div>
 
-            <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-3">
+            <div 
+              className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-3"
+              style={{ borderColor: 'var(--color-border)' }}
+            >
               {filteredRoles.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
+                <p 
+                  className="text-sm text-center py-4"
+                  style={{ color: 'var(--color-text-muted)' }}
+                >
                   No roles found
                 </p>
               ) : (
                 filteredRoles.map((role) => (
                   <div
                     key={role.id}
-                    className="flex items-start gap-3 p-2 rounded hover:bg-gray-50 cursor-pointer"
+                    className="flex items-start gap-3 p-2 rounded cursor-pointer transition-colors"
+                    style={{ backgroundColor: 'transparent' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-surface-hover)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     onClick={() => handleToggleRole(role.id)}
                   >
                     <Checkbox
@@ -323,16 +346,18 @@ export function UserRoleAssignmentDrawer({
                     />
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium">{role.roleName}</p>
+                        <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                          {role.roleName}
+                        </p>
                         {role.isProtected === 'true' && (
                           <Badge variant="warning" className="text-xs">Protected</Badge>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
                         {role.roleCode}
                       </p>
                       {role.description && (
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
                           {role.description}
                         </p>
                       )}

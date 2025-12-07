@@ -31,48 +31,101 @@ export function Tabs({ value, onValueChange, children, className, ...props }: Ta
   );
 }
 
-export const TabsList = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, style, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(
-        'inline-flex h-10 items-center justify-center rounded-md p-1',
-        className
-      )}
-      style={{
-        backgroundColor: 'var(--color-surface-hover)',
-        color: 'var(--color-text-secondary)',
-        ...style,
-      }}
-      {...props}
-    />
-  )
+interface TabsListProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: 'default' | 'underline' | 'pills';
+}
+
+export const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
+  ({ className, variant = 'default', style, ...props }, ref) => {
+    const getVariantStyles = (): React.CSSProperties => {
+      switch (variant) {
+        case 'underline':
+          return {
+            backgroundColor: 'transparent',
+            borderBottom: '1px solid var(--color-border)',
+          };
+        case 'pills':
+          return {
+            backgroundColor: 'transparent',
+            gap: '0.5rem',
+          };
+        default:
+          return {
+            backgroundColor: 'var(--color-surface-hover)',
+            borderRadius: 'var(--radius)',
+          };
+      }
+    };
+
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          'inline-flex h-10 items-center justify-center p-1',
+          variant === 'underline' && 'pb-0 gap-4',
+          variant === 'pills' && 'p-0',
+          className
+        )}
+        style={{
+          ...getVariantStyles(),
+          color: 'var(--color-text-secondary)',
+          ...style,
+        }}
+        {...props}
+      />
+    );
+  }
 );
 TabsList.displayName = 'TabsList';
 
 interface TabsTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   value: string;
+  variant?: 'default' | 'underline' | 'pills';
 }
 
 export const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
-  ({ className, value, style, ...props }, ref) => {
+  ({ className, value, variant = 'default', style, ...props }, ref) => {
     const { value: selectedValue, onValueChange } = useTabs();
     const isSelected = value === selectedValue;
+
+    const getVariantStyles = (): React.CSSProperties => {
+      switch (variant) {
+        case 'underline':
+          return {
+            backgroundColor: 'transparent',
+            color: isSelected ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+            borderBottom: isSelected ? '2px solid var(--color-accent)' : '2px solid transparent',
+            borderRadius: '0',
+            marginBottom: '-1px',
+          };
+        case 'pills':
+          return {
+            backgroundColor: isSelected ? 'var(--color-accent)' : 'var(--color-surface-hover)',
+            color: isSelected ? 'var(--color-text-on-accent)' : 'var(--color-text-secondary)',
+            borderRadius: 'var(--radius)',
+          };
+        default:
+          return {
+            backgroundColor: isSelected ? 'var(--color-surface)' : 'transparent',
+            color: isSelected ? 'var(--color-text)' : 'var(--color-text-secondary)',
+            boxShadow: isSelected ? '0 1px 2px 0 rgb(0 0 0 / 0.05)' : 'none',
+            borderRadius: 'calc(var(--radius) - 2px)',
+          };
+      }
+    };
 
     return (
       <button
         ref={ref}
         type="button"
         className={cn(
-          'inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium',
-          'transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+          'inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium',
+          'transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]',
           'disabled:pointer-events-none disabled:opacity-50',
           className
         )}
         style={{
-          backgroundColor: isSelected ? 'var(--color-surface)' : 'transparent',
-          color: isSelected ? 'var(--color-text)' : 'var(--color-text-secondary)',
-          boxShadow: isSelected ? '0 1px 2px 0 rgb(0 0 0 / 0.05)' : 'none',
+          ...getVariantStyles(),
           ...style,
         }}
         onClick={() => onValueChange(value)}
@@ -97,7 +150,7 @@ export const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
       <div
         ref={ref}
         className={cn(
-          'mt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+          'mt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]',
           className
         )}
         {...props}

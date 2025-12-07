@@ -1,35 +1,46 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { AlertCircle, CheckCircle, Info, AlertTriangle, X } from 'lucide-react';
 
 export interface AlertProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'success' | 'warning' | 'error' | 'info';
+  dismissible?: boolean;
+  onDismiss?: () => void;
 }
 
-const getVariantStyles = (variant: string) => {
+const iconMap = {
+  default: Info,
+  success: CheckCircle,
+  warning: AlertTriangle,
+  error: AlertCircle,
+  info: Info,
+};
+
+const getVariantStyles = (variant: string): React.CSSProperties => {
   switch (variant) {
     case 'success':
       return {
-        backgroundColor: 'color-mix(in srgb, var(--color-success) 10%, transparent)',
-        borderColor: 'color-mix(in srgb, var(--color-success) 30%, transparent)',
-        color: 'var(--color-success)',
+        backgroundColor: 'var(--alert-success-bg)',
+        borderColor: 'var(--alert-success-border)',
+        color: 'var(--alert-success-text)',
       };
     case 'warning':
       return {
-        backgroundColor: 'color-mix(in srgb, var(--color-warning) 10%, transparent)',
-        borderColor: 'color-mix(in srgb, var(--color-warning) 30%, transparent)',
-        color: 'var(--color-warning)',
+        backgroundColor: 'var(--alert-warning-bg)',
+        borderColor: 'var(--alert-warning-border)',
+        color: 'var(--alert-warning-text)',
       };
     case 'error':
       return {
-        backgroundColor: 'color-mix(in srgb, var(--color-danger) 10%, transparent)',
-        borderColor: 'color-mix(in srgb, var(--color-danger) 30%, transparent)',
-        color: 'var(--color-danger)',
+        backgroundColor: 'var(--alert-danger-bg)',
+        borderColor: 'var(--alert-danger-border)',
+        color: 'var(--alert-danger-text)',
       };
     case 'info':
       return {
-        backgroundColor: 'color-mix(in srgb, var(--color-info) 10%, transparent)',
-        borderColor: 'color-mix(in srgb, var(--color-info) 30%, transparent)',
-        color: 'var(--color-info)',
+        backgroundColor: 'var(--alert-info-bg)',
+        borderColor: 'var(--alert-info-border)',
+        color: 'var(--alert-info-text)',
       };
     default:
       return {
@@ -41,17 +52,34 @@ const getVariantStyles = (variant: string) => {
 };
 
 export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
-  ({ className, variant = 'default', style, ...props }, ref) => {
+  ({ className, variant = 'default', dismissible = false, onDismiss, children, style, ...props }, ref) => {
     const variantStyles = getVariantStyles(variant);
+    const Icon = iconMap[variant];
     
     return (
       <div
         ref={ref}
         role="alert"
-        className={cn('relative w-full rounded-lg border p-4', className)}
-        style={{ ...variantStyles, ...style }}
+        className={cn('relative w-full rounded-lg border p-4 flex gap-3', className)}
+        style={{ 
+          ...variantStyles, 
+          borderRadius: 'var(--radius)',
+          ...style 
+        }}
         {...props}
-      />
+      >
+        <Icon className="h-5 w-5 flex-shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0">{children}</div>
+        {dismissible && onDismiss && (
+          <button
+            onClick={onDismiss}
+            className="flex-shrink-0 opacity-70 hover:opacity-100 transition-opacity"
+            aria-label="Dismiss"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
     );
   }
 );
@@ -72,7 +100,7 @@ export const AlertDescription = React.forwardRef<HTMLParagraphElement, React.HTM
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('text-sm [&_p]:leading-relaxed', className)}
+      className={cn('text-sm [&_p]:leading-relaxed opacity-90', className)}
       {...props}
     />
   )

@@ -186,9 +186,23 @@ export default function LoginPage() {
               <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Error Message */}
                 {error && (
-                  <div className={`p-4 rounded-lg bg-red-50 border border-red-200 flex items-start gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <p className={`text-sm text-red-800 ${isRTL ? 'text-right' : 'text-left'}`}>{error}</p>
+                  <div 
+                    className={`p-4 rounded-lg border flex items-start gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}
+                    style={{
+                      backgroundColor: 'var(--alert-danger-bg)',
+                      borderColor: 'var(--alert-danger-border)'
+                    }}
+                  >
+                    <AlertCircle 
+                      className="w-5 h-5 flex-shrink-0 mt-0.5"
+                      style={{ color: 'var(--color-danger)' }}
+                    />
+                    <p 
+                      className={`text-sm ${isRTL ? 'text-right' : 'text-left'}`}
+                      style={{ color: 'var(--alert-danger-text)' }}
+                    >
+                      {error}
+                    </p>
                   </div>
                 )}
 

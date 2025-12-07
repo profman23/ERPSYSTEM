@@ -1,12 +1,24 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-export const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
-  ({ className, ...props }, ref) => (
+export interface TableProps extends React.HTMLAttributes<HTMLTableElement> {
+  variant?: 'default' | 'striped' | 'bordered';
+}
+
+export const Table = React.forwardRef<HTMLTableElement, TableProps>(
+  ({ className, variant = 'default', ...props }, ref) => (
     <div className="w-full overflow-auto">
       <table
         ref={ref}
-        className={cn('w-full caption-bottom text-sm', className)}
+        className={cn(
+          'w-full caption-bottom text-sm',
+          variant === 'bordered' && 'border',
+          className
+        )}
+        style={{
+          borderColor: variant === 'bordered' ? 'var(--table-row-border)' : undefined,
+          borderRadius: 'var(--radius)',
+        }}
         {...props}
       />
     </div>
@@ -40,16 +52,39 @@ export const TableBody = React.forwardRef<HTMLTableSectionElement, React.HTMLAtt
 );
 TableBody.displayName = 'TableBody';
 
-export const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTMLTableRowElement>>(
+export const TableFooter = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
   ({ className, style, ...props }, ref) => (
+    <tfoot
+      ref={ref}
+      className={cn('border-t font-medium [&>tr]:last:border-b-0', className)}
+      style={{
+        backgroundColor: 'var(--table-header-bg)',
+        borderColor: 'var(--table-row-border)',
+        ...style
+      }}
+      {...props}
+    />
+  )
+);
+TableFooter.displayName = 'TableFooter';
+
+export interface TableRowProps extends React.HTMLAttributes<HTMLTableRowElement> {
+  selected?: boolean;
+  hoverable?: boolean;
+}
+
+export const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(
+  ({ className, selected, hoverable = true, style, ...props }, ref) => (
     <tr
       ref={ref}
       className={cn(
-        'border-b transition-colors data-[state=selected]:bg-muted',
+        'border-b transition-colors',
+        hoverable && 'hover:bg-[var(--table-row-bg-hover)]',
+        selected && 'bg-[var(--table-row-bg-hover)]',
         className
       )}
       style={{
-        backgroundColor: 'var(--table-row-bg)',
+        backgroundColor: selected ? 'var(--table-row-bg-hover)' : 'var(--table-row-bg)',
         borderColor: 'var(--table-row-border)',
         ...style
       }}
@@ -91,3 +126,18 @@ export const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttr
   )
 );
 TableCell.displayName = 'TableCell';
+
+export const TableCaption = React.forwardRef<HTMLTableCaptionElement, React.HTMLAttributes<HTMLTableCaptionElement>>(
+  ({ className, style, ...props }, ref) => (
+    <caption
+      ref={ref}
+      className={cn('mt-4 text-sm', className)}
+      style={{
+        color: 'var(--color-text-muted)',
+        ...style
+      }}
+      {...props}
+    />
+  )
+);
+TableCaption.displayName = 'TableCaption';

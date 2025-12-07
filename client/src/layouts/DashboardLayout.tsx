@@ -11,22 +11,18 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-/**
- * DashboardLayout - Enterprise dashboard layout with sidebar navigation
- * Used for: All protected application routes
- * 
- * Features:
- * - Responsive sidebar (collapsible on mobile)
- * - Top header with branding
- * - Active route highlighting
- * - RTL-ready navigation
- * - Breadcrumb support
- */
 export default function DashboardLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isRTL, setIsRTL] = useState(false);
   const location = useLocation();
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-panel', 'tenant');
+    return () => {
+      document.documentElement.removeAttribute('data-panel');
+    };
+  }, []);
 
   useEffect(() => {
     const checkRTL = () => {
@@ -82,33 +78,32 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className={`min-h-screen bg-[#F3F4F6] flex ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
-      {/* Sidebar */}
+    <div className={`min-h-screen bg-panel flex ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
       <aside
         className={`
           ${isSidebarOpen ? 'translate-x-0' : isRTL ? 'translate-x-full' : '-translate-x-full'}
           ${isMobile ? 'fixed inset-y-0 z-50 w-64' : 'relative w-64'}
-          bg-white border-gray-200
+          bg-surface border-panel
           ${isRTL ? 'border-l' : 'border-r'}
           transition-transform duration-300 ease-in-out
           flex flex-col
         `}
       >
-        {/* Sidebar Header */}
-        <div className={`h-16 flex items-center px-6 border-b border-gray-200 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className={`h-16 flex items-center px-6 border-b border-panel ${isRTL ? 'flex-row-reverse' : ''}`}>
           <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className="w-8 h-8 bg-[#2563EB] rounded-lg flex items-center justify-center">
+            <div 
+              className="w-8 h-8 rounded-lg flex items-center justify-center bg-accent"
+            >
               <Building2 className="w-5 h-5 text-white" />
             </div>
             <div className={isRTL ? 'text-right' : 'text-left'}>
-              <h1 className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>
+              <h1 className="text-sm font-bold text-panel">
                 {isRTL ? 'نظام ERP البيطري' : 'Veterinary ERP'}
               </h1>
             </div>
           </div>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
           {navigation.map((item) => {
             const Icon = item.icon;
@@ -122,12 +117,8 @@ export default function DashboardLayout() {
                 className={`
                   flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
                   ${isRTL ? 'flex-row-reverse' : ''}
-                  ${active 
-                    ? 'bg-[#2563EB] text-white' 
-                    : 'hover:bg-gray-100'
-                  }
+                  ${active ? 'sidebar-item-active' : 'sidebar-item'}
                 `}
-                style={!active ? { color: 'var(--color-text-secondary)' } : {}}
               >
                 <Icon className="w-5 h-5" />
                 <span>{isRTL ? item.nameAr : item.name}</span>
@@ -139,32 +130,26 @@ export default function DashboardLayout() {
           })}
         </nav>
 
-        {/* Sidebar Footer */}
-        <div className="p-4 border-t border-gray-200">
-          <div className="text-xs text-center" style={{ color: 'var(--color-text-secondary)' }}>
+        <div className="p-4 border-t border-panel">
+          <div className="text-xs text-center text-muted">
             {isRTL ? 'الإصدار 1.0.0' : 'Version 1.0.0'}
           </div>
         </div>
       </aside>
 
-      {/* Mobile Overlay */}
       {isMobile && isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40"
+          className="fixed inset-0 modal-overlay z-40"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center px-6">
+        <header className="h-16 bg-surface border-b border-panel flex items-center px-6">
           <div className={`flex items-center gap-4 flex-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            {/* Mobile Menu Toggle */}
             <button
               onClick={toggleSidebar}
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
-              style={{ color: 'var(--color-text-secondary)' }}
+              className="lg:hidden p-2 rounded-lg btn-ghost transition-colors"
             >
               {isSidebarOpen ? (
                 <X className="w-5 h-5" />
@@ -173,22 +158,19 @@ export default function DashboardLayout() {
               )}
             </button>
 
-            {/* Page Title */}
-            <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
+            <h2 className="text-lg font-semibold text-panel">
               {isRTL ? 'لوحة التحكم' : 'Dashboard'}
             </h2>
           </div>
 
-          {/* Header Actions */}
           <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            <div className="text-sm text-secondary">
               {isRTL ? 'مستخدم تجريبي' : 'Demo User'}
             </div>
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-6 bg-panel">
           <Outlet />
         </main>
       </div>

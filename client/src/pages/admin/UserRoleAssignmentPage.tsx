@@ -125,9 +125,20 @@ export default function UserRoleAssignmentPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <Shield className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Access Denied</h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <Shield 
+              className="mx-auto h-12 w-12"
+              style={{ color: 'var(--color-text-muted)' }}
+            />
+            <h3 
+              className="mt-2 text-sm font-medium"
+              style={{ color: 'var(--color-text)' }}
+            >
+              Access Denied
+            </h3>
+            <p 
+              className="mt-1 text-sm"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
               You don't have permission to view user roles.
             </p>
             <Button onClick={() => navigate('/users')} className="mt-4">
@@ -144,7 +155,10 @@ export default function UserRoleAssignmentPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <Loader2 
+            className="h-8 w-8 animate-spin"
+            style={{ color: 'var(--color-text-muted)' }}
+          />
         </div>
       </div>
     );
@@ -154,8 +168,16 @@ export default function UserRoleAssignmentPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600">Error</h2>
-          <p className="mt-2 text-muted-foreground">
+          <h2 
+            className="text-2xl font-bold"
+            style={{ color: 'var(--color-danger)' }}
+          >
+            Error
+          </h2>
+          <p 
+            className="mt-2"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
             {axios.isAxiosError(userError) ? userError.response?.data?.error : 'Failed to load user'}
           </p>
           <Button onClick={() => navigate('/users')} className="mt-4">
@@ -180,9 +202,18 @@ export default function UserRoleAssignmentPage() {
         </Button>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">User Role Management</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage roles and permissions for <span className="font-semibold">{user.firstName} {user.lastName}</span>
+            <h1 
+              className="text-3xl font-bold tracking-tight"
+              style={{ color: 'var(--color-text)' }}
+            >
+              User Role Management
+            </h1>
+            <p 
+              className="mt-1"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
+              Manage roles and permissions for{' '}
+              <span className="font-semibold">{user.firstName} {user.lastName}</span>
             </p>
           </div>
         </div>
@@ -196,22 +227,44 @@ export default function UserRoleAssignmentPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Email</p>
-              <p className="text-sm">{user.email}</p>
+              <p 
+                className="text-sm font-medium"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                Email
+              </p>
+              <p className="text-sm" style={{ color: 'var(--color-text)' }}>{user.email}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Full Name</p>
-              <p className="text-sm">{user.firstName} {user.lastName}</p>
+              <p 
+                className="text-sm font-medium"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                Full Name
+              </p>
+              <p className="text-sm" style={{ color: 'var(--color-text)' }}>{user.firstName} {user.lastName}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Status</p>
+              <p 
+                className="text-sm font-medium"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                Status
+              </p>
               <Badge variant={user.status === 'active' ? 'success' : 'default'}>
                 {user.status}
               </Badge>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Created At</p>
-              <p className="text-sm">{new Date(user.createdAt).toLocaleDateString()}</p>
+              <p 
+                className="text-sm font-medium"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                Created At
+              </p>
+              <p className="text-sm" style={{ color: 'var(--color-text)' }}>
+                {new Date(user.createdAt).toLocaleDateString()}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -229,7 +282,10 @@ export default function UserRoleAssignmentPage() {
           <CardContent>
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {currentRoles.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
+                <p 
+                  className="text-sm text-center py-4"
+                  style={{ color: 'var(--color-text-muted)' }}
+                >
                   No roles assigned
                 </p>
               ) : (
@@ -237,10 +293,21 @@ export default function UserRoleAssignmentPage() {
                   <div
                     key={role.id}
                     className="flex items-center justify-between p-2 rounded border"
+                    style={{ borderColor: 'var(--color-border)' }}
                   >
                     <div>
-                      <p className="text-sm font-medium">{role.roleName}</p>
-                      <p className="text-xs text-muted-foreground">{role.roleCode}</p>
+                      <p 
+                        className="text-sm font-medium"
+                        style={{ color: 'var(--color-text)' }}
+                      >
+                        {role.roleName}
+                      </p>
+                      <p 
+                        className="text-xs"
+                        style={{ color: 'var(--color-text-muted)' }}
+                      >
+                        {role.roleCode}
+                      </p>
                     </div>
                     {role.isProtected === 'true' && (
                       <Badge variant="warning" className="text-xs">Protected</Badge>
@@ -273,7 +340,10 @@ export default function UserRoleAssignmentPage() {
         <CardContent>
           <div className="max-h-64 overflow-y-auto">
             {currentPermissions.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
+              <p 
+                className="text-sm text-center py-4"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
                 No permissions granted. Assign roles to grant permissions.
               </p>
             ) : (
@@ -281,10 +351,22 @@ export default function UserRoleAssignmentPage() {
                 {currentPermissions.map((perm) => (
                   <div
                     key={perm.id}
-                    className="text-xs p-2 rounded border bg-gray-50"
+                    className="text-xs p-2 rounded border"
+                    style={{ 
+                      backgroundColor: 'var(--color-surface-hover)',
+                      borderColor: 'var(--color-border)'
+                    }}
                   >
-                    <div className="font-medium">{perm.permissionCode}</div>
-                    <div className="text-muted-foreground truncate">
+                    <div 
+                      className="font-medium"
+                      style={{ color: 'var(--color-text)' }}
+                    >
+                      {perm.permissionCode}
+                    </div>
+                    <div 
+                      className="truncate"
+                      style={{ color: 'var(--color-text-muted)' }}
+                    >
                       {perm.permissionName}
                     </div>
                   </div>

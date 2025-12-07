@@ -1,7 +1,7 @@
-import { Settings, Building2, Bell, Lock, Globe } from 'lucide-react';
+import { Building2, Bell, Lock, Globe } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { Badge } from '@/components/ui/badge';
 
 export default function AdminSettingsPage() {
   const { user } = useAuth();
@@ -34,8 +34,11 @@ export default function AdminSettingsPage() {
             >
               <CardContent className="pt-6">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Icon className="w-6 h-6 text-blue-600" />
+                  <div 
+                    className="w-12 h-12 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: 'var(--color-accent-light)' }}
+                  >
+                    <Icon className="w-6 h-6" style={{ color: 'var(--color-accent)' }} />
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold" style={{ color: 'var(--color-text)' }}>
@@ -59,15 +62,30 @@ export default function AdminSettingsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50">
+            <div 
+              className="flex items-center justify-between p-4 rounded-lg"
+              style={{ backgroundColor: 'var(--color-surface-hover)' }}
+            >
               <span style={{ color: 'var(--color-text-secondary)' }}>Tenant ID</span>
-              <code className="text-sm bg-white px-2 py-1 rounded border">{user?.tenantId || 'N/A'}</code>
+              <code 
+                className="text-sm px-2 py-1 rounded border"
+                style={{ 
+                  backgroundColor: 'var(--color-surface)',
+                  borderColor: 'var(--color-border)',
+                  color: 'var(--color-text)'
+                }}
+              >
+                {user?.tenantId || 'N/A'}
+              </code>
             </div>
-            <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50">
+            <div 
+              className="flex items-center justify-between p-4 rounded-lg"
+              style={{ backgroundColor: 'var(--color-surface-hover)' }}
+            >
               <span style={{ color: 'var(--color-text-secondary)' }}>Access Scope</span>
-              <span className="px-3 py-1 text-sm rounded-full bg-blue-100 text-blue-600 font-medium">
+              <Badge variant="info">
                 {user?.accessScope || 'N/A'}
-              </span>
+              </Badge>
             </div>
           </div>
         </CardContent>

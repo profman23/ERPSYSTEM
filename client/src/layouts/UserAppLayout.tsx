@@ -8,7 +8,6 @@ import {
   FileText,
   Menu,
   X,
-  ChevronRight,
   LogOut,
   Bell
 } from 'lucide-react';
@@ -167,7 +166,7 @@ export default function UserAppLayout() {
           <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <button className="p-2 rounded-lg btn-ghost transition-colors relative">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--color-danger)' }}></span>
             </button>
             <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold bg-accent">
               {user?.name?.charAt(0) || 'U'}

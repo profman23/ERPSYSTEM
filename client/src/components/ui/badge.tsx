@@ -2,40 +2,47 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'outline';
+  variant?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'outline' | 'secondary';
+  size?: 'default' | 'sm' | 'lg';
 }
 
 export const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
-  ({ className, variant = 'default', style, ...props }, ref) => {
+  ({ className, variant = 'default', size = 'default', style, ...props }, ref) => {
     const getVariantStyles = (): React.CSSProperties => {
       switch (variant) {
         case 'success':
           return {
-            backgroundColor: 'rgba(34, 197, 94, 0.15)',
-            color: 'var(--color-success)',
-            borderColor: 'rgba(34, 197, 94, 0.3)',
+            backgroundColor: 'var(--badge-success-bg)',
+            color: 'var(--badge-success-text)',
+            borderColor: 'var(--badge-success-border)',
           };
         case 'warning':
           return {
-            backgroundColor: 'rgba(245, 158, 11, 0.15)',
-            color: 'var(--color-warning)',
-            borderColor: 'rgba(245, 158, 11, 0.3)',
+            backgroundColor: 'var(--badge-warning-bg)',
+            color: 'var(--badge-warning-text)',
+            borderColor: 'var(--badge-warning-border)',
           };
         case 'error':
           return {
-            backgroundColor: 'rgba(239, 68, 68, 0.15)',
-            color: 'var(--color-danger)',
-            borderColor: 'rgba(239, 68, 68, 0.3)',
+            backgroundColor: 'var(--badge-danger-bg)',
+            color: 'var(--badge-danger-text)',
+            borderColor: 'var(--badge-danger-border)',
           };
         case 'info':
           return {
-            backgroundColor: 'rgba(59, 130, 246, 0.15)',
-            color: 'var(--color-info)',
-            borderColor: 'rgba(59, 130, 246, 0.3)',
+            backgroundColor: 'var(--badge-info-bg)',
+            color: 'var(--badge-info-text)',
+            borderColor: 'var(--badge-info-border)',
           };
         case 'outline':
           return {
             backgroundColor: 'transparent',
+            color: 'var(--color-text-secondary)',
+            borderColor: 'var(--color-border)',
+          };
+        case 'secondary':
+          return {
+            backgroundColor: 'var(--color-surface-hover)',
             color: 'var(--color-text-secondary)',
             borderColor: 'var(--color-border)',
           };
@@ -48,11 +55,23 @@ export const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
       }
     };
 
+    const getSizeStyles = () => {
+      switch (size) {
+        case 'sm':
+          return 'px-2 py-0.5 text-[10px]';
+        case 'lg':
+          return 'px-3 py-1 text-sm';
+        default:
+          return 'px-2.5 py-0.5 text-xs';
+      }
+    };
+
     return (
       <div
         ref={ref}
         className={cn(
-          'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border transition-colors',
+          'inline-flex items-center rounded-full font-semibold border transition-colors',
+          getSizeStyles(),
           className
         )}
         style={{

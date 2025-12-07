@@ -1,8 +1,3 @@
-/**
- * Role Form Modal - Create/Edit Role
- * Handles both create and update operations
- */
-
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useCreateRole, useUpdateRole } from '../../hooks/useRoles';
@@ -120,30 +115,36 @@ export function RoleFormModal({ open, onOpenChange, role }: RoleFormModalProps) 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="roleCode">
-                Role Code <span className="text-red-500">*</span>
+                Role Code <span style={{ color: 'var(--color-danger)' }}>*</span>
               </Label>
               <Input
                 id="roleCode"
                 {...register('roleCode', { required: 'Role code is required' })}
                 disabled={isEditing}
                 placeholder="e.g., VET_DOCTOR"
+                error={!!errors.roleCode}
               />
               {errors.roleCode && (
-                <p className="text-sm text-red-500">{errors.roleCode.message}</p>
+                <p className="text-sm" style={{ color: 'var(--color-text-danger)' }}>
+                  {errors.roleCode.message}
+                </p>
               )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="roleName">
-                Role Name (English) <span className="text-red-500">*</span>
+                Role Name (English) <span style={{ color: 'var(--color-danger)' }}>*</span>
               </Label>
               <Input
                 id="roleName"
                 {...register('roleName', { required: 'Role name is required' })}
                 placeholder="e.g., Veterinary Doctor"
+                error={!!errors.roleName}
               />
               {errors.roleName && (
-                <p className="text-sm text-red-500">{errors.roleName.message}</p>
+                <p className="text-sm" style={{ color: 'var(--color-text-danger)' }}>
+                  {errors.roleName.message}
+                </p>
               )}
             </div>
           </div>
@@ -199,8 +200,8 @@ export function RoleFormModal({ open, onOpenChange, role }: RoleFormModalProps) 
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : isEditing ? 'Update Role' : 'Create Role'}
+            <Button type="submit" disabled={isSubmitting} loading={isSubmitting}>
+              {isEditing ? 'Update Role' : 'Create Role'}
             </Button>
           </DialogFooter>
         </form>

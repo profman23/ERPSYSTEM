@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { ChevronDown } from 'lucide-react';
 
 interface AccordionContextValue {
   openItems: string[];
@@ -59,8 +60,16 @@ interface AccordionItemProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export const AccordionItem = React.forwardRef<HTMLDivElement, AccordionItemProps>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('border-b', className)} {...props} />
+  ({ className, style, ...props }, ref) => (
+    <div 
+      ref={ref} 
+      className={cn('border-b', className)} 
+      style={{
+        borderColor: 'var(--color-border)',
+        ...style
+      }}
+      {...props} 
+    />
   )
 );
 AccordionItem.displayName = 'AccordionItem';
@@ -70,7 +79,7 @@ interface AccordionTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonEle
 }
 
 export const AccordionTrigger = React.forwardRef<HTMLButtonElement, AccordionTriggerProps>(
-  ({ className, children, value, ...props }, ref) => {
+  ({ className, children, value, style, ...props }, ref) => {
     const { openItems, toggleItem } = useAccordion();
     const isOpen = openItems.includes(value);
 
@@ -79,28 +88,26 @@ export const AccordionTrigger = React.forwardRef<HTMLButtonElement, AccordionTri
         ref={ref}
         type="button"
         className={cn(
-          'flex w-full items-center justify-between py-4 font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180',
+          'flex w-full items-center justify-between py-4 font-medium transition-all',
+          'hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]',
           className
         )}
+        style={{
+          color: 'var(--color-text)',
+          ...style
+        }}
         data-state={isOpen ? 'open' : 'closed'}
         onClick={() => toggleItem(value)}
         {...props}
       >
         {children}
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="h-4 w-4 shrink-0 transition-transform duration-200"
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+        <ChevronDown 
+          className={cn(
+            'h-4 w-4 shrink-0 transition-transform duration-200',
+            isOpen && 'rotate-180'
+          )}
+          style={{ color: 'var(--color-text-muted)' }}
+        />
       </button>
     );
   }
@@ -112,7 +119,7 @@ interface AccordionContentProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export const AccordionContent = React.forwardRef<HTMLDivElement, AccordionContentProps>(
-  ({ className, children, value, ...props }, ref) => {
+  ({ className, children, value, style, ...props }, ref) => {
     const { openItems } = useAccordion();
     const isOpen = openItems.includes(value);
 
@@ -122,6 +129,10 @@ export const AccordionContent = React.forwardRef<HTMLDivElement, AccordionConten
       <div
         ref={ref}
         className={cn('pb-4 pt-0 animate-in slide-in-from-top-1', className)}
+        style={{
+          color: 'var(--color-text-secondary)',
+          ...style
+        }}
         {...props}
       >
         {children}

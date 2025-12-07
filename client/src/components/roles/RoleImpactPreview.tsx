@@ -32,10 +32,7 @@ interface PermissionConflict {
 const HIGH_RISK_ACTIONS = ['DELETE', 'APPROVE', 'ADMIN', 'FINANCE_APPROVE', 'MODIFY_ALL'];
 
 export function RoleImpactPreview({
-  currentRoles,
   selectedRoleIds,
-  allRoles,
-  allPermissions,
   currentPermissions,
 }: RoleImpactPreviewProps) {
   const selectedRoleIdsArray = Array.from(selectedRoleIds);
@@ -127,8 +124,16 @@ export function RoleImpactPreview({
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-sm text-muted-foreground">Loading permission impact...</span>
+            <Loader2 
+              className="h-6 w-6 animate-spin"
+              style={{ color: 'var(--color-text-muted)' }}
+            />
+            <span 
+              className="ml-2 text-sm"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
+              Loading permission impact...
+            </span>
           </div>
         </CardContent>
       </Card>
@@ -140,12 +145,18 @@ export function RoleImpactPreview({
       <Card>
         <CardHeader>
           <CardTitle className="text-sm flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <CheckCircle 
+              className="h-4 w-4"
+              style={{ color: 'var(--color-success)' }}
+            />
             No Changes
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
+          <p 
+            className="text-sm"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
             No role changes detected. Select or deselect roles to see impact.
           </p>
         </CardContent>
@@ -156,9 +167,9 @@ export function RoleImpactPreview({
   return (
     <div className="space-y-4">
       {hasConflicts && (
-        <Alert>
+        <Alert variant="warning">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>⚠️ Permission Conflicts Detected</AlertTitle>
+          <AlertTitle>Permission Conflicts Detected</AlertTitle>
           <AlertDescription>
             <ul className="mt-2 space-y-2">
               {diff.conflicts.map((conflict, idx) => (
@@ -183,7 +194,7 @@ export function RoleImpactPreview({
       )}
 
       {hasHighRisk && (
-        <Alert>
+        <Alert variant="warning">
           <Shield className="h-4 w-4" />
           <AlertTitle>High-Risk Permissions</AlertTitle>
           <AlertDescription>
@@ -217,19 +228,32 @@ export function RoleImpactPreview({
           {diff.gained.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Plus className="h-4 w-4 text-green-600" />
-                <span className="text-sm font-semibold text-green-600">
+                <Plus 
+                  className="h-4 w-4"
+                  style={{ color: 'var(--color-success)' }}
+                />
+                <span 
+                  className="text-sm font-semibold"
+                  style={{ color: 'var(--color-text-success)' }}
+                >
                   Gained Permissions ({diff.gained.length})
                 </span>
               </div>
               <div className="max-h-32 overflow-y-auto space-y-1 pl-6">
                 {diff.gained.slice(0, 10).map(p => (
-                  <div key={p.id} className="text-xs text-muted-foreground">
+                  <div 
+                    key={p.id} 
+                    className="text-xs"
+                    style={{ color: 'var(--color-text-muted)' }}
+                  >
                     + {p.permissionCode} - {p.permissionName}
                   </div>
                 ))}
                 {diff.gained.length > 10 && (
-                  <div className="text-xs text-muted-foreground italic">
+                  <div 
+                    className="text-xs italic"
+                    style={{ color: 'var(--color-text-muted)' }}
+                  >
                     ... and {diff.gained.length - 10} more
                   </div>
                 )}
@@ -240,19 +264,32 @@ export function RoleImpactPreview({
           {diff.lost.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Minus className="h-4 w-4 text-red-600" />
-                <span className="text-sm font-semibold text-red-600">
+                <Minus 
+                  className="h-4 w-4"
+                  style={{ color: 'var(--color-danger)' }}
+                />
+                <span 
+                  className="text-sm font-semibold"
+                  style={{ color: 'var(--color-text-danger)' }}
+                >
                   Lost Permissions ({diff.lost.length})
                 </span>
               </div>
               <div className="max-h-32 overflow-y-auto space-y-1 pl-6">
                 {diff.lost.slice(0, 10).map(p => (
-                  <div key={p.id} className="text-xs text-muted-foreground">
+                  <div 
+                    key={p.id} 
+                    className="text-xs"
+                    style={{ color: 'var(--color-text-muted)' }}
+                  >
                     - {p.permissionCode} - {p.permissionName}
                   </div>
                 ))}
                 {diff.lost.length > 10 && (
-                  <div className="text-xs text-muted-foreground italic">
+                  <div 
+                    className="text-xs italic"
+                    style={{ color: 'var(--color-text-muted)' }}
+                  >
                     ... and {diff.lost.length - 10} more
                   </div>
                 )}
@@ -260,8 +297,14 @@ export function RoleImpactPreview({
             </div>
           )}
 
-          <div className="pt-2 border-t">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div 
+            className="pt-2 border-t"
+            style={{ borderColor: 'var(--color-border)' }}
+          >
+            <div 
+              className="flex items-center justify-between text-xs"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
               <span>Total permissions after change:</span>
               <Badge variant="info">
                 {diff.unchanged.length + diff.gained.length}

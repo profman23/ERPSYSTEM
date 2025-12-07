@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, Shield, Users, ArrowRight } from 'lucide-react';
+import { Building2, Shield, Users, ArrowRight, Check } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useScopePath } from '@/hooks/useScopePath';
@@ -23,9 +23,8 @@ const userTypes = [
       'Can manage all tenants',
       'No branch restriction',
     ],
-    color: 'from-purple-600 to-purple-700',
-    borderColor: 'border-purple-200',
-    hoverBg: 'hover:bg-purple-50',
+    accentVar: '--sys-accent',
+    bgVar: '--sys-surface',
   },
   {
     id: 'tenant_admin' as const,
@@ -37,9 +36,8 @@ const userTypes = [
       'Can manage all branches',
       'Auto-granted permissions',
     ],
-    color: 'from-blue-600 to-blue-700',
-    borderColor: 'border-blue-200',
-    hoverBg: 'hover:bg-blue-50',
+    accentVar: '--tenant-accent',
+    bgVar: '--tenant-surface',
   },
 ];
 
@@ -81,35 +79,47 @@ export function UserTypeSelector({ open, onOpenChange }: UserTypeSelectorProps) 
               <button
                 key={type.id}
                 onClick={() => setSelectedType(type.id)}
-                className={`
-                  relative p-4 rounded-lg border-2 text-left transition-all duration-200
-                  ${isSelected 
-                    ? `${type.borderColor} bg-gradient-to-r ${type.color} text-white shadow-lg` 
-                    : `border-gray-200 ${type.hoverBg}`
-                  }
-                `}
+                className="relative p-4 rounded-lg border-2 text-left transition-all duration-200"
+                style={{
+                  borderColor: isSelected ? `var(${type.accentVar})` : 'var(--color-border)',
+                  backgroundColor: isSelected ? `var(${type.accentVar})` : 'var(--color-surface)',
+                  color: isSelected ? 'white' : 'var(--color-text)',
+                }}
               >
                 <div className="flex items-start gap-4">
-                  <div className={`
-                    p-3 rounded-lg
-                    ${isSelected ? 'bg-white/20' : `bg-gradient-to-r ${type.color} text-white`}
-                  `}>
+                  <div 
+                    className="p-3 rounded-lg"
+                    style={{
+                      backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : `var(${type.accentVar})`,
+                      color: 'white',
+                    }}
+                  >
                     <Icon className="w-6 h-6" />
                   </div>
                   <div className="flex-1">
-                    <h3 className={`font-semibold text-lg mb-1 ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                    <h3 
+                      className="font-semibold text-lg mb-1"
+                      style={{ color: isSelected ? 'white' : 'var(--color-text)' }}
+                    >
                       {type.title}
                     </h3>
-                    <p className={`text-sm mb-3 ${isSelected ? 'text-white/90' : 'text-gray-600'}`}>
+                    <p 
+                      className="text-sm mb-3"
+                      style={{ color: isSelected ? 'rgba(255,255,255,0.9)' : 'var(--color-text-secondary)' }}
+                    >
                       {type.description}
                     </p>
                     <ul className="space-y-1">
                       {type.details.map((detail, i) => (
                         <li 
                           key={i} 
-                          className={`text-xs flex items-center gap-2 ${isSelected ? 'text-white/80' : 'text-gray-500'}`}
+                          className="text-xs flex items-center gap-2"
+                          style={{ color: isSelected ? 'rgba(255,255,255,0.8)' : 'var(--color-text-muted)' }}
                         >
-                          <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white/60' : 'bg-gray-400'}`} />
+                          <span 
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{ backgroundColor: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--color-text-muted)' }}
+                          />
                           {detail}
                         </li>
                       ))}
@@ -117,10 +127,14 @@ export function UserTypeSelector({ open, onOpenChange }: UserTypeSelectorProps) 
                   </div>
                   {isSelected && (
                     <div className="absolute top-4 right-4">
-                      <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center">
-                        <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
+                      <div 
+                        className="w-6 h-6 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: 'white' }}
+                      >
+                        <Check 
+                          className="w-4 h-4"
+                          style={{ color: 'var(--color-success)' }}
+                        />
                       </div>
                     </div>
                   )}
@@ -130,14 +144,16 @@ export function UserTypeSelector({ open, onOpenChange }: UserTypeSelectorProps) 
           })}
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t">
+        <div 
+          className="flex justify-end gap-3 pt-4 border-t"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
           <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
           <Button 
             onClick={handleContinue}
             disabled={!selectedType}
-            className="bg-[#2563EB] hover:bg-[#1E40AF]"
           >
             Continue
             <ArrowRight className="w-4 h-4 ml-2" />

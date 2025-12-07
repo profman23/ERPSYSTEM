@@ -19,22 +19,44 @@ const iconMap = {
   info: Info,
 };
 
-const colorMap = {
-  success: 'bg-green-50 border-green-200 text-green-800',
-  error: 'bg-red-50 border-red-200 text-red-800',
-  warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-  info: 'bg-blue-50 border-blue-200 text-blue-800',
-};
-
-const iconColorMap = {
-  success: 'text-green-500',
-  error: 'text-red-500',
-  warning: 'text-yellow-500',
-  info: 'text-blue-500',
+const getToastStyles = (type: ToastType): React.CSSProperties => {
+  switch (type) {
+    case 'success':
+      return {
+        backgroundColor: 'var(--alert-success-bg)',
+        borderColor: 'var(--alert-success-border)',
+        color: 'var(--alert-success-text)',
+      };
+    case 'error':
+      return {
+        backgroundColor: 'var(--alert-danger-bg)',
+        borderColor: 'var(--alert-danger-border)',
+        color: 'var(--alert-danger-text)',
+      };
+    case 'warning':
+      return {
+        backgroundColor: 'var(--alert-warning-bg)',
+        borderColor: 'var(--alert-warning-border)',
+        color: 'var(--alert-warning-text)',
+      };
+    case 'info':
+      return {
+        backgroundColor: 'var(--alert-info-bg)',
+        borderColor: 'var(--alert-info-border)',
+        color: 'var(--alert-info-text)',
+      };
+    default:
+      return {
+        backgroundColor: 'var(--color-surface)',
+        borderColor: 'var(--color-border)',
+        color: 'var(--color-text)',
+      };
+  }
 };
 
 export function Toast({ id, type, title, description, onClose }: ToastProps) {
   const Icon = iconMap[type];
+  const toastStyles = getToastStyles(type);
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -46,18 +68,22 @@ export function Toast({ id, type, title, description, onClose }: ToastProps) {
   return (
     <div
       className={cn(
-        'flex items-start gap-3 p-4 rounded-lg border shadow-lg animate-in slide-in-from-right duration-300',
-        colorMap[type]
+        'flex items-start gap-3 p-4 rounded-lg border shadow-lg animate-in slide-in-from-right duration-300'
       )}
+      style={{
+        ...toastStyles,
+        borderRadius: 'var(--radius)',
+        boxShadow: 'var(--card-shadow)',
+      }}
     >
-      <Icon className={cn('h-5 w-5 flex-shrink-0', iconColorMap[type])} />
+      <Icon className="h-5 w-5 flex-shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="font-medium">{title}</p>
         {description && <p className="text-sm opacity-80 mt-1">{description}</p>}
       </div>
       <button
         onClick={() => onClose(id)}
-        className="flex-shrink-0 opacity-70 hover:opacity-100"
+        className="flex-shrink-0 opacity-70 hover:opacity-100 transition-opacity"
       >
         <X className="h-4 w-4" />
       </button>
