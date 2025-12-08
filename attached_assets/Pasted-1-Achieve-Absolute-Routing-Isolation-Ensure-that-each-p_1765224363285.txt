@@ -1,0 +1,141 @@
+1. Achieve Absolute Routing Isolation
+
+Ensure that each panel has mathematically guaranteed isolation:
+
+System Panel → only System Admin
+
+Tenant Admin Panel → only Tenant Admin
+
+App Panel → only App Users
+
+No cross-panel access must be possible even with:
+
+manual URL manipulation
+
+expired tokens
+
+multiple tabs
+
+invalid tenantCodes
+
+deep links
+
+or malformed requests
+
+2. Audit Every API Endpoint
+
+Perform a full backend audit and confirm:
+
+Every API endpoint belongs to the correct panel
+
+No System API is reachable by Tenant/Admin/App users
+
+No Tenant API is reachable by App users
+
+No App routes are accessible by unauthorized scopes
+
+If any endpoint is not explicitly protected → treat as a vulnerability and fix it.
+
+3. Enforce Panel-Level Guards (No Code Needed)
+
+Guarantee that:
+
+System APIs ONLY accept system-scope users
+
+Tenant Admin APIs ONLY accept tenant-scope users
+
+App APIs ONLY accept app-scope users
+
+This must be enforced at the router level, not inside individual handlers.
+
+4. Block Every Form of Cross-Tenant Access
+
+Ensure the backend blocks:
+
+Access to another tenantId
+
+Access to another businessLineId
+
+Access to another branchId
+
+Users calling APIs from the wrong panel
+
+Routing must never rely on the frontend — backend should enforce the rules autonomously.
+
+5. Fix Incorrect Backend Fallback Behavior
+
+Ensure:
+
+The backend never returns HTML for API requests
+
+Unknown API paths must return clean JSON errors
+
+No fallback should leak frontend pages
+
+This is critical for a clean API boundary in enterprise systems.
+
+6. Validate All Authentication Scenarios
+
+Simulate all of these and harden behavior:
+
+Token expiry
+
+Refresh token invalidation
+
+Logout in one tab with multiple tabs open
+
+Change user roles during active sessions
+
+Incorrect tenantCode during login
+
+Unknown tenant or deleted tenant
+
+Users switching from one panel to another manually
+
+All cases must consistently enforce isolation.
+
+7. Confirm High-Scale Safety (3000+ Tenants)
+
+Verify that the routing layer can:
+
+Handle thousands of tenants simultaneously
+
+Guarantee strict per-tenant API separation
+
+Maintain performance without routing overhead
+
+Avoid regex-based routing bottlenecks
+
+Support future growth (10k+ tenants)
+
+8. Deliver a Final Security Report
+
+After hardening, provide:
+
+A list of all backend routing problems found
+
+How each one was resolved
+
+What was added or improved
+
+The isolation guarantees now in place
+
+Confirmation no panel can ever leak into another
+
+Confirmation no tenant can access another tenant
+
+QUALITY STANDARD
+
+Your work must reach the routing/security bar of:
+
+Stripe API isolation
+
+Meta internal panel separation
+
+Shopify multi-tenant backend isolation
+
+Uber microservice permission boundaries
+
+No code is required in your reply — only the fixes and architectural outcomes.
+
+Begin execution now.
