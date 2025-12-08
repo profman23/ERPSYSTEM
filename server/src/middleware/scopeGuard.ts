@@ -38,6 +38,7 @@ const SCOPE_HIERARCHY: Record<AccessScope, number> = {
 };
 
 function getPanelFromPath(path: string): PanelType | null {
+  // Frontend panel paths (for reference, not used in API)
   if (path.includes('/system/') || path.startsWith('/api/v1/system')) {
     return 'system';
   }
@@ -47,6 +48,40 @@ function getPanelFromPath(path: string): PanelType | null {
   if (path.includes('/app/') || path.startsWith('/api/v1/app')) {
     return 'app';
   }
+  
+  // API route patterns → panel mapping
+  // System panel APIs (only system scope can access)
+  if (
+    path.startsWith('/api/v1/tenants') ||
+    path.includes('/api/v1/hierarchy/tenants') ||
+    path.includes('/api/v1/hierarchy/system-users') ||
+    path.includes('/api/v1/hierarchy/tenant-admins') ||
+    path.includes('/api/v1/hierarchy/system-user-roles')
+  ) {
+    return 'system';
+  }
+  
+  // Admin panel APIs (tenant + system scope can access)
+  if (
+    path.startsWith('/api/v1/business-lines') ||
+    path.startsWith('/api/v1/branches') ||
+    path.startsWith('/api/v1/branch-capacity') ||
+    path.startsWith('/api/v1/tenant/') ||
+    path.includes('/api/v1/hierarchy/business-lines') ||
+    path.includes('/api/v1/hierarchy/branches')
+  ) {
+    return 'admin';
+  }
+  
+  // App panel APIs (all authenticated users can access)
+  if (
+    path.startsWith('/api/v1/hierarchy/users') && 
+    !path.includes('system-user') && 
+    !path.includes('tenant-admin')
+  ) {
+    return 'app';
+  }
+  
   return null;
 }
 
@@ -272,7 +307,11 @@ export const requireBranchScope = () => {
 
 export const autoPanelGuard = () => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const panel = getPanelFromPath(req.path);
+    // CRITICAL FIX: Use originalUrl to get full path after router mounting
+    // req.path becomes relative (e.g., "/hierarchy") when mounted under /api/v1
+    // req.originalUrl contains the full path (e.g., "/api/v1/hierarchy")
+    const fullPath = req.originalUrl.split('?')[0]; // Remove query params
+    const panel = getPanelFromPath(fullPath);
     
     if (!panel) {
       return next();
@@ -292,7 +331,8 @@ export const autoPanelGuard = () => {
       logAccessViolation(req, 'Auto panel guard violation', {
         detectedPanel: panel,
         userScope,
-        path: req.path,
+        path: fullPath,
+        originalUrl: req.originalUrl,
       });
       return res.status(403).json({
         error: `Access denied. You don't have permission to access ${panel} APIs.`,

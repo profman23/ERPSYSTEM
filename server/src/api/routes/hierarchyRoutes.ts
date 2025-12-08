@@ -7,27 +7,30 @@
 import { Router } from 'express';
 import { hierarchyController } from '../controllers/hierarchyController';
 import { authMiddleware } from '../../middleware/authMiddleware';
+import { requireSystemScope, panelGuard } from '../../middleware/scopeGuard';
 
 const router = Router();
 
-router.post('/tenants', hierarchyController.createTenant);
+// CRITICAL: All routes explicitly include authMiddleware for defense-in-depth
+// Never rely on parent router mounting for security-critical middleware
 
-router.post('/business-lines', authMiddleware, hierarchyController.createBusinessLine);
+// System-only routes (System Panel)
+// Auth → RequireSystemScope → Controller
+router.post('/tenants', authMiddleware, requireSystemScope(), hierarchyController.createTenant);
+router.post('/system-users', authMiddleware, requireSystemScope(), hierarchyController.createSystemUser);
+router.post('/tenant-admins', authMiddleware, requireSystemScope(), hierarchyController.createTenantAdmin);
+router.get('/system-user-roles', authMiddleware, requireSystemScope(), hierarchyController.getSystemUserRoles);
 
-router.post('/branches', authMiddleware, hierarchyController.createBranch);
+// Admin panel routes (Tenant Admin + System)
+// Auth → PanelGuard('admin') → Controller
+router.post('/business-lines', authMiddleware, panelGuard('admin'), hierarchyController.createBusinessLine);
+router.post('/branches', authMiddleware, panelGuard('admin'), hierarchyController.createBranch);
+router.get('/tenants/:tenantId/hierarchy', authMiddleware, panelGuard('admin'), hierarchyController.getTenantHierarchy);
 
+// App panel routes (All authenticated users)
+// Auth → Controller (autoPanelGuard at parent level handles app panel check)
 router.post('/users', authMiddleware, hierarchyController.createUser);
-
-router.post('/system-users', authMiddleware, hierarchyController.createSystemUser);
-
-router.post('/tenant-admins', authMiddleware, hierarchyController.createTenantAdmin);
-
-router.get('/system-user-roles', authMiddleware, hierarchyController.getSystemUserRoles);
-
-router.get('/tenants/:tenantId/hierarchy', authMiddleware, hierarchyController.getTenantHierarchy);
-
 router.get('/users/:userId/context', authMiddleware, hierarchyController.getUserContext);
-
 router.get('/users/:userId/scope', authMiddleware, hierarchyController.getUserScope);
 
 export default router;

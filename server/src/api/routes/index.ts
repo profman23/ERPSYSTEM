@@ -22,22 +22,22 @@ import tenantAdminRoutes from '../../routes/tenant';
 import { authMiddleware } from '../../middleware/authMiddleware';
 import { tenantLoader } from '../../middleware/tenantLoader';
 import { apiRateLimiter, strictRateLimiter } from '../../middleware/rateLimiter';
-import { panelGuard, requireSystemScope } from '../../middleware/scopeGuard';
+import { panelGuard, requireSystemScope, autoPanelGuard } from '../../middleware/scopeGuard';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
 
-router.use('/hierarchy', hierarchyRoutes);
+router.use('/hierarchy', authMiddleware, autoPanelGuard(), tenantLoader, apiRateLimiter, hierarchyRoutes);
 
-router.use('/tenants', authMiddleware, tenantLoader, requireSystemScope(), apiRateLimiter, strictRateLimiter, tenantRoutes);
-router.use('/business-lines', authMiddleware, tenantLoader, panelGuard('admin'), apiRateLimiter, strictRateLimiter, businessLineRoutes);
-router.use('/branches', authMiddleware, tenantLoader, panelGuard('admin'), apiRateLimiter, strictRateLimiter, branchRoutes);
-router.use('/branch-capacity', authMiddleware, tenantLoader, panelGuard('admin'), apiRateLimiter, branchCapacityRoutes);
+router.use('/tenants', authMiddleware, autoPanelGuard(), tenantLoader, requireSystemScope(), apiRateLimiter, strictRateLimiter, tenantRoutes);
+router.use('/business-lines', authMiddleware, autoPanelGuard(), tenantLoader, panelGuard('admin'), apiRateLimiter, strictRateLimiter, businessLineRoutes);
+router.use('/branches', authMiddleware, autoPanelGuard(), tenantLoader, panelGuard('admin'), apiRateLimiter, strictRateLimiter, branchRoutes);
+router.use('/branch-capacity', authMiddleware, autoPanelGuard(), tenantLoader, panelGuard('admin'), apiRateLimiter, branchCapacityRoutes);
 
-router.use('/tenant/users', authMiddleware, tenantLoader, panelGuard('admin'), apiRateLimiter, usersRoutes);
+router.use('/tenant/users', authMiddleware, autoPanelGuard(), tenantLoader, panelGuard('admin'), apiRateLimiter, usersRoutes);
 
-router.use('/tenant', authMiddleware, tenantLoader, panelGuard('admin'), apiRateLimiter, tenantAdminRoutes);
+router.use('/tenant', authMiddleware, autoPanelGuard(), tenantLoader, panelGuard('admin'), apiRateLimiter, tenantAdminRoutes);
 
 router.get('/', (req, res) => {
   res.json({ message: 'API - Multi-Tenant Hierarchy Foundation Complete' });
