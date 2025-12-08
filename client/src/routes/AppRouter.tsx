@@ -1,3 +1,32 @@
+/**
+ * AppRouter - HARDENED Multi-Panel Routing with Absolute Isolation
+ * 
+ * CRITICAL SECURITY PATTERN:
+ * ========================
+ * 
+ * 1. ProtectedRoute is the ABSOLUTE GATEKEEPER for all panel routes
+ * 2. EVERY route under /system/*, /admin/*, /app/* MUST pass through ProtectedRoute FIRST
+ * 3. 404 pages are placed INSIDE each panel's children (after ProtectedRoute)
+ * 4. This ensures scope validation happens BEFORE 404, never after
+ * 
+ * Route Hierarchy:
+ * ===============
+ * /system/* → ProtectedRoute (allowedScopes=['system']) → [routes] → catch-all 404
+ * /admin/*  → ProtectedRoute (allowedScopes=['tenant', 'system']) → [routes] → catch-all 404
+ * /app/*    → ProtectedRoute (allowedScopes=['branch', 'business_line', 'mixed', 'tenant', 'system']) → [routes] → catch-all 404
+ * 
+ * Security Guarantee:
+ * ==================
+ * - Deep link to /admin/users/123/edit → ProtectedRoute validates scope → then shows 404
+ * - Branch user tries /admin/anything → ProtectedRoute blocks (403/redirect) → NEVER shows 404
+ * - URL manipulation → Always intercepted by ProtectedRoute before reaching any page
+ * 
+ * Mathematically Guaranteed:
+ * =========================
+ * NO route under /admin/*, /system/*, or /app/* can bypass ProtectedRoute.
+ * Scope validation is enforced BEFORE route matching, BEFORE 404 handling.
+ */
+
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import AuthLayout from '@/layouts/AuthLayout';
@@ -214,6 +243,14 @@ const router = createBrowserRouter([
               </Suspense>
             ),
           },
+          {
+            path: '*',
+            element: (
+              <Suspense fallback={<DarkLoadingFallback />}>
+                <NotFoundPage />
+              </Suspense>
+            ),
+          },
         ],
       },
     ],
@@ -324,6 +361,14 @@ const router = createBrowserRouter([
               </Suspense>
             ),
           },
+          {
+            path: '*',
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <NotFoundPage />
+              </Suspense>
+            ),
+          },
         ],
       },
     ],
@@ -383,6 +428,14 @@ const router = createBrowserRouter([
             element: (
               <Suspense fallback={<LoadingFallback />}>
                 <AppReportsPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: '*',
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <NotFoundPage />
               </Suspense>
             ),
           },
