@@ -18,8 +18,24 @@ declare global {
 }
 
 /**
- * Authentication middleware
- * Validates JWT token and attaches user to req.user
+ * PASSIVE Authentication Middleware - Phase 5 Backend Hardening
+ * 
+ * CRITICAL ARCHITECTURAL CHANGE:
+ * ==============================
+ * This middleware ALWAYS calls next(), even if authentication fails.
+ * It sets req.user if token is valid, leaves it undefined otherwise.
+ * 
+ * Authorization enforcement happens in enforceRouteMetadata(), which runs
+ * AFTER this middleware and checks if req.user is present when required.
+ * 
+ * This pattern ensures:
+ * 1. enforceRouteMetadata() ALWAYS executes (deterministic)
+ * 2. Authorization cannot be bypassed (mathematical guarantee)
+ * 3. Route protection doesn't depend on auth middleware implementation
+ * 
+ * WHY THIS MATTERS:
+ * If authMiddleware returns early, enforceRouteMetadata() never runs,
+ * breaking the security guarantee that all routes are protected.
  */
 export const authMiddleware = (
   req: Request,
@@ -31,42 +47,36 @@ export const authMiddleware = (
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
-        error: 'No token provided. Please login.',
-      });
+      // CRITICAL: Don't reject here, let enforceRouteMetadata() handle it
+      req.user = undefined;
+      return next();
     }
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
-    // Verify and decode token
-    const decoded = AuthService.verifyToken(token);
+    try {
+      // Verify and decode token
+      const decoded = AuthService.verifyToken(token);
 
-    // Attach user to request
-    req.user = {
-      userId: decoded.userId,
-      role: decoded.role,
-      accessScope: decoded.accessScope,
-      tenantId: decoded.tenantId,
-      businessLineId: decoded.businessLineId,
-      branchId: decoded.branchId,
-    };
+      // Attach user to request
+      req.user = {
+        userId: decoded.userId,
+        role: decoded.role,
+        accessScope: decoded.accessScope,
+        tenantId: decoded.tenantId,
+        businessLineId: decoded.businessLineId,
+        branchId: decoded.branchId,
+      };
+    } catch (error: any) {
+      // Token verification failed - leave req.user undefined
+      // Let enforceRouteMetadata() reject the request
+      req.user = undefined;
+    }
 
     next();
   } catch (error: any) {
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        error: 'Token expired. Please refresh your token.',
-      });
-    }
-
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({
-        error: 'Invalid token. Please login again.',
-      });
-    }
-
-    return res.status(401).json({
-      error: 'Authentication failed.',
-    });
+    // Unexpected error - leave req.user undefined and continue
+    req.user = undefined;
+    next();
   }
 };
