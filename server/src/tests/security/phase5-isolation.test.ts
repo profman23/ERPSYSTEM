@@ -19,10 +19,19 @@
  * - Proves mathematical guarantees of isolation
  */
 
+/**
+ * NOTE: This test suite requires:
+ * 1. Jest configured with TypeScript support
+ * 2. Supertest installed (npm install --save-dev supertest @types/supertest)
+ * 3. Test database environment (separate from development)
+ * 
+ * To run tests:
+ * npm run test
+ */
+
 import request from 'supertest';
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
-import app from '../../app'; // Main Express app
-import { AuthService } from '../../services/AuthService';
+import { app } from '../../app'; // Main Express app (side-effect free import)
+import jwt from 'jsonwebtoken';
 
 // Test user tokens (generated with known user data)
 let systemUserToken: string;
@@ -68,14 +77,20 @@ const TENANT_B_ADMIN = {
   branchId: null,
 };
 
+// Helper function to generate test tokens
+const generateToken = (payload: any, expiresIn: string = '1h'): string => {
+  const secret = process.env.JWT_SECRET || 'test-secret-key';
+  return jwt.sign(payload, secret, { expiresIn });
+};
+
 beforeAll(async () => {
   // Generate test tokens
-  systemUserToken = AuthService.generateAccessToken(SYSTEM_USER);
-  tenantAdminToken = AuthService.generateAccessToken(TENANT_ADMIN_USER);
-  branchUserToken = AuthService.generateAccessToken(BRANCH_USER);
+  systemUserToken = generateToken(SYSTEM_USER);
+  tenantAdminToken = generateToken(TENANT_ADMIN_USER);
+  branchUserToken = generateToken(BRANCH_USER);
   
   // Generate expired token (for testing)
-  expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJleHBpcmVkIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyMzkwMjJ9.invalid';
+  expiredToken = generateToken({ userId: 'expired-user' }, '-1h'); // Already expired
   
   // Invalid token
   invalidToken = 'invalid.token.here';
@@ -83,6 +98,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   // Cleanup if needed
+  // Close database connections, etc.
 });
 
 describe('Phase 5: System User Access Control', () => {
@@ -263,7 +279,7 @@ describe('Phase 5: Tenant Context Validation (Anti-Spoofing)', () => {
   
   it('should reject system user with spoofed tenant context', async () => {
     // Generate system user token with invalid tenant binding
-    const spoofedToken = AuthService.generateAccessToken({
+    const spoofedToken = generateToken({
       ...SYSTEM_USER,
       tenantId: 'spoofed-tenant-id', // System users CANNOT have tenantId
     });
@@ -279,7 +295,7 @@ describe('Phase 5: Tenant Context Validation (Anti-Spoofing)', () => {
   
   it('should reject tenant admin without tenant context', async () => {
     // Generate tenant admin token without tenantId
-    const invalidToken = AuthService.generateAccessToken({
+    const invalidToken = generateToken({
       ...TENANT_ADMIN_USER,
       tenantId: null, // Tenant admins MUST have tenantId
     });
@@ -295,7 +311,7 @@ describe('Phase 5: Tenant Context Validation (Anti-Spoofing)', () => {
   
   it('should reject branch user without complete context', async () => {
     // Generate branch user token without branchId
-    const invalidToken = AuthService.generateAccessToken({
+    const invalidToken = generateToken({
       ...BRANCH_USER,
       branchId: null, // Branch users MUST have branchId
     });

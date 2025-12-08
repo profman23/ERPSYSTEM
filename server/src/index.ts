@@ -1,24 +1,22 @@
-import express from 'express';
+/**
+ * Server Entry Point
+ * 
+ * Initializes and starts the HTTP server with Socket.IO support.
+ * The Express app is imported from ./app.ts (side-effect free for testing).
+ */
+
 import dotenv from 'dotenv';
 import { createServer } from 'http';
+import { app } from './app'; // Import configured Express app
 import { initializeSocket } from './realtime/socket';
 import { initializeRedis } from './services/redisClient';
 import { startAllJobs } from './jobs';
 import logger from './config/logger';
-import { helmetMiddleware, corsMiddleware } from './middleware/securityMiddleware';
-import { metricsMiddleware } from './middleware/metricsMiddleware';
-import { tenantContextCleanup } from './middleware/tenantLoader';
-import { errorHandler, notFoundHandler } from './middleware/errorHandler';
-import { apiRateLimiter } from './middleware/rateLimiter';
-import apiRoutes from './api/routes';
 import { seedSuperAdmin } from './db/seed/seedSuperAdmin';
-import { requestContextMiddleware, contextLogger } from './core/context';
-import { healthRoutes } from './core/health';
-import { versionMiddleware } from './core/versioning';
+import { contextLogger } from './core/context';
 
 dotenv.config();
 
-const app = express();
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 3000;
 
@@ -26,48 +24,10 @@ const startServer = async () => {
   try {
     logger.info('🚀 Starting Veterinary ERP SaaS Server...');
 
+    // Initialize Redis for caching and Socket.IO adapter
     await initializeRedis();
 
-    // Enable trust proxy for Replit environment and enterprise deployments
-    // Required for proper rate limiting and X-Forwarded-For header handling
-    app.set('trust proxy', true);
-
-    app.use(helmetMiddleware);
-    app.use(corsMiddleware);
-    app.use(express.json({ limit: '10mb' }));
-    app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-    app.use(requestContextMiddleware);
-
-    app.use(metricsMiddleware);
-
-    app.use('/health', healthRoutes);
-
-    app.use(versionMiddleware);
-
-    app.use('/api/v1', apiRateLimiter, apiRoutes);
-    
-    app.get('/api', (req, res) => {
-      res.json({
-        success: true,
-        versions: {
-          current: 'v1',
-          available: ['v1'],
-          deprecated: [],
-        },
-        endpoints: {
-          v1: '/api/v1',
-        },
-        documentation: '/api/docs',
-      });
-    });
-
-    // Cleanup tenant context after request completes
-    app.use(tenantContextCleanup);
-
-    app.use(notFoundHandler);
-    app.use(errorHandler);
-
+    // Initialize Socket.IO with HTTP server
     await initializeSocket(httpServer);
 
     httpServer.listen(PORT, async () => {
