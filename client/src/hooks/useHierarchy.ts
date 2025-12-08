@@ -17,9 +17,15 @@ export interface Tenant {
   status: string;
   logoUrl: string | null;
   primaryColor: string;
+  accentColor: string;
   contactEmail: string | null;
   contactPhone: string | null;
   address: string | null;
+  allowedBusinessLines: number;
+  allowedBranches: number;
+  allowedUsers: number;
+  storageLimitGB: number;
+  apiRateLimit: number;
   settings: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
@@ -106,13 +112,19 @@ export interface TenantHierarchy extends Tenant {
 export interface CreateTenantInput {
   name: string;
   code: string;
-  subscriptionPlan?: string;
   country?: string;
   timezone?: string;
+  subscriptionPlan?: 'trial' | 'standard' | 'enterprise';
+  allowedBusinessLines?: number;
+  allowedBranches?: number;
+  allowedUsers?: number;
+  storageLimitGB?: number;
+  apiRateLimit?: number;
+  primaryColor?: string;
+  accentColor?: string;
   contactEmail?: string;
   contactPhone?: string;
   address?: string;
-  primaryColor?: string;
 }
 
 export interface CreateBusinessLineInput {

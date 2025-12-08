@@ -89,7 +89,7 @@ export default function CreateTenantPage() {
         code: formData.code.toUpperCase(),
         country: formData.country || undefined,
         timezone: formData.timezone,
-        subscriptionPlan: formData.subscriptionPlan,
+        subscriptionPlan: formData.subscriptionPlan as 'trial' | 'standard' | 'enterprise',
         allowedBusinessLines: parseInt(formData.allowedBusinessLines),
         allowedBranches: parseInt(formData.allowedBranches),
         contactEmail: formData.contactEmail || undefined,

@@ -57,7 +57,7 @@ const AppPatientsPage = lazy(() => import('@/pages/app/AppPatientsPage'));
 const AppTasksPage = lazy(() => import('@/pages/app/AppTasksPage'));
 const AppReportsPage = lazy(() => import('@/pages/app/AppReportsPage'));
 
-const CreateTenantPage = lazy(() => import('@/pages/tenants/CreateTenantPage'));
+const SystemCreateTenantPage = lazy(() => import('@/pages/system/SystemCreateTenantPage'));
 const TenantDetailPage = lazy(() => import('@/pages/tenants/TenantDetailPage'));
 const EditTenantPage = lazy(() => import('@/pages/tenants/EditTenantPage'));
 
@@ -130,7 +130,7 @@ const router = createBrowserRouter([
             path: 'tenants/create',
             element: (
               <Suspense fallback={<DarkLoadingFallback />}>
-                <CreateTenantPage />
+                <SystemCreateTenantPage />
               </Suspense>
             ),
           },

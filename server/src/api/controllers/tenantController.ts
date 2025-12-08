@@ -47,15 +47,26 @@ export const createTenant = async (req: Request, res: Response, next: any) => {
       });
     }
 
-    // Create tenant
+    // Create tenant with all fields
     const [newTenant] = await db
       .insert(tenants)
       .values({
         code: validatedData.code.toUpperCase(),
         name: validatedData.name,
-        defaultLanguage: validatedData.defaultLanguage,
+        defaultLanguage: validatedData.defaultLanguage || 'en',
         country: validatedData.country,
-        timezone: validatedData.timezone,
+        timezone: validatedData.timezone || 'UTC',
+        subscriptionPlan: validatedData.subscriptionPlan || 'trial',
+        allowedBusinessLines: validatedData.allowedBusinessLines || 5,
+        allowedBranches: validatedData.allowedBranches || 10,
+        allowedUsers: validatedData.allowedUsers || 50,
+        storageLimitGB: validatedData.storageLimitGB || 10,
+        apiRateLimit: validatedData.apiRateLimit || 1000,
+        primaryColor: validatedData.primaryColor || '#2563EB',
+        accentColor: validatedData.accentColor || '#8B5CF6',
+        contactEmail: validatedData.contactEmail || null,
+        contactPhone: validatedData.contactPhone || null,
+        address: validatedData.address || null,
       })
       .returning();
 
