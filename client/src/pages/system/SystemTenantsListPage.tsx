@@ -1,25 +1,44 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Building2, Plus, Search, Eye, Edit, Loader2, AlertCircle } from 'lucide-react';
+import { Building2, Plus, Search, Eye, Edit } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useTenants } from '@/hooks/useHierarchy';
+import { LoadingState } from '@/components/ui/loading-state';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ErrorState } from '@/components/ui/error-state';
 
-const statusColors: Record<string, string> = {
-  active: 'bg-green-500/20 text-green-400 border-green-500/30',
-  inactive: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
-  suspended: 'bg-red-500/20 text-red-400 border-red-500/30',
-  pending: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+const getStatusStyle = (status: string) => {
+  switch (status) {
+    case 'active':
+      return { backgroundColor: 'var(--badge-success-bg)', color: 'var(--color-text-success)', borderColor: 'var(--badge-success-border)' };
+    case 'inactive':
+      return { backgroundColor: 'var(--sys-button)', color: 'var(--sys-text-muted)', borderColor: 'var(--sys-border)' };
+    case 'suspended':
+      return { backgroundColor: 'var(--badge-danger-bg)', color: 'var(--color-text-danger)', borderColor: 'var(--badge-danger-border)' };
+    case 'pending':
+      return { backgroundColor: 'var(--badge-warning-bg)', color: 'var(--color-text-warning)', borderColor: 'var(--badge-warning-border)' };
+    default:
+      return { backgroundColor: 'var(--badge-success-bg)', color: 'var(--color-text-success)', borderColor: 'var(--badge-success-border)' };
+  }
 };
 
-const planColors: Record<string, string> = {
-  trial: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
-  standard: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  professional: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  enterprise: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+const getPlanStyle = (plan: string) => {
+  switch (plan) {
+    case 'trial':
+      return { backgroundColor: 'var(--sys-button)', color: 'var(--sys-text-muted)', borderColor: 'var(--sys-border)' };
+    case 'standard':
+      return { backgroundColor: 'var(--badge-info-bg)', color: 'var(--color-text-info)', borderColor: 'var(--badge-info-border)' };
+    case 'professional':
+      return { backgroundColor: 'color-mix(in srgb, var(--sys-accent) 20%, transparent)', color: 'var(--sys-accent)', borderColor: 'color-mix(in srgb, var(--sys-accent) 30%, transparent)' };
+    case 'enterprise':
+      return { backgroundColor: 'var(--badge-warning-bg)', color: 'var(--color-text-warning)', borderColor: 'var(--badge-warning-border)' };
+    default:
+      return { backgroundColor: 'var(--badge-info-bg)', color: 'var(--color-text-info)', borderColor: 'var(--badge-info-border)' };
+  }
 };
 
 export default function SystemTenantsListPage() {
@@ -61,8 +80,8 @@ export default function SystemTenantsListPage() {
         <Link to="/system/tenants/create">
           <Button 
             style={{ 
-              background: 'linear-gradient(135deg, var(--sys-accent), #7C3AED)', 
-              color: 'var(--sys-text)' 
+              background: 'linear-gradient(135deg, var(--sys-accent), var(--sys-accent-hover))', 
+              color: 'var(--color-text-on-accent)' 
             }}
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -104,57 +123,25 @@ export default function SystemTenantsListPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--sys-accent)' }} />
-              <span className="ml-3" style={{ color: 'var(--sys-text-secondary)' }}>Loading tenants...</span>
-            </div>
+            <LoadingState size="lg" message="Loading tenants..." fullPage />
           ) : error ? (
-            <div className="text-center py-12">
-              <div 
-                className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
-                style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)' }}
-              >
-                <AlertCircle className="w-8 h-8 text-red-400" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-red-400">Error Loading Tenants</h3>
-              <p className="mb-4" style={{ color: 'var(--sys-text-muted)' }}>
-                {(error as any)?.message || 'Failed to load tenants. Please try again.'}
-              </p>
-              <Button 
-                variant="outline" 
-                onClick={() => window.location.reload()}
-                style={{ 
-                  backgroundColor: 'var(--sys-button)', 
-                  borderColor: 'var(--sys-border)', 
-                  color: 'var(--sys-text)' 
-                }}
-              >
-                Retry
-              </Button>
-            </div>
+            <ErrorState
+              title="Error Loading Tenants"
+              message={(error as any)?.message || 'Failed to load tenants. Please try again.'}
+              retryAction={() => window.location.reload()}
+              variant="page"
+            />
           ) : filteredTenants.length === 0 ? (
-            <div className="text-center py-12">
-              <Building2 className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--sys-text-muted)' }} />
-              <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--sys-text)' }}>
-                {searchQuery ? 'No Matching Tenants' : 'No Tenants Yet'}
-              </h3>
-              <p className="mb-6" style={{ color: 'var(--sys-text-secondary)' }}>
-                {searchQuery ? 'Try adjusting your search query' : 'Get started by creating your first tenant'}
-              </p>
-              {!searchQuery && (
-                <Link to="/system/tenants/create">
-                  <Button 
-                    style={{ 
-                      background: 'linear-gradient(135deg, var(--sys-accent), #7C3AED)', 
-                      color: 'var(--sys-text)' 
-                    }}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Tenant
-                  </Button>
-                </Link>
-              )}
-            </div>
+            <EmptyState
+              icon={Building2}
+              title={searchQuery ? 'No Matching Tenants' : 'No Tenants Yet'}
+              description={searchQuery ? 'Try adjusting your search query' : 'Get started by creating your first tenant'}
+              action={!searchQuery ? {
+                label: 'Add Tenant',
+                onClick: () => navigate('/system/tenants/create'),
+                icon: Plus,
+              } : undefined}
+            />
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -173,14 +160,19 @@ export default function SystemTenantsListPage() {
                   {filteredTenants.map((tenant) => (
                     <TableRow 
                       key={tenant.id} 
-                      className="hover:bg-white/5"
+                      className="transition-colors"
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--sys-surface-hover)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                       style={{ borderColor: 'var(--sys-border)' }}
                     >
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-3">
                           <div 
-                            className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-sm font-bold"
-                            style={{ backgroundColor: tenant.primaryColor || 'var(--sys-accent)' }}
+                            className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold"
+                            style={{ 
+                              backgroundColor: tenant.primaryColor || 'var(--sys-accent)',
+                              color: 'var(--color-text-on-accent)'
+                            }}
                           >
                             {tenant.name.charAt(0)}
                           </div>
@@ -202,12 +194,18 @@ export default function SystemTenantsListPage() {
                         {tenant.contactEmail || <span style={{ color: 'var(--sys-text-muted)' }}>-</span>}
                       </TableCell>
                       <TableCell>
-                        <Badge className={`${planColors[tenant.subscriptionPlan] || planColors.standard} border`}>
+                        <Badge 
+                          className="border"
+                          style={getPlanStyle(tenant.subscriptionPlan)}
+                        >
                           {tenant.subscriptionPlan || 'standard'}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge className={`${statusColors[tenant.status] || statusColors.active} border`}>
+                        <Badge 
+                          className="border"
+                          style={getStatusStyle(tenant.status)}
+                        >
                           {tenant.status || 'active'}
                         </Badge>
                       </TableCell>

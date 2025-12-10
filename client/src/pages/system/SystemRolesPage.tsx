@@ -54,8 +54,8 @@ export default function SystemRolesPage() {
         <Button 
           className="transition-colors"
           style={{ 
-            background: 'linear-gradient(135deg, var(--sys-accent), #7C3AED)', 
-            color: 'var(--sys-text)' 
+            background: 'linear-gradient(135deg, var(--sys-accent), var(--sys-accent-hover))', 
+            color: 'var(--color-text-on-accent)' 
           }}
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -96,11 +96,12 @@ export default function SystemRolesPage() {
                   className="p-3 rounded-lg"
                   style={{ 
                     background: role.code === 'SYSTEM_ADMIN' 
-                      ? 'linear-gradient(135deg, var(--sys-accent), #7C3AED)'
-                      : 'var(--sys-button)'
+                      ? 'linear-gradient(135deg, var(--sys-accent), var(--sys-accent-hover))'
+                      : 'var(--sys-button)',
+                    color: 'var(--color-text-on-accent)'
                   }}
                 >
-                  <Shield className="w-6 h-6" style={{ color: 'var(--sys-text)' }} />
+                  <Shield className="w-6 h-6" style={{ color: role.code === 'SYSTEM_ADMIN' ? 'var(--color-text-on-accent)' : 'var(--sys-text)' }} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -108,13 +109,27 @@ export default function SystemRolesPage() {
                       {role.name}
                     </h3>
                     {role.isProtected && (
-                      <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 border">
+                      <Badge 
+                        className="border"
+                        style={{ 
+                          backgroundColor: 'var(--badge-warning-bg)', 
+                          color: 'var(--color-text-warning)', 
+                          borderColor: 'var(--badge-warning-border)' 
+                        }}
+                      >
                         <Lock className="w-3 h-3 mr-1" />
                         Protected
                       </Badge>
                     )}
                     {role.isDefault && (
-                      <Badge className="bg-green-500/20 text-green-400 border-green-500/30 border">
+                      <Badge 
+                        className="border"
+                        style={{ 
+                          backgroundColor: 'var(--badge-success-bg)', 
+                          color: 'var(--color-text-success)', 
+                          borderColor: 'var(--badge-success-border)' 
+                        }}
+                      >
                         Default
                       </Badge>
                     )}
@@ -150,9 +165,13 @@ export default function SystemRolesPage() {
                       key={idx}
                       className="border"
                       style={{ 
-                        backgroundColor: perm === '*' ? 'rgba(139, 92, 246, 0.2)' : 'var(--sys-button)',
+                        backgroundColor: perm === '*' 
+                          ? 'color-mix(in srgb, var(--sys-accent) 20%, transparent)' 
+                          : 'var(--sys-button)',
                         color: perm === '*' ? 'var(--sys-accent)' : 'var(--sys-text-secondary)',
-                        borderColor: perm === '*' ? 'rgba(139, 92, 246, 0.3)' : 'var(--sys-border)'
+                        borderColor: perm === '*' 
+                          ? 'color-mix(in srgb, var(--sys-accent) 30%, transparent)' 
+                          : 'var(--sys-border)'
                       }}
                     >
                       {perm === '*' ? '✦ Wildcard (All Permissions)' : perm}
@@ -178,19 +197,6 @@ export default function SystemRolesPage() {
             )}
           </div>
         ))}
-      </div>
-
-      <div 
-        className="rounded-xl border p-6 text-center"
-        style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}
-      >
-        <Settings className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--sys-text-muted)' }} />
-        <p className="text-lg font-medium" style={{ color: 'var(--sys-text-secondary)' }}>
-          Additional Role Management
-        </p>
-        <p className="mt-2" style={{ color: 'var(--sys-text-muted)' }}>
-          Custom system role creation and advanced permission configuration coming in Phase 2
-        </p>
       </div>
     </div>
   );

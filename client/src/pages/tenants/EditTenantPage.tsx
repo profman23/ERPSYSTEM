@@ -99,7 +99,7 @@ export default function EditTenantPage() {
         name: formData.name,
         country: formData.country || undefined,
         timezone: formData.timezone,
-        subscriptionPlan: formData.subscriptionPlan,
+        subscriptionPlan: formData.subscriptionPlan as 'trial' | 'standard' | 'enterprise',
         contactEmail: formData.contactEmail || undefined,
         contactPhone: formData.contactPhone || undefined,
         address: formData.address || undefined,

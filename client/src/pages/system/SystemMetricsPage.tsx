@@ -1,6 +1,17 @@
 import { Activity, Cpu, HardDrive, Wifi } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
+const getTrendStyle = (trend: string) => {
+  switch (trend) {
+    case 'low':
+      return { backgroundColor: 'var(--badge-success-bg)', color: 'var(--color-text-success)' };
+    case 'high':
+      return { backgroundColor: 'var(--badge-warning-bg)', color: 'var(--color-text-warning)' };
+    default:
+      return { backgroundColor: 'var(--badge-info-bg)', color: 'var(--color-text-info)' };
+  }
+};
+
 export default function SystemMetricsPage() {
   const metrics = [
     { name: 'API Response Time', value: '45ms', trend: 'stable', icon: Activity },
@@ -21,6 +32,7 @@ export default function SystemMetricsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {metrics.map((metric) => {
           const Icon = metric.icon;
+          const trendStyle = getTrendStyle(metric.trend);
           return (
             <Card 
               key={metric.name} 
@@ -31,15 +43,14 @@ export default function SystemMetricsPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div 
                     className="w-10 h-10 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: 'rgba(139, 92, 246, 0.2)' }}
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--sys-accent) 20%, transparent)' }}
                   >
                     <Icon className="w-5 h-5" style={{ color: 'var(--sys-accent)' }} />
                   </div>
-                  <span className={`px-2 py-1 text-xs rounded ${
-                    metric.trend === 'low' ? 'bg-green-500/20 text-green-400' :
-                    metric.trend === 'high' ? 'bg-yellow-500/20 text-yellow-400' :
-                    'bg-blue-500/20 text-blue-400'
-                  }`}>
+                  <span 
+                    className="px-2 py-1 text-xs rounded"
+                    style={trendStyle}
+                  >
                     {metric.trend}
                   </span>
                 </div>

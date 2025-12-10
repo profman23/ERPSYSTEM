@@ -438,8 +438,11 @@ export default function CreateUserPage() {
                   ))}
                 </Select>
               </div>
-              <div className="p-3 rounded-lg bg-gray-50 border">
-                <p className="text-sm text-gray-600">
+              <div 
+                className="p-3 rounded-lg border"
+                style={{ backgroundColor: 'var(--color-surface-hover)', borderColor: 'var(--color-border)' }}
+              >
+                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
                   System users are automatically assigned to the SYSTEM tenant and have platform-wide access based on their role.
                 </p>
               </div>
@@ -469,13 +472,18 @@ export default function CreateUserPage() {
                   ))}
                 </Select>
               </div>
-              <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-                <div className="flex items-center gap-2 text-blue-700 mb-2">
+              <div 
+                className="p-3 rounded-lg border"
+                style={{ backgroundColor: 'var(--badge-info-bg)', borderColor: 'var(--badge-info-border)' }}
+              >
+                <div className="flex items-center gap-2 mb-2" style={{ color: 'var(--color-info)' }}>
                   <Shield className="w-4 h-4" />
                   <span className="font-medium">TENANT_ADMIN Role</span>
-                  <Badge className="bg-blue-600">Auto-Assigned</Badge>
+                  <Badge style={{ backgroundColor: 'var(--color-info)', color: 'var(--color-text-on-accent)' }}>
+                    Auto-Assigned
+                  </Badge>
                 </div>
-                <p className="text-sm text-blue-600">
+                <p className="text-sm" style={{ color: 'var(--color-text-info)' }}>
                   This user will be automatically assigned the TENANT_ADMIN role with full permissions within their tenant. They can manage all business lines, branches, and users within their organization.
                 </p>
               </div>

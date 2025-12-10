@@ -138,9 +138,9 @@ export default function AppDashboard() {
                   className="p-3 rounded-lg"
                   style={{ 
                     backgroundColor: notification.type === 'warning' 
-                      ? 'rgba(245, 158, 11, 0.1)' 
+                      ? 'var(--badge-warning-bg)' 
                       : notification.type === 'reminder' 
-                        ? 'rgba(59, 130, 246, 0.1)' 
+                        ? 'var(--badge-info-bg)' 
                         : 'var(--app-surface-hover)'
                   }}
                 >

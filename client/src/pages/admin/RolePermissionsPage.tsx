@@ -4,7 +4,9 @@ import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { PermissionMatrix } from '@/components/permissions/PermissionMatrix';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { LoadingState } from '@/components/ui/loading-state';
+import { ErrorState } from '@/components/ui/error-state';
 import type { DPFRole } from '../../../../types/dpf';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
@@ -29,7 +31,7 @@ export default function RolePermissionsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <LoadingState size="lg" message="Loading role..." />
       </div>
     );
   }
@@ -37,16 +39,13 @@ export default function RolePermissionsPage() {
   if (error) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600">Error</h2>
-          <p className="mt-2 text-muted-foreground">
-            {axios.isAxiosError(error) ? error.response?.data?.error : 'Failed to load role'}
-          </p>
-          <Button onClick={() => navigate('/roles')} className="mt-4">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Roles
-          </Button>
-        </div>
+        <ErrorState
+          title="Error"
+          message={axios.isAxiosError(error) ? error.response?.data?.error : 'Failed to load role'}
+          variant="page"
+          retryAction={() => navigate('/roles')}
+          retryLabel="Back to Roles"
+        />
       </div>
     );
   }
@@ -55,8 +54,8 @@ export default function RolePermissionsPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <h2 className="text-2xl font-bold">Role Not Found</h2>
-          <p className="mt-2 text-muted-foreground">
+          <h2 className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>Role Not Found</h2>
+          <p className="mt-2" style={{ color: 'var(--color-text-secondary)' }}>
             The requested role could not be found.
           </p>
           <Button onClick={() => navigate('/roles')} className="mt-4">
@@ -81,8 +80,10 @@ export default function RolePermissionsPage() {
         </Button>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Manage Permissions</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--color-text)' }}>
+              Manage Permissions
+            </h1>
+            <p className="mt-1" style={{ color: 'var(--color-text-secondary)' }}>
               Configure permissions for role: <span className="font-semibold">{role.roleName}</span>
             </p>
           </div>

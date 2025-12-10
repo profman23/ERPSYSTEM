@@ -1,0 +1,61 @@
+Continue Phase 6 — Wave 3 UX Normalization and complete the final global migration.
+
+Your objective is to finish all remaining pages that still contain hardcoded colors, Tailwind color classes, or inline styles, and fully migrate them into the unified token-based design system — exactly as defined in the Phase 6 Architecture Document.
+
+Focus on correctness, scalability, theme isolation, and strict design-system compliance.
+
+Do NOT write code comments explaining what you are doing — only produce the required code changes.
+
+Your tasks:
+
+1. Scan ALL remaining pages across:
+   • System Panel  
+   • Admin Panel  
+   • App Panel  
+   • Any shared components or legacy pages  
+
+2. Identify any of the following:
+   • Hardcoded hex colors (#2563EB, #1E40AF, #7C3AED, #9CA3AF, etc.)
+   • Tailwind color utilities (bg-gray-100, text-red-600, bg-blue-500, …)
+   • Inline style objects that set colors
+   • Hardcoded spacing/padding inconsistent with the spacing token scale
+   • Typography that does not use the Design Token rhythm
+
+3. Migrate everything to token-based values:
+   • var(--color-text-primary)
+   • var(--color-text-muted)
+   • var(--color-border)
+   • var(--btn-bg-default)
+   • var(--sys-accent), var(--tenant-accent), var(--app-accent)
+   • var(--space-*)
+   • var(--font-size-*)
+
+4. Ensure ALL pages comply with the same rules:
+   • No colors in JSX  
+   • No Tailwind color classes  
+   • No inline color styles  
+   • No custom spacing that breaks the grid rhythm  
+   • No layout differences between panels  
+
+5. Unify the remaining UX elements:
+   • State components (LoadingState / EmptyState / ErrorState) must replace all ad-hoc code  
+   • Tables, Cards, Buttons, Forms must use the component tokens  
+   • Replace any "bg-white" / "bg-gray" surfaces with .bg-surface / .bg-panel tokens  
+   • Normalize border radius, sidebar width, headers, footers if needed  
+
+6. After completing migration:
+   • Run a deep scan to ensure the codebase contains **zero** hardcoded colors  
+   • Confirm that each panel (system, tenant, app) switches themes correctly  
+   • Verify that all global tokens apply consistently across all pages  
+
+7. When done, generate a final summary:
+   • Files modified  
+   • Which colors were removed  
+   • Which components/pages now use tokens  
+   • Total elimination of color/spacing inconsistencies  
+   • Confirmation that the Design System is now fully unified  
+
+Goal:
+Complete Wave 3 and finish Phase 6, producing an enterprise-grade, globally consistent, token-driven UX system that supports infinite scalability, tenant theming, and instant UI theming overrides.
+
+Proceed.

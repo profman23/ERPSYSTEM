@@ -22,14 +22,14 @@ function getUserTypeInfo(type: UserType) {
       icon: Shield,
       title: 'Create System User',
       description: 'Platform-level user with system-wide access',
-      accentColor: '#9333EA',
+      isSystem: true,
     };
   }
   return {
     icon: Building2,
     title: 'Create Tenant Admin',
     description: 'Organization administrator with full tenant access',
-    accentColor: '#3B82F6',
+    isSystem: false,
   };
 }
 
@@ -176,8 +176,8 @@ export default function SystemCreateUserPage() {
           <div 
             className="p-3 rounded-lg"
             style={{ 
-              background: `linear-gradient(135deg, ${typeInfo.accentColor}, ${userType === 'system' ? '#7C3AED' : '#2563EB'})`,
-              color: 'white'
+              background: 'linear-gradient(135deg, var(--sys-accent), var(--sys-accent-hover))',
+              color: 'var(--color-text-on-accent)'
             }}
           >
             <TypeIcon className="w-6 h-6" />
@@ -216,7 +216,11 @@ export default function SystemCreateUserPage() {
       {success && (
         <div 
           className="p-4 rounded-lg border flex items-center gap-2"
-          style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', borderColor: 'rgba(34, 197, 94, 0.3)', color: '#22C55E' }}
+          style={{ 
+            backgroundColor: 'var(--alert-success-bg)', 
+            borderColor: 'var(--alert-success-border)', 
+            color: 'var(--color-text-success)' 
+          }}
         >
           <Shield className="w-5 h-5" />
           <span>User created successfully! Redirecting...</span>
@@ -233,7 +237,11 @@ export default function SystemCreateUserPage() {
             {error && (
               <div 
                 className="p-3 rounded-lg border flex items-center gap-2"
-                style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#EF4444' }}
+                style={{ 
+                  backgroundColor: 'var(--alert-danger-bg)', 
+                  borderColor: 'var(--alert-danger-border)', 
+                  color: 'var(--color-text-danger)' 
+                }}
               >
                 <AlertCircle className="w-4 h-4" />
                 <span>{error}</span>
@@ -384,7 +392,7 @@ export default function SystemCreateUserPage() {
           <Card className="mt-6 border" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2" style={{ color: 'var(--sys-text)' }}>
-                <Building2 className="w-5 h-5 text-blue-400" />
+                <Building2 className="w-5 h-5" style={{ color: 'var(--color-info)' }} />
                 Tenant Assignment
               </CardTitle>
               <CardDescription style={{ color: 'var(--sys-text-secondary)' }}>Select the tenant this admin will manage</CardDescription>
@@ -409,14 +417,19 @@ export default function SystemCreateUserPage() {
               </div>
               <div 
                 className="p-3 rounded-lg border"
-                style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', borderColor: 'rgba(59, 130, 246, 0.3)' }}
+                style={{ backgroundColor: 'var(--badge-info-bg)', borderColor: 'var(--badge-info-border)' }}
               >
-                <div className="flex items-center gap-2 text-blue-400 mb-2">
+                <div className="flex items-center gap-2 mb-2" style={{ color: 'var(--color-info)' }}>
                   <Shield className="w-4 h-4" />
                   <span className="font-medium">TENANT_ADMIN Role</span>
-                  <Badge className="bg-blue-600 text-white text-xs">Auto-Assigned</Badge>
+                  <Badge 
+                    className="text-xs"
+                    style={{ backgroundColor: 'var(--color-info)', color: 'var(--color-text-on-accent)' }}
+                  >
+                    Auto-Assigned
+                  </Badge>
                 </div>
-                <p className="text-sm" style={{ color: 'rgba(147, 197, 253, 0.8)' }}>
+                <p className="text-sm" style={{ color: 'var(--color-text-info)' }}>
                   This user will be automatically assigned the TENANT_ADMIN role with full permissions within their tenant.
                 </p>
               </div>
@@ -442,8 +455,8 @@ export default function SystemCreateUserPage() {
             type="submit"
             disabled={isSubmitting || success}
             style={{ 
-              background: 'linear-gradient(135deg, var(--sys-accent), #7C3AED)', 
-              color: 'var(--sys-text)',
+              background: 'linear-gradient(135deg, var(--sys-accent), var(--sys-accent-hover))', 
+              color: 'var(--color-text-on-accent)',
               opacity: isSubmitting || success ? 0.5 : 1
             }}
           >

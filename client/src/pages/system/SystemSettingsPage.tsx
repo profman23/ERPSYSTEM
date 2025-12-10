@@ -33,7 +33,7 @@ export default function SystemSettingsPage() {
                 <div className="flex items-start gap-4">
                   <div 
                     className="w-12 h-12 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: 'rgba(139, 92, 246, 0.2)' }}
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--sys-accent) 20%, transparent)' }}
                   >
                     <Icon className="w-6 h-6" style={{ color: 'var(--sys-accent)' }} />
                   </div>

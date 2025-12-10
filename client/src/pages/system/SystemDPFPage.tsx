@@ -24,7 +24,10 @@ export default function SystemDPFPage() {
         <Card className="border" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(139, 92, 246, 0.2)' }}>
+              <div 
+                className="w-12 h-12 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: 'color-mix(in srgb, var(--sys-accent) 20%, transparent)' }}
+              >
                 <Layers className="w-6 h-6" style={{ color: 'var(--sys-accent)' }} />
               </div>
               <div>
@@ -37,8 +40,11 @@ export default function SystemDPFPage() {
         <Card className="border" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)' }}>
-                <Database className="w-6 h-6 text-blue-400" />
+              <div 
+                className="w-12 h-12 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: 'var(--badge-info-bg)' }}
+              >
+                <Database className="w-6 h-6" style={{ color: 'var(--color-info)' }} />
               </div>
               <div>
                 <p className="text-2xl font-bold" style={{ color: 'var(--sys-text)' }}>22</p>
@@ -50,8 +56,11 @@ export default function SystemDPFPage() {
         <Card className="border" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)' }}>
-                <Shield className="w-6 h-6 text-green-400" />
+              <div 
+                className="w-12 h-12 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: 'var(--badge-success-bg)' }}
+              >
+                <Shield className="w-6 h-6" style={{ color: 'var(--color-success)' }} />
               </div>
               <div>
                 <p className="text-2xl font-bold" style={{ color: 'var(--sys-text)' }}>85</p>
@@ -81,8 +90,11 @@ export default function SystemDPFPage() {
               >
                 <div className="flex items-center gap-4">
                   <div 
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
-                    style={{ background: 'linear-gradient(135deg, var(--sys-accent), #7C3AED)' }}
+                    className="w-10 h-10 rounded-lg flex items-center justify-center font-bold"
+                    style={{ 
+                      background: 'linear-gradient(135deg, var(--sys-accent), var(--sys-accent-hover))',
+                      color: 'var(--color-text-on-accent)'
+                    }}
                   >
                     {module.name.charAt(0)}
                   </div>
@@ -93,7 +105,10 @@ export default function SystemDPFPage() {
                     </p>
                   </div>
                 </div>
-                <span className="px-3 py-1 text-xs rounded-full bg-green-500/20 text-green-400">
+                <span 
+                  className="px-3 py-1 text-xs rounded-full"
+                  style={{ backgroundColor: 'var(--badge-success-bg)', color: 'var(--color-text-success)' }}
+                >
                   {module.status}
                 </span>
               </div>

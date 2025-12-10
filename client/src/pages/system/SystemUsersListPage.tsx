@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Plus, Search, Eye, Edit, Shield, Loader2, User, AlertCircle, Building2, ArrowRight } from 'lucide-react';
+import { Users, Plus, Search, Eye, Edit, Shield, User, Building2, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,22 +9,42 @@ import { Select } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useAllUsers, useTenants } from '@/hooks/useHierarchy';
+import { LoadingState } from '@/components/ui/loading-state';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ErrorState } from '@/components/ui/error-state';
 
 type UserTypeSelection = 'system' | 'tenant_admin' | null;
 
-const scopeColors: Record<string, string> = {
-  system: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  tenant: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  business_line: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
-  branch: 'bg-green-500/20 text-green-400 border-green-500/30',
-  mixed: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+const getScopeStyle = (scope: string) => {
+  switch (scope) {
+    case 'system':
+      return { backgroundColor: 'color-mix(in srgb, var(--sys-accent) 20%, transparent)', color: 'var(--sys-accent)', borderColor: 'color-mix(in srgb, var(--sys-accent) 30%, transparent)' };
+    case 'tenant':
+      return { backgroundColor: 'var(--badge-info-bg)', color: 'var(--color-text-info)', borderColor: 'var(--badge-info-border)' };
+    case 'business_line':
+      return { backgroundColor: 'color-mix(in srgb, var(--color-info) 20%, transparent)', color: 'var(--color-info)', borderColor: 'color-mix(in srgb, var(--color-info) 30%, transparent)' };
+    case 'branch':
+      return { backgroundColor: 'var(--badge-success-bg)', color: 'var(--color-text-success)', borderColor: 'var(--badge-success-border)' };
+    case 'mixed':
+      return { backgroundColor: 'var(--badge-warning-bg)', color: 'var(--color-text-warning)', borderColor: 'var(--badge-warning-border)' };
+    default:
+      return { backgroundColor: 'var(--badge-success-bg)', color: 'var(--color-text-success)', borderColor: 'var(--badge-success-border)' };
+  }
 };
 
-const statusColors: Record<string, string> = {
-  active: 'bg-green-500/20 text-green-400 border-green-500/30',
-  inactive: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
-  suspended: 'bg-red-500/20 text-red-400 border-red-500/30',
-  pending: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+const getStatusStyle = (status: string) => {
+  switch (status) {
+    case 'active':
+      return { backgroundColor: 'var(--badge-success-bg)', color: 'var(--color-text-success)', borderColor: 'var(--badge-success-border)' };
+    case 'inactive':
+      return { backgroundColor: 'var(--sys-button)', color: 'var(--sys-text-muted)', borderColor: 'var(--sys-border)' };
+    case 'suspended':
+      return { backgroundColor: 'var(--badge-danger-bg)', color: 'var(--color-text-danger)', borderColor: 'var(--badge-danger-border)' };
+    case 'pending':
+      return { backgroundColor: 'var(--badge-warning-bg)', color: 'var(--color-text-warning)', borderColor: 'var(--badge-warning-border)' };
+    default:
+      return { backgroundColor: 'var(--badge-success-bg)', color: 'var(--color-text-success)', borderColor: 'var(--badge-success-border)' };
+  }
 };
 
 const userTypes = [
@@ -121,8 +141,8 @@ export default function SystemUsersListPage() {
         <Button 
           onClick={() => setShowUserTypeSelector(true)}
           style={{ 
-            background: 'linear-gradient(135deg, var(--sys-accent), #7C3AED)', 
-            color: 'var(--sys-text)' 
+            background: 'linear-gradient(135deg, var(--sys-accent), var(--sys-accent-hover))', 
+            color: 'var(--color-text-on-accent)' 
           }}
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -185,56 +205,25 @@ export default function SystemUsersListPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--sys-accent)' }} />
-              <span className="ml-3" style={{ color: 'var(--sys-text-secondary)' }}>Loading...</span>
-            </div>
+            <LoadingState size="lg" message="Loading users..." fullPage />
           ) : error ? (
-            <div className="text-center py-12">
-              <div 
-                className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
-                style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)' }}
-              >
-                <AlertCircle className="w-8 h-8 text-red-400" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-red-400">Error Loading Users</h3>
-              <p className="mb-4" style={{ color: 'var(--sys-text-muted)' }}>
-                {(error as any)?.message || 'Failed to load users. Please try again.'}
-              </p>
-              <Button 
-                variant="outline" 
-                onClick={() => window.location.reload()}
-                style={{ 
-                  backgroundColor: 'var(--sys-button)', 
-                  borderColor: 'var(--sys-border)', 
-                  color: 'var(--sys-text)' 
-                }}
-              >
-                Retry
-              </Button>
-            </div>
+            <ErrorState
+              title="Error Loading Users"
+              message={(error as any)?.message || 'Failed to load users. Please try again.'}
+              retryAction={() => window.location.reload()}
+              variant="page"
+            />
           ) : filteredUsers.length === 0 ? (
-            <div className="text-center py-12">
-              <Users className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--sys-text-muted)' }} />
-              <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--sys-text)' }}>
-                {searchQuery ? 'No Matching Users' : 'No Users Yet'}
-              </h3>
-              <p className="mb-6" style={{ color: 'var(--sys-text-secondary)' }}>
-                {searchQuery ? 'Try adjusting your search' : 'Create your first user to get started'}
-              </p>
-              {!searchQuery && (
-                <Button 
-                  onClick={() => setShowUserTypeSelector(true)}
-                  style={{ 
-                    background: 'linear-gradient(135deg, var(--sys-accent), #7C3AED)', 
-                    color: 'var(--sys-text)' 
-                  }}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add User
-                </Button>
-              )}
-            </div>
+            <EmptyState
+              icon={Users}
+              title={searchQuery ? 'No Matching Users' : 'No Users Yet'}
+              description={searchQuery ? 'Try adjusting your search' : 'Create your first user to get started'}
+              action={!searchQuery ? {
+                label: 'Add User',
+                onClick: () => setShowUserTypeSelector(true),
+                icon: Plus,
+              } : undefined}
+            />
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -253,7 +242,9 @@ export default function SystemUsersListPage() {
                   {filteredUsers.map((u) => (
                     <TableRow 
                       key={u.id} 
-                      className="hover:bg-white/5"
+                      className="transition-colors"
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--sys-surface-hover)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                       style={{ borderColor: 'var(--sys-border)' }}
                     >
                       <TableCell className="font-medium">
@@ -263,7 +254,7 @@ export default function SystemUsersListPage() {
                           ) : (
                             <div 
                               className="w-9 h-9 rounded-full flex items-center justify-center"
-                              style={{ backgroundColor: 'rgba(139, 92, 246, 0.2)' }}
+                              style={{ backgroundColor: 'color-mix(in srgb, var(--sys-accent) 20%, transparent)' }}
                             >
                               <User className="w-4 h-4" style={{ color: 'var(--sys-accent)' }} />
                             </div>
@@ -287,7 +278,7 @@ export default function SystemUsersListPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge className={`${scopeColors[u.accessScope] || scopeColors.branch} border`}>
+                        <Badge className="border" style={getScopeStyle(u.accessScope)}>
                           {u.accessScope || 'branch'}
                         </Badge>
                       </TableCell>
@@ -305,7 +296,7 @@ export default function SystemUsersListPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge className={`${statusColors[u.status] || statusColors.active} border`}>
+                        <Badge className="border" style={getStatusStyle(u.status)}>
                           {u.status || 'active'}
                         </Badge>
                       </TableCell>
@@ -374,19 +365,13 @@ export default function SystemUsersListPage() {
                 <button
                   key={type.id}
                   onClick={() => setSelectedType(type.id)}
-                  className={`
-                    relative p-4 rounded-lg border-2 text-left transition-all duration-200
-                    ${isSelected 
-                      ? `border-${isSystem ? 'purple' : 'blue'}-500/50` 
-                      : ''
-                    }
-                  `}
+                  className="relative p-4 rounded-lg border-2 text-left transition-all duration-200"
                   style={{ 
                     backgroundColor: isSelected 
-                      ? (isSystem ? 'rgba(139, 92, 246, 0.1)' : 'rgba(59, 130, 246, 0.1)')
+                      ? 'color-mix(in srgb, var(--sys-accent) 10%, transparent)'
                       : 'var(--sys-bg)',
                     borderColor: isSelected 
-                      ? (isSystem ? 'rgba(139, 92, 246, 0.5)' : 'rgba(59, 130, 246, 0.5)')
+                      ? 'color-mix(in srgb, var(--sys-accent) 50%, transparent)'
                       : 'var(--sys-border)'
                   }}
                 >
@@ -394,10 +379,8 @@ export default function SystemUsersListPage() {
                     <div 
                       className="p-3 rounded-lg"
                       style={{ 
-                        background: isSystem 
-                          ? 'linear-gradient(135deg, #9333EA, #7C3AED)' 
-                          : 'linear-gradient(135deg, #2563EB, #3B82F6)',
-                        color: 'white'
+                        background: 'linear-gradient(135deg, var(--sys-accent), var(--sys-accent-hover))',
+                        color: 'var(--color-text-on-accent)'
                       }}
                     >
                       <Icon className="w-6 h-6" />
@@ -429,9 +412,9 @@ export default function SystemUsersListPage() {
                       <div className="absolute top-4 right-4">
                         <div 
                           className="w-6 h-6 rounded-full flex items-center justify-center"
-                          style={{ backgroundColor: isSystem ? '#9333EA' : '#3B82F6' }}
+                          style={{ backgroundColor: 'var(--sys-accent)' }}
                         >
-                          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="w-4 h-4" fill="var(--color-text-on-accent)" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         </div>
@@ -459,8 +442,8 @@ export default function SystemUsersListPage() {
               onClick={handleContinue}
               disabled={!selectedType}
               style={{ 
-                background: selectedType ? 'linear-gradient(135deg, var(--sys-accent), #7C3AED)' : 'var(--sys-button)',
-                color: 'var(--sys-text)',
+                background: selectedType ? 'linear-gradient(135deg, var(--sys-accent), var(--sys-accent-hover))' : 'var(--sys-button)',
+                color: 'var(--color-text-on-accent)',
                 opacity: selectedType ? 1 : 0.5
               }}
             >
