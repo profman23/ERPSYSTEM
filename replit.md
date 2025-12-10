@@ -186,6 +186,36 @@ The system guarantees ≥4.5:1 contrast ratio for ALL tenant-customizable color 
 -   **Permission Auto-Grant:** PermissionContext grants wildcard ['*'] permissions for system and tenant_admin users
 -   **Demo Credentials:** superadmin@system.local / Admin@123 (Tenant Code: SYSTEM)
 
+### Phase 6: UX Normalization Architecture (Dec 2024) - PLANNING COMPLETE
+
+Comprehensive architectural plan for achieving 100% UX consistency across the platform. Full documentation: `docs/PHASE6_UX_NORMALIZATION_ARCHITECTURE.md`
+
+**Audit Findings:**
+- 31+ pages contain hardcoded colors (#2563EB, #9CA3AF, #7C3AED, etc.)
+- Token system is 100% complete in globals.css (Layers 0-5)
+- UI components correctly use CSS variables
+- Pages override components with hardcoded colors in className/style attributes
+- No unified Loading/Empty/Error state components exist
+- Minor layout dimension inconsistencies between panels
+
+**Planned Architecture:**
+1. **Three-Tier Token System:** Base Palette → Semantic Tokens → Component Tokens
+2. **Typography Tokens:** --font-base, --font-heading with RTL switching for Cairo/Inter
+3. **Spacing Tokens:** --space-1 through --space-16 matching Tailwind rhythm
+4. **Unified State Components:** LoadingState, EmptyState, ErrorState with panel-aware behavior
+5. **Layout Normalization:** Unified sidebar width (w-64), consistent radii, standardized padding
+
+**Migration Strategy:**
+- Wave 1: Auth + Tenant Management (6 pages)
+- Wave 2: System + Branch Management (10 pages)
+- Wave 3: App + Admin Panels (10+ pages)
+- Estimated Duration: 5 weeks
+
+**Future Scalability:**
+- Tenant theme override architecture via runtime CSS injection
+- UI versioning for enterprise contracts
+- Mobile token export (JSON → React Native/Flutter/Swift)
+
 ## External Dependencies
 
 -   **Database:** Neon Serverless PostgreSQL
