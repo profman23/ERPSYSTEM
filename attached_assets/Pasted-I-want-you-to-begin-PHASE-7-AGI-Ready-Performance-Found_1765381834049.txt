@@ -1,0 +1,160 @@
+I want you to begin **PHASE 7 — AGI-Ready Performance Foundation Upgrade**.
+
+Do NOT write code yet.  
+First, think and act as a **Meta / OpenAI / Stripe Principal Architect**.
+
+Your mission:
+Transform the entire platform into a **hyper-scalable, AGI-ready, multi-tenant cloud system** capable of operating 24/7 with massive concurrency, automated reasoning (ANI), and future AGI integration.
+
+This requires a performance architecture that supports:
+• 100,000+ concurrent users  
+• 3,000+ clinics  
+• real-time AGI agents  
+• ANI execution loops  
+• zero downtime deployments  
+• horizontal scaling  
+• intelligent caching  
+• adaptive throttling  
+• multi-tenant isolation  
+• event-driven compute  
+
+────────────────────────
+PHASE 7 — AGI PERFORMANCE BLUEPRINT
+────────────────────────
+
+# 1) Ultra-High Performance Caching Architecture (L1 + L2 + L3)
+Upgrade the caching layer into a **multi-tier AGI-friendly cache mesh**:
+
+• L1 — In-memory per-instance cache (micro TTL)
+• L2 — Redis distributed cache (5–15 min, adaptive TTL)
+• L3 — Pre-computed AGI knowledge cache (long TTL)
+
+Requirements:
+• Cache warming on startup  
+• Zero KEYS usage — replace with Redis Sets for tag-based invalidation  
+• Automatic TTL adjustment based on load  
+• Cache hit ratio metrics exported to Prometheus  
+• Caching added to ScopeService.getScopeFilter() and DPF permission graph  
+
+Deliverables:
+– New multi-tier cache engine  
+– Cache invalidation strategy  
+– AGI cache layer design  
+
+────────────────────────
+
+# 2) Enterprise Background Processing (BullMQ) — AGI Task Engine
+Introduce a scalable queue system to handle ANI/AGI workloads.
+
+Create queues:
+• aniDecisionQueue  
+• agiTaskQueue  
+• permissionRebuildQueue  
+• auditQueue  
+• mailQueue  
+• reportingQueue  
+• bulkOperationQueue  
+
+Each queue must include:
+• advanced retry policies  
+• exponential backoff  
+• concurrency control  
+• dead-letter queues  
+• Redis-based distributed locks  
+• metrics (queue depth, processing time, errors/min)  
+
+Goal:
+All long-running actions MUST move off the API thread.
+
+────────────────────────
+
+# 3) Request Deduplication & Distributed Transaction Safety
+Implement a **global write safety layer**:
+
+• Idempotency keys for all write routes  
+• Distributed locks for tenant-level operations  
+• Request dedup for repeated client retries  
+• Double-submission prevention  
+• Conflict-free data merges  
+
+This protects AGI/ANI from producing competing writes.
+
+────────────────────────
+
+# 4) Frontend High-Throughput Optimization
+Upgrade frontend performance to support AGI-driven interfaces.
+
+Implement:
+• List virtualization (react-window) for all large lists  
+• React.memo on all list rows and cards  
+• useCallback / useMemo improvements  
+• Split bundles by panel, by feature, by flow  
+• Preload critical AGI/ANI components  
+• Intelligent React Query caching based on tenant activity  
+
+Goal:
+Frontend performance comparable to Notion / Figma / Intercom.
+
+────────────────────────
+
+# 5) Observability Upgrade — AGI Telemetry Layer
+AGI requires deep system intelligence.
+
+Implement:
+• Fine-grained Prometheus metrics  
+• Slow query logging + heatmaps  
+• Request latency per tenant  
+• Cache miss/hit ratio  
+• Queue processing KPIs  
+• Worker cluster health checks  
+• Custom business metrics (permission checks/sec, AGI tasks/sec)  
+
+Each request must include:
+• trace_id  
+• correlation_id  
+• span_id  
+• tenant_id  
+
+AGI will use this telemetry later for reasoning and self-optimization.
+
+────────────────────────
+
+# 6) Future-Proofing for AGI / ANI Execution
+Design the foundation so future agents can:
+• read tenant context safely  
+• schedule tasks  
+• run background decision loops  
+• analyze system telemetry  
+• access cached knowledge graphs  
+• produce safe writes (protected by idempotency + locks)  
+
+Deliverables:
+• AGI execution sandbox design  
+• ANI task loop architecture  
+• Agent safety guardrails  
+• Write-conflict prevention rules  
+
+────────────────────────
+
+# 7) Phase 7 Completion Report (MANDATORY)
+Once the implementation is complete, provide:
+
+1. Performance Benchmark (before/after)  
+2. Cache Hit Ratio Improvement  
+3. Queue Throughput Metrics  
+4. API Latency Reduction  
+5. Load Testing Results (10k–50k req/min)  
+6. AGI-Readiness Checklist  
+7. Zero-Downtime Deployment Plan  
+
+────────────────────────
+
+Execution Principles:
+• Always favor horizontal scaling over vertical scaling.  
+• No global in-memory state without L2 fallback.  
+• Every heavy computation moves to BullMQ.  
+• Every write operation becomes idempotent.  
+• Every subsystem must become AGI-safe.  
+• Maintain strict multi-tenant isolation across all layers.  
+
+When ready, begin with the architectural reasoning before touching any file.
