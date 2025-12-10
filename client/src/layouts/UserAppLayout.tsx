@@ -85,15 +85,15 @@ export default function UserAppLayout() {
       <aside
         className={`
           ${isSidebarOpen ? 'translate-x-0' : isRTL ? 'translate-x-full' : '-translate-x-full'}
-          ${isMobile ? 'fixed inset-y-0 z-50 w-60' : 'relative w-60'}
+          ${isMobile ? 'fixed inset-y-0 z-50 w-64' : 'relative w-64'}
           transition-transform duration-300 ease-in-out
           flex flex-col bg-surface border-panel shadow-sm
           ${isRTL ? 'border-l' : 'border-r'}
         `}
       >
-        <div className={`h-16 flex items-center px-5 border-b border-panel ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className={`h-16 flex items-center px-4 border-b border-panel ${isRTL ? 'flex-row-reverse' : ''}`}>
           <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-accent">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-accent">
               <Stethoscope className="w-5 h-5 text-white" />
             </div>
             <div className={isRTL ? 'text-right' : 'text-left'}>
@@ -107,7 +107,7 @@ export default function UserAppLayout() {
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
           {navigation.map((item) => {
             const Icon = item.icon;
             const active = isActiveRoute(item.href);
@@ -118,7 +118,7 @@ export default function UserAppLayout() {
                 to={item.href}
                 onClick={() => isMobile && setIsSidebarOpen(false)}
                 className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
+                  flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
                   ${isRTL ? 'flex-row-reverse' : ''}
                   ${active ? 'sidebar-item-active shadow-md' : 'sidebar-item'}
                 `}
@@ -133,7 +133,7 @@ export default function UserAppLayout() {
         <div className="p-3 border-t border-panel">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium sidebar-item transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium sidebar-item transition-colors"
           >
             <LogOut className="w-5 h-5" />
             <span>{isRTL ? 'تسجيل الخروج' : 'Logout'}</span>
