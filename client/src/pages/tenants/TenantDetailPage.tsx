@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Building2, Users, MapPin, GitBranch, 
-  Plus, ChevronRight, Loader2, Eye, Edit 
+  Plus, ChevronRight, Eye, Edit 
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useTenant } from '@/hooks/useHierarchy';
+import { LoadingState } from '@/components/ui/loading-state';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const planColors: Record<string, 'default' | 'success' | 'warning' | 'info'> = {
   trial: 'default',
@@ -30,28 +32,20 @@ export default function TenantDetailPage() {
   const [expandedBL, setExpandedBL] = useState<string | null>(null);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="w-8 h-8 animate-spin text-[#2563EB]" />
-        <span className="ml-3" style={{ color: 'var(--color-text-secondary)' }}>Loading tenant...</span>
-      </div>
-    );
+    return <LoadingState size="lg" message="Loading tenant..." fullPage />;
   }
 
   if (error || !tenant) {
     return (
-      <div className="text-center py-24">
-        <Building2 className="w-16 h-16 mx-auto mb-4" style={{ color: '#9CA3AF' }} />
-        <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
-          Tenant Not Found
-        </h3>
-        <p className="mb-6" style={{ color: 'var(--color-text-secondary)' }}>
-          The tenant you're looking for doesn't exist or you don't have access.
-        </p>
-        <Link to="/tenants">
-          <Button variant="outline">Back to Tenants</Button>
-        </Link>
-      </div>
+      <EmptyState
+        icon={Building2}
+        title="Tenant Not Found"
+        description="The tenant you're looking for doesn't exist or you don't have access."
+        action={{
+          label: 'Back to Tenants',
+          onClick: () => navigate('/tenants'),
+        }}
+      />
     );
   }
 
@@ -60,7 +54,7 @@ export default function TenantDetailPage() {
       <div>
         <Link
           to="/tenants"
-          className="inline-flex items-center gap-2 text-sm mb-4 hover:text-[#2563EB] transition-colors"
+          className="inline-flex items-center gap-2 text-sm mb-4 transition-colors hover:opacity-70"
           style={{ color: 'var(--color-text-secondary)' }}
         >
           <ArrowLeft className="w-4 h-4" />
@@ -71,8 +65,11 @@ export default function TenantDetailPage() {
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
           <div
-            className="w-16 h-16 rounded-xl flex items-center justify-center text-white text-2xl font-bold"
-            style={{ backgroundColor: tenant.primaryColor || '#2563EB' }}
+            className="w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold"
+            style={{ 
+              backgroundColor: tenant.primaryColor || 'var(--color-accent)',
+              color: 'var(--color-text-on-accent)'
+            }}
           >
             {tenant.name.charAt(0).toUpperCase()}
           </div>
@@ -81,7 +78,12 @@ export default function TenantDetailPage() {
               {tenant.name}
             </h1>
             <div className="flex items-center gap-3 mt-2">
-              <code className="text-sm bg-gray-100 px-2 py-1 rounded">{tenant.code}</code>
+              <code 
+                className="text-sm px-2 py-1 rounded"
+                style={{ backgroundColor: 'var(--color-surface-hover)' }}
+              >
+                {tenant.code}
+              </code>
               <Badge variant={planColors[tenant.subscriptionPlan] || 'default'}>
                 {tenant.subscriptionPlan}
               </Badge>
@@ -97,7 +99,7 @@ export default function TenantDetailPage() {
             Edit
           </Button>
           <Link to={`/business-lines?tenantId=${tenantId}`}>
-            <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
+            <Button>
               <Plus className="w-4 h-4 mr-2" />
               Add Business Line
             </Button>
@@ -109,8 +111,11 @@ export default function TenantDetailPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-3 rounded-lg bg-blue-50">
-                <GitBranch className="w-6 h-6 text-blue-600" />
+              <div 
+                className="p-3 rounded-lg"
+                style={{ backgroundColor: 'var(--badge-info-bg)' }}
+              >
+                <GitBranch className="w-6 h-6" style={{ color: 'var(--color-info)' }} />
               </div>
               <div>
                 <p className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>
@@ -126,8 +131,11 @@ export default function TenantDetailPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-3 rounded-lg bg-green-50">
-                <MapPin className="w-6 h-6 text-green-600" />
+              <div 
+                className="p-3 rounded-lg"
+                style={{ backgroundColor: 'var(--badge-success-bg)' }}
+              >
+                <MapPin className="w-6 h-6" style={{ color: 'var(--color-success)' }} />
               </div>
               <div>
                 <p className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>
@@ -143,8 +151,11 @@ export default function TenantDetailPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-3 rounded-lg bg-purple-50">
-                <Users className="w-6 h-6 text-purple-600" />
+              <div 
+                className="p-3 rounded-lg"
+                style={{ backgroundColor: 'var(--color-accent-light)' }}
+              >
+                <Users className="w-6 h-6" style={{ color: 'var(--color-accent)' }} />
               </div>
               <div>
                 <p className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>
@@ -168,25 +179,27 @@ export default function TenantDetailPage() {
         </CardHeader>
         <CardContent>
           {!tenant.businessLines || tenant.businessLines.length === 0 ? (
-            <div className="text-center py-12" style={{ color: 'var(--color-text-secondary)' }}>
-              <GitBranch className="w-12 h-12 mx-auto mb-4" style={{ color: '#9CA3AF' }} />
-              <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
-                No Business Lines Yet
-              </h3>
-              <p className="mb-4">Start by creating your first business line</p>
-              <Link to={`/business-lines/create?tenantId=${tenantId}`}>
-                <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Business Line
-                </Button>
-              </Link>
-            </div>
+            <EmptyState
+              icon={GitBranch}
+              title="No Business Lines Yet"
+              description="Start by creating your first business line"
+              action={{
+                label: 'Add Business Line',
+                onClick: () => navigate(`/business-lines/create?tenantId=${tenantId}`),
+                icon: Plus,
+              }}
+            />
           ) : (
             <div className="space-y-4">
               {tenant.businessLines.map((bl) => (
-                <div key={bl.id} className="border rounded-lg overflow-hidden">
+                <div 
+                  key={bl.id} 
+                  className="border rounded-lg overflow-hidden"
+                  style={{ borderColor: 'var(--color-border)' }}
+                >
                   <div
-                    className="flex items-center justify-between p-4 bg-gray-50 cursor-pointer hover:bg-gray-100"
+                    className="flex items-center justify-between p-4 cursor-pointer transition-colors"
+                    style={{ backgroundColor: 'var(--color-surface-hover)' }}
                     onClick={() => setExpandedBL(expandedBL === bl.id ? null : bl.id)}
                   >
                     <div className="flex items-center gap-3">
@@ -196,13 +209,18 @@ export default function TenantDetailPage() {
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{bl.name}</p>
-                          <code className="text-xs bg-gray-200 px-1.5 py-0.5 rounded">{bl.code}</code>
+                          <code 
+                            className="text-xs px-1.5 py-0.5 rounded"
+                            style={{ backgroundColor: 'var(--color-surface)' }}
+                          >
+                            {bl.code}
+                          </code>
                         </div>
-                        <p className="text-sm text-gray-500">{bl.businessLineType}</p>
+                        <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{bl.businessLineType}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
                         {bl.branchCount} branches, {bl.totalUsers} users
                       </span>
                       <Button
@@ -219,32 +237,43 @@ export default function TenantDetailPage() {
                   </div>
 
                   {expandedBL === bl.id && (
-                    <div className="p-4 border-t">
+                    <div className="p-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
                       {bl.branches.length === 0 ? (
-                        <p className="text-gray-500 text-center py-4">No branches in this business line</p>
+                        <p className="text-center py-4" style={{ color: 'var(--color-text-muted)' }}>
+                          No branches in this business line
+                        </p>
                       ) : (
                         <div className="space-y-3">
                           {bl.branches.map((branch) => (
                             <div
                               key={branch.id}
-                              className="flex items-center justify-between p-3 bg-white border rounded-lg hover:bg-gray-50"
+                              className="flex items-center justify-between p-3 border rounded-lg transition-colors"
+                              style={{ 
+                                backgroundColor: 'var(--color-surface)',
+                                borderColor: 'var(--color-border)'
+                              }}
                             >
                               <div className="flex items-center gap-3">
-                                <MapPin className="w-4 h-4 text-gray-400" />
+                                <MapPin className="w-4 h-4" style={{ color: 'var(--color-text-muted)' }} />
                                 <div>
                                   <div className="flex items-center gap-2">
                                     <p className="font-medium">{branch.name}</p>
-                                    <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{branch.code}</code>
+                                    <code 
+                                      className="text-xs px-1.5 py-0.5 rounded"
+                                      style={{ backgroundColor: 'var(--color-surface-hover)' }}
+                                    >
+                                      {branch.code}
+                                    </code>
                                   </div>
-                                  <p className="text-sm text-gray-500">
+                                  <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
                                     {[branch.city, branch.state, branch.country].filter(Boolean).join(', ') || 'No location'}
                                   </p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-4">
                                 <div className="flex items-center gap-1">
-                                  <Users className="w-4 h-4 text-gray-400" />
-                                  <span className="text-sm text-gray-500">{branch.userCount}</span>
+                                  <Users className="w-4 h-4" style={{ color: 'var(--color-text-muted)' }} />
+                                  <span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{branch.userCount}</span>
                                 </div>
                                 <Button
                                   variant="ghost"
@@ -258,7 +287,7 @@ export default function TenantDetailPage() {
                           ))}
                         </div>
                       )}
-                      <div className="mt-4 pt-4 border-t">
+                      <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
                         <Link to={`/branches/create?businessLineId=${bl.id}`}>
                           <Button variant="outline" size="sm">
                             <Plus className="w-4 h-4 mr-2" />
@@ -284,19 +313,19 @@ export default function TenantDetailPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {tenant.contactEmail && (
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Email</p>
+                  <p className="text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>Email</p>
                   <p className="mt-1">{tenant.contactEmail}</p>
                 </div>
               )}
               {tenant.contactPhone && (
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Phone</p>
+                  <p className="text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>Phone</p>
                   <p className="mt-1">{tenant.contactPhone}</p>
                 </div>
               )}
               {tenant.address && (
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Address</p>
+                  <p className="text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>Address</p>
                   <p className="mt-1">{tenant.address}</p>
                 </div>
               )}

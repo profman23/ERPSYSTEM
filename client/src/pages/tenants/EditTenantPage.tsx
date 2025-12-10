@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { useTenant, useUpdateTenant } from '@/hooks/useHierarchy';
+import { LoadingState } from '@/components/ui/loading-state';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const subscriptionPlans = [
   { value: 'trial', label: 'Trial' },
@@ -111,23 +113,20 @@ export default function EditTenantPage() {
   };
 
   if (loadingTenant) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="w-8 h-8 animate-spin text-[#2563EB]" />
-        <span className="ml-3" style={{ color: 'var(--color-text-secondary)' }}>Loading tenant...</span>
-      </div>
-    );
+    return <LoadingState size="lg" message="Loading tenant..." fullPage />;
   }
 
   if (!tenant) {
     return (
-      <div className="text-center py-24">
-        <Building2 className="w-16 h-16 mx-auto mb-4" style={{ color: '#9CA3AF' }} />
-        <h3 className="text-lg font-semibold mb-2">Tenant Not Found</h3>
-        <Link to="/tenants">
-          <Button variant="outline">Back to Tenants</Button>
-        </Link>
-      </div>
+      <EmptyState
+        icon={Building2}
+        title="Tenant Not Found"
+        description="The tenant you're looking for doesn't exist."
+        action={{
+          label: 'Back to Tenants',
+          onClick: () => navigate('/tenants'),
+        }}
+      />
     );
   }
 
@@ -136,7 +135,7 @@ export default function EditTenantPage() {
       <div>
         <Link
           to={`/tenants/${tenantId}`}
-          className="inline-flex items-center gap-2 text-sm mb-4 hover:text-[#2563EB] transition-colors"
+          className="inline-flex items-center gap-2 text-sm mb-4 transition-colors hover:opacity-70"
           style={{ color: 'var(--color-text-secondary)' }}
         >
           <ArrowLeft className="w-4 h-4" />
@@ -154,13 +153,23 @@ export default function EditTenantPage() {
         <CardHeader>
           <CardTitle>Organization Information</CardTitle>
           <CardDescription>
-            Code: <code className="bg-gray-100 px-2 py-0.5 rounded">{tenant.code}</code>
+            Code: <code 
+              className="px-2 py-0.5 rounded"
+              style={{ backgroundColor: 'var(--color-surface-hover)' }}
+            >{tenant.code}</code>
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {errors.submit && (
-              <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-red-700">
+              <div 
+                className="p-4 rounded-lg border"
+                style={{ 
+                  backgroundColor: 'var(--alert-danger-bg)', 
+                  borderColor: 'var(--alert-danger-border)',
+                  color: 'var(--alert-danger-text)'
+                }}
+              >
                 {errors.submit}
               </div>
             )}
@@ -169,7 +178,10 @@ export default function EditTenantPage() {
               <div className="space-y-2">
                 <Label htmlFor="name">Organization Name *</Label>
                 <div className="relative">
-                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9CA3AF' }} />
+                  <Building2 
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" 
+                    style={{ color: 'var(--color-text-muted)' }} 
+                  />
                   <Input
                     id="name"
                     name="name"
@@ -179,7 +191,7 @@ export default function EditTenantPage() {
                     onChange={handleChange}
                   />
                 </div>
-                {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
+                {errors.name && <p className="text-sm" style={{ color: 'var(--color-danger)' }}>{errors.name}</p>}
               </div>
 
               <div className="space-y-2">
@@ -198,7 +210,10 @@ export default function EditTenantPage() {
               <div className="space-y-2">
                 <Label htmlFor="country">Country</Label>
                 <div className="relative">
-                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9CA3AF' }} />
+                  <Globe 
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" 
+                    style={{ color: 'var(--color-text-muted)' }} 
+                  />
                   <Input
                     id="country"
                     name="country"
@@ -260,7 +275,10 @@ export default function EditTenantPage() {
               <div className="space-y-2">
                 <Label htmlFor="contactEmail">Contact Email</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9CA3AF' }} />
+                  <Mail 
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" 
+                    style={{ color: 'var(--color-text-muted)' }} 
+                  />
                   <Input
                     id="contactEmail"
                     name="contactEmail"
@@ -271,13 +289,16 @@ export default function EditTenantPage() {
                     onChange={handleChange}
                   />
                 </div>
-                {errors.contactEmail && <p className="text-sm text-red-600">{errors.contactEmail}</p>}
+                {errors.contactEmail && <p className="text-sm" style={{ color: 'var(--color-danger)' }}>{errors.contactEmail}</p>}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="contactPhone">Contact Phone</Label>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9CA3AF' }} />
+                  <Phone 
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" 
+                    style={{ color: 'var(--color-text-muted)' }} 
+                  />
                   <Input
                     id="contactPhone"
                     name="contactPhone"
@@ -305,7 +326,6 @@ export default function EditTenantPage() {
             <div className="flex gap-4 pt-4">
               <Button
                 type="submit"
-                className="bg-[#2563EB] hover:bg-[#1E40AF]"
                 disabled={updateTenant.isPending}
               >
                 {updateTenant.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

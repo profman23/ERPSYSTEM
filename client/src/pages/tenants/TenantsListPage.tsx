@@ -1,12 +1,15 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Building2, Plus, Search, Eye, Edit, Loader2, AlertCircle } from 'lucide-react';
+import { Building2, Plus, Search, Eye, Edit } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useTenants } from '@/hooks/useHierarchy';
+import { LoadingState } from '@/components/ui/loading-state';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ErrorState } from '@/components/ui/error-state';
 
 const planColors: Record<string, 'default' | 'success' | 'warning' | 'info'> = {
   trial: 'default',
@@ -59,7 +62,7 @@ export default function TenantsListPage() {
           </p>
         </div>
         <Link to="/tenants/create">
-          <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
+          <Button>
             <Plus className="w-4 h-4 mr-2" />
             Add Tenant
           </Button>
@@ -70,7 +73,10 @@ export default function TenantsListPage() {
         <CardContent className="pt-6">
           <div className="flex gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9CA3AF' }} />
+              <Search 
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" 
+                style={{ color: 'var(--color-text-muted)' }} 
+              />
               <Input
                 placeholder="Search tenants by name, code, or email..."
                 className="pl-10"
@@ -91,41 +97,25 @@ export default function TenantsListPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-[#2563EB]" />
-              <span className="ml-3" style={{ color: 'var(--color-text-secondary)' }}>Loading tenants...</span>
-            </div>
+            <LoadingState size="lg" message="Loading tenants..." fullPage />
           ) : error ? (
-            <div className="text-center py-12">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
-                <AlertCircle className="w-8 h-8 text-red-600" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-red-600">Error Loading Tenants</h3>
-              <p className="text-gray-600 mb-4">
-                {(error as any)?.message || 'Failed to load tenants. Please try again.'}
-              </p>
-              <Button variant="outline" onClick={() => window.location.reload()}>
-                Retry
-              </Button>
-            </div>
+            <ErrorState
+              title="Error Loading Tenants"
+              message={(error as any)?.message || 'Failed to load tenants. Please try again.'}
+              retryAction={() => window.location.reload()}
+              variant="page"
+            />
           ) : filteredTenants.length === 0 ? (
-            <div className="text-center py-12" style={{ color: 'var(--color-text-secondary)' }}>
-              <Building2 className="w-16 h-16 mx-auto mb-4" style={{ color: '#9CA3AF' }} />
-              <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
-                {searchQuery ? 'No Matching Tenants' : 'No Tenants Yet'}
-              </h3>
-              <p className="mb-6">
-                {searchQuery ? 'Try adjusting your search query' : 'Get started by creating your first tenant'}
-              </p>
-              {!searchQuery && (
-                <Link to="/tenants/create">
-                  <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Tenant
-                  </Button>
-                </Link>
-              )}
-            </div>
+            <EmptyState
+              icon={Building2}
+              title={searchQuery ? 'No Matching Tenants' : 'No Tenants Yet'}
+              description={searchQuery ? 'Try adjusting your search query' : 'Get started by creating your first tenant'}
+              action={!searchQuery ? {
+                label: 'Add Tenant',
+                onClick: () => navigate('/tenants/create'),
+                icon: Plus,
+              } : undefined}
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -143,25 +133,33 @@ export default function TenantsListPage() {
               </TableHeader>
               <TableBody>
                 {filteredTenants.map((tenant) => (
-                  <TableRow key={tenant.id} className="cursor-pointer hover:bg-gray-50">
+                  <TableRow key={tenant.id} className="cursor-pointer">
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                          style={{ backgroundColor: tenant.primaryColor || '#2563EB' }}
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
+                          style={{ 
+                            backgroundColor: tenant.primaryColor || 'var(--color-accent)',
+                            color: 'var(--color-text-on-accent)'
+                          }}
                         >
                           {tenant.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
                           <p className="font-medium">{tenant.name}</p>
                           {tenant.contactEmail && (
-                            <p className="text-xs text-gray-500">{tenant.contactEmail}</p>
+                            <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{tenant.contactEmail}</p>
                           )}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <code className="text-sm bg-gray-100 px-2 py-1 rounded">{tenant.code}</code>
+                      <code 
+                        className="text-sm px-2 py-1 rounded"
+                        style={{ backgroundColor: 'var(--color-surface-hover)' }}
+                      >
+                        {tenant.code}
+                      </code>
                     </TableCell>
                     <TableCell>
                       <Badge variant={planColors[tenant.subscriptionPlan] || 'default'}>

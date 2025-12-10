@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { LayoutDashboard, Building2, Users, GitBranch, Loader2 } from 'lucide-react';
+import { LayoutDashboard, Building2, Users, GitBranch } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTenants, useAllBranchesNoFilter, useAllUsers, useAllBusinessLines } from '@/hooks/useHierarchy';
+import { LoadingState } from '@/components/ui/loading-state';
 
 export default function DashboardHomePage() {
   const [isRTL, setIsRTL] = useState(false);
@@ -37,7 +38,8 @@ export default function DashboardHomePage() {
       icon: Building2,
       description: 'Active organizations',
       descriptionAr: 'المنظمات النشطة',
-      color: '#2563EB',
+      colorVar: '--color-accent',
+      bgVar: '--color-accent-light',
       loading: loadingTenants
     },
     {
@@ -47,7 +49,8 @@ export default function DashboardHomePage() {
       icon: GitBranch,
       description: 'Across all tenants',
       descriptionAr: 'عبر جميع العملاء',
-      color: '#0EA5E9',
+      colorVar: '--color-info',
+      bgVar: '--badge-info-bg',
       loading: loadingBusinessLines
     },
     {
@@ -57,7 +60,8 @@ export default function DashboardHomePage() {
       icon: Building2,
       description: 'Physical locations',
       descriptionAr: 'المواقع الفعلية',
-      color: '#14B8A6',
+      colorVar: '--color-success',
+      bgVar: '--badge-success-bg',
       loading: loadingBranches
     },
     {
@@ -67,14 +71,14 @@ export default function DashboardHomePage() {
       icon: Users,
       description: 'Platform users',
       descriptionAr: 'مستخدمو النظام',
-      color: '#22C55E',
+      colorVar: '--color-warning',
+      bgVar: '--badge-warning-bg',
       loading: loadingUsers
     }
   ];
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
       <div className={isRTL ? 'text-right' : 'text-left'}>
         <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
           {isRTL ? 'لوحة التحكم' : 'Dashboard'}
@@ -84,7 +88,6 @@ export default function DashboardHomePage() {
         </p>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => {
           const Icon = stat.icon;
@@ -95,9 +98,9 @@ export default function DashboardHomePage() {
                   <CardDescription>{isRTL ? stat.titleAr : stat.title}</CardDescription>
                   <div
                     className="w-10 h-10 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: `${stat.color}15` }}
+                    style={{ backgroundColor: `var(${stat.bgVar})` }}
                   >
-                    <Icon className="w-5 h-5" style={{ color: stat.color }} />
+                    <Icon className="w-5 h-5" style={{ color: `var(${stat.colorVar})` }} />
                   </div>
                 </div>
               </CardHeader>
@@ -105,7 +108,7 @@ export default function DashboardHomePage() {
                 <div className={isRTL ? 'text-right' : 'text-left'}>
                   <div className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
                     {stat.loading ? (
-                      <Loader2 className="w-6 h-6 animate-spin" style={{ color: stat.color }} />
+                      <LoadingState size="sm" />
                     ) : (
                       stat.value
                     )}
@@ -120,7 +123,6 @@ export default function DashboardHomePage() {
         })}
       </div>
 
-      {/* Placeholder for future widgets */}
       <Card>
         <CardHeader>
           <CardTitle className={isRTL ? 'text-right' : 'text-left'}>
@@ -132,7 +134,7 @@ export default function DashboardHomePage() {
         </CardHeader>
         <CardContent>
           <div className="text-center py-12" style={{ color: 'var(--color-text-secondary)' }}>
-            <LayoutDashboard className="w-12 h-12 mx-auto mb-4" style={{ color: '#9CA3AF' }} />
+            <LayoutDashboard className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--color-text-muted)' }} />
             <p>{isRTL ? 'لا توجد بيانات للعرض' : 'No data to display'}</p>
             <p className="text-sm mt-1">
               {isRTL ? 'هذا مكون توضيحي للواجهة فقط' : 'This is a UI placeholder component'}
