@@ -1,0 +1,147 @@
+Before starting PHASE 7 — PERFORMANCE & SCALABILITY ENGINE, I need a complete architectural report of what performance-related systems already exist in the current codebase.
+
+Provide a deep Performance Foundation Audit across backend and frontend.
+
+Please analyze and report the following in detail:
+
+1) Caching Layer (Backend)
+
+Check if the system currently includes:
+
+Any Redis usage
+
+Any in-memory caching utilities
+
+Hierarchy caching
+
+Permissions caching
+
+Tenant settings caching
+
+User session caching
+
+For each:
+✔ Is it implemented?
+✔ Where is it located?
+✔ Is it correct, incomplete, or unsafe?
+✔ What are the current limitations?
+
+2) Deduplication / Throttling / Rate Limiting
+
+Check if any mechanism exists for:
+
+Preventing duplicate concurrent requests
+
+Per-tenant rate limiting
+
+Traffic shaping
+
+Protecting against “noisy tenant” behavior
+
+Report: implemented / partially implemented / missing.
+
+3) Background Worker Architecture
+
+Check if any async engine exists:
+
+BullMQ
+
+Redis Queues
+
+In-memory queues
+
+Email/job dispatch system
+
+Deferred tasks
+
+Report what’s implemented and what is missing.
+
+4) Database Performance Foundations
+
+For all database operations, check:
+
+Are there proper indexes?
+
+Are there composite indexes per tenant?
+
+Are queries optimized?
+
+Does any table violate tenant isolation principles?
+
+Are there any known slow queries?
+
+Is pagination enforced?
+
+Give specific examples with file paths if possible.
+
+5) Hierarchy / Permissions Performance
+
+Analyze:
+
+How expensive is hierarchy loading?
+
+How expensive is permission resolution?
+
+Are results cached or recomputed each time?
+
+Where are the bottlenecks?
+
+6) Observability / Monitoring
+
+Check if the system already includes:
+
+Logging standards
+
+Trace IDs
+
+Request-level correlation
+
+Metrics exporter (Prometheus)
+
+Error tracking layers
+
+Rate each of them: none / partial / complete.
+
+7) Frontend Performance Systems
+
+Check the frontend for:
+
+React Query caching strategy
+
+Memoization
+
+Code splitting
+
+Lazy loading
+
+Preventing unnecessary re-renders
+
+Expensive components
+
+Large bundle issues
+
+List panel-specific issues (System / Admin / User App).
+
+8) Summary Table
+
+Provide a table:
+
+FEATURE	STATUS	IMPLEMENTED WHERE	QUALITY	REQUIRED WORK
+9) Recommendation for Phase 7
+
+Based on your audit, tell me:
+
+What should be preserved
+
+What should be rewritten
+
+What should be deleted
+
+What should be introduced
+
+What should be redesigned entirely
+
+This report must be precise, brutally honest, and architect-grade.
+
+Do NOT begin Phase 7 yet.
+Only produce the Performance Foundation Report.
