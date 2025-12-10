@@ -87,7 +87,7 @@ export default function CreateBusinessLinePage() {
       <div>
         <Link
           to="/business-lines"
-          className="inline-flex items-center gap-2 text-sm mb-4 hover:text-[#2563EB] transition-colors"
+          className="inline-flex items-center gap-2 text-sm mb-4 transition-colors hover:opacity-70"
           style={{ color: 'var(--color-text-secondary)' }}
         >
           <ArrowLeft className="w-4 h-4" />
@@ -109,7 +109,14 @@ export default function CreateBusinessLinePage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {errors.submit && (
-              <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-red-700">
+              <div 
+                className="p-4 rounded-lg border"
+                style={{ 
+                  backgroundColor: 'var(--alert-danger-bg)', 
+                  borderColor: 'var(--alert-danger-border)',
+                  color: 'var(--alert-danger-text)'
+                }}
+              >
                 {errors.submit}
               </div>
             )}
@@ -128,7 +135,7 @@ export default function CreateBusinessLinePage() {
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </Select>
-                {errors.tenantId && <p className="text-sm text-red-600">{errors.tenantId}</p>}
+                {errors.tenantId && <p className="text-sm" style={{ color: 'var(--color-danger)' }}>{errors.tenantId}</p>}
               </div>
             )}
 
@@ -136,7 +143,7 @@ export default function CreateBusinessLinePage() {
               <div className="space-y-2">
                 <Label htmlFor="name">Business Line Name *</Label>
                 <div className="relative">
-                  <GitBranch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9CA3AF' }} />
+                  <GitBranch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--color-text-muted)' }} />
                   <Input
                     id="name"
                     name="name"
@@ -146,7 +153,7 @@ export default function CreateBusinessLinePage() {
                     onChange={handleChange}
                   />
                 </div>
-                {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
+                {errors.name && <p className="text-sm" style={{ color: 'var(--color-danger)' }}>{errors.name}</p>}
               </div>
 
               <div className="space-y-2">
@@ -189,7 +196,7 @@ export default function CreateBusinessLinePage() {
               <div className="space-y-2">
                 <Label htmlFor="contactEmail">Contact Email</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9CA3AF' }} />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--color-text-muted)' }} />
                   <Input
                     id="contactEmail"
                     name="contactEmail"
@@ -200,13 +207,13 @@ export default function CreateBusinessLinePage() {
                     onChange={handleChange}
                   />
                 </div>
-                {errors.contactEmail && <p className="text-sm text-red-600">{errors.contactEmail}</p>}
+                {errors.contactEmail && <p className="text-sm" style={{ color: 'var(--color-danger)' }}>{errors.contactEmail}</p>}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="contactPhone">Contact Phone</Label>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9CA3AF' }} />
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--color-text-muted)' }} />
                   <Input
                     id="contactPhone"
                     name="contactPhone"
@@ -222,7 +229,6 @@ export default function CreateBusinessLinePage() {
             <div className="flex gap-4 pt-4">
               <Button
                 type="submit"
-                className="bg-[#2563EB] hover:bg-[#1E40AF]"
                 disabled={createBusinessLine.isPending}
               >
                 {createBusinessLine.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

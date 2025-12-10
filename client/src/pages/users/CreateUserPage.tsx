@@ -42,24 +42,27 @@ function getUserTypeInfo(type: UserType) {
         icon: Shield,
         title: 'Create System User',
         description: 'Platform-level user with system-wide access',
-        color: 'bg-purple-100 text-purple-700',
-        borderColor: 'border-purple-200',
+        bgColor: 'var(--badge-info-bg)',
+        textColor: 'var(--color-info)',
+        borderColor: 'var(--badge-info-border)',
       };
     case 'tenant_admin':
       return {
         icon: Building2,
         title: 'Create Tenant Admin',
         description: 'Organization administrator with full tenant access',
-        color: 'bg-blue-100 text-blue-700',
-        borderColor: 'border-blue-200',
+        bgColor: 'var(--badge-info-bg)',
+        textColor: 'var(--color-info)',
+        borderColor: 'var(--badge-info-border)',
       };
     default:
       return {
         icon: Users,
         title: 'Create User',
         description: 'Add a new user to the system',
-        color: 'bg-teal-100 text-teal-700',
-        borderColor: 'border-teal-200',
+        bgColor: 'var(--badge-success-bg)',
+        textColor: 'var(--color-success)',
+        borderColor: 'var(--badge-success-border)',
       };
   }
 }
@@ -256,7 +259,10 @@ export default function CreateUserPage() {
           </Button>
         </Link>
         <div className="flex items-center gap-4">
-          <div className={`p-3 rounded-lg ${typeInfo.color}`}>
+          <div 
+            className="p-3 rounded-lg"
+            style={{ backgroundColor: typeInfo.bgColor, color: typeInfo.textColor }}
+          >
             <TypeIcon className="w-6 h-6" />
           </div>
           <div>
@@ -271,7 +277,10 @@ export default function CreateUserPage() {
       </div>
 
       {userType !== 'regular' && (
-        <div className={`p-4 rounded-lg border ${typeInfo.borderColor} ${typeInfo.color.replace('text-', 'bg-').replace('-700', '-50')}`}>
+        <div 
+          className="p-4 rounded-lg border"
+          style={{ borderColor: typeInfo.borderColor, backgroundColor: typeInfo.bgColor, color: typeInfo.textColor }}
+        >
           <div className="flex items-start gap-3">
             <Shield className="w-5 h-5 mt-0.5" />
             <div>
@@ -297,7 +306,14 @@ export default function CreateUserPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             {error && (
-              <div className="p-3 rounded-lg bg-red-50 border border-red-200 flex items-center gap-2 text-red-700">
+              <div 
+                className="p-3 rounded-lg border flex items-center gap-2"
+                style={{ 
+                  backgroundColor: 'var(--alert-danger-bg)', 
+                  borderColor: 'var(--alert-danger-border)',
+                  color: 'var(--alert-danger-text)'
+                }}
+              >
                 <AlertCircle className="w-4 h-4" />
                 <span>{error}</span>
               </div>
@@ -366,10 +382,10 @@ export default function CreateUserPage() {
                   value={formData.confirmPassword}
                   onChange={(e) => handleChange('confirmPassword', e.target.value)}
                   placeholder="Repeat password"
-                  className={passwordError ? 'border-red-500' : ''}
+                  style={passwordError ? { borderColor: 'var(--color-danger)' } : undefined}
                 />
                 {passwordError && (
-                  <p className="text-sm text-red-500">{passwordError}</p>
+                  <p className="text-sm" style={{ color: 'var(--color-danger)' }}>{passwordError}</p>
                 )}
               </div>
             </div>
@@ -540,7 +556,6 @@ export default function CreateUserPage() {
           </Link>
           <Button
             type="submit"
-            className="bg-[#2563EB] hover:bg-[#1E40AF]"
             disabled={isSubmitting || createUser.isPending}
           >
             {(isSubmitting || createUser.isPending) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

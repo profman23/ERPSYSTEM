@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { GitBranch, Plus, Search, Eye, Edit, Trash2, Loader2, AlertCircle } from 'lucide-react';
+import { GitBranch, Plus, Search, Eye, Edit, Trash2, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useBusinessLines, useDeleteBusinessLine, useTenants } from '@/hooks/useHierarchy';
 import { useAuth } from '@/contexts/AuthContext';
+import { LoadingState } from '@/components/ui/loading-state';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ErrorState } from '@/components/ui/error-state';
 
 const typeLabels: Record<string, string> = {
   veterinary_clinic: 'Veterinary Clinic',
@@ -84,7 +87,7 @@ export default function BusinessLinesListPage() {
           </p>
         </div>
         <Link to={`/business-lines/create${tenantId ? `?tenantId=${tenantId}` : ''}`}>
-          <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
+          <Button>
             <Plus className="w-4 h-4 mr-2" />
             Add Business Line
           </Button>
@@ -95,7 +98,10 @@ export default function BusinessLinesListPage() {
         <CardContent className="pt-6">
           <div className="flex gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9CA3AF' }} />
+              <Search 
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" 
+                style={{ color: 'var(--color-text-muted)' }} 
+              />
               <Input
                 placeholder="Search business lines..."
                 className="pl-10"
@@ -129,41 +135,25 @@ export default function BusinessLinesListPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-[#2563EB]" />
-              <span className="ml-3" style={{ color: 'var(--color-text-secondary)' }}>Loading...</span>
-            </div>
+            <LoadingState size="lg" message="Loading business lines..." fullPage />
           ) : error ? (
-            <div className="text-center py-12">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
-                <AlertCircle className="w-8 h-8 text-red-600" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-red-600">Error Loading Business Lines</h3>
-              <p className="text-gray-600 mb-4">
-                {(error as any)?.message || 'Failed to load business lines. Please try again.'}
-              </p>
-              <Button variant="outline" onClick={() => window.location.reload()}>
-                Retry
-              </Button>
-            </div>
+            <ErrorState
+              title="Error Loading Business Lines"
+              message={(error as any)?.message || 'Failed to load business lines. Please try again.'}
+              retryAction={() => window.location.reload()}
+              variant="page"
+            />
           ) : filteredBusinessLines.length === 0 ? (
-            <div className="text-center py-12" style={{ color: 'var(--color-text-secondary)' }}>
-              <GitBranch className="w-16 h-16 mx-auto mb-4" style={{ color: '#9CA3AF' }} />
-              <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
-                {searchQuery ? 'No Matching Business Lines' : 'No Business Lines Yet'}
-              </h3>
-              <p className="mb-6">
-                {searchQuery ? 'Try adjusting your search' : 'Create your first business line to get started'}
-              </p>
-              {!searchQuery && (
-                <Link to={`/business-lines/create${tenantId ? `?tenantId=${tenantId}` : ''}`}>
-                  <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Business Line
-                  </Button>
-                </Link>
-              )}
-            </div>
+            <EmptyState
+              icon={GitBranch}
+              title={searchQuery ? 'No Matching Business Lines' : 'No Business Lines Yet'}
+              description={searchQuery ? 'Try adjusting your search' : 'Create your first business line to get started'}
+              action={!searchQuery ? {
+                label: 'Add Business Line',
+                onClick: () => navigate(`/business-lines/create${tenantId ? `?tenantId=${tenantId}` : ''}`),
+                icon: Plus,
+              } : undefined}
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -182,26 +172,39 @@ export default function BusinessLinesListPage() {
                   <TableRow key={bl.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                          <GitBranch className="w-4 h-4 text-blue-600" />
+                        <div 
+                          className="w-8 h-8 rounded-full flex items-center justify-center"
+                          style={{ backgroundColor: 'var(--badge-info-bg)' }}
+                        >
+                          <GitBranch className="w-4 h-4" style={{ color: 'var(--color-info)' }} />
                         </div>
                         <div>
                           <p className="font-medium">{bl.name}</p>
                           {bl.description && (
-                            <p className="text-xs text-gray-500 truncate max-w-[200px]">{bl.description}</p>
+                            <p 
+                              className="text-xs truncate max-w-[200px]"
+                              style={{ color: 'var(--color-text-muted)' }}
+                            >
+                              {bl.description}
+                            </p>
                           )}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <code className="text-sm bg-gray-100 px-2 py-1 rounded">{bl.code}</code>
+                      <code 
+                        className="text-sm px-2 py-1 rounded"
+                        style={{ backgroundColor: 'var(--color-surface-hover)' }}
+                      >
+                        {bl.code}
+                      </code>
                     </TableCell>
                     <TableCell>{typeLabels[bl.businessLineType] || bl.businessLineType}</TableCell>
                     <TableCell>
                       <div className="text-sm">
                         {bl.contactEmail && <p>{bl.contactEmail}</p>}
-                        {bl.contactPhone && <p className="text-gray-500">{bl.contactPhone}</p>}
-                        {!bl.contactEmail && !bl.contactPhone && <span className="text-gray-400">-</span>}
+                        {bl.contactPhone && <p style={{ color: 'var(--color-text-muted)' }}>{bl.contactPhone}</p>}
+                        {!bl.contactEmail && !bl.contactPhone && <span style={{ color: 'var(--color-text-muted)' }}>-</span>}
                       </div>
                     </TableCell>
                     <TableCell className="text-center">{bl.branchCount ?? '-'}</TableCell>
@@ -230,7 +233,7 @@ export default function BusinessLinesListPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => setDeleteId(bl.id)}
-                          className="text-red-600 hover:text-red-700"
+                          style={{ color: 'var(--color-danger)' }}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -254,7 +257,14 @@ export default function BusinessLinesListPage() {
             </DialogDescription>
           </DialogHeader>
           {deleteError && (
-            <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+            <div 
+              className="p-3 rounded-lg border text-sm"
+              style={{ 
+                backgroundColor: 'var(--alert-danger-bg)', 
+                borderColor: 'var(--alert-danger-border)',
+                color: 'var(--alert-danger-text)'
+              }}
+            >
               {deleteError}
             </div>
           )}
@@ -263,7 +273,7 @@ export default function BusinessLinesListPage() {
               Cancel
             </Button>
             <Button
-              className="bg-red-600 hover:bg-red-700"
+              variant="destructive"
               onClick={handleDelete}
               disabled={deleteMutation.isPending}
             >
