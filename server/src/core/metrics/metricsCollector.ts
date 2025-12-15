@@ -47,8 +47,40 @@ class MetricsCollector {
   private permissionCacheHits = 0;
   private permissionCacheMisses = 0;
 
+  private counters: Map<string, { value: number; labels: Map<string, number> }> = new Map();
+  private gauges: Map<string, number> = new Map();
+  private histograms: Map<string, number[]> = new Map();
+
   constructor() {
     this.startCollection();
+  }
+
+  counter(name: string, increment: number = 1, labels?: Record<string, string>): void {
+    if (!this.counters.has(name)) {
+      this.counters.set(name, { value: 0, labels: new Map() });
+    }
+    const counter = this.counters.get(name)!;
+    if (labels) {
+      const labelKey = Object.entries(labels).map(([k, v]) => `${k}="${v}"`).join(',');
+      counter.labels.set(labelKey, (counter.labels.get(labelKey) || 0) + increment);
+    } else {
+      counter.value += increment;
+    }
+  }
+
+  gauge(name: string, value: number): void {
+    this.gauges.set(name, value);
+  }
+
+  histogram(name: string, value: number): void {
+    if (!this.histograms.has(name)) {
+      this.histograms.set(name, []);
+    }
+    const values = this.histograms.get(name)!;
+    values.push(value);
+    if (values.length > 10000) {
+      values.shift();
+    }
   }
 
   getCacheMetrics(): CacheMetrics {
@@ -246,6 +278,47 @@ class MetricsCollector {
     lines.push(`db_connection_pool{status="active"} ${database.connectionPoolActive}`);
     lines.push(`db_connection_pool{status="idle"} ${database.connectionPoolIdle}`);
     lines.push(`db_connection_pool{status="total"} ${database.connectionPoolTotal}`);
+
+    // Export custom counters
+    for (const [name, counter] of this.counters) {
+      lines.push(`# HELP ${name} Custom counter metric`);
+      lines.push(`# TYPE ${name} counter`);
+      if (counter.labels.size > 0) {
+        for (const [labelKey, value] of counter.labels) {
+          lines.push(`${name}{${labelKey}} ${value}`);
+        }
+      }
+      if (counter.value > 0) {
+        lines.push(`${name} ${counter.value}`);
+      }
+    }
+
+    // Export custom gauges
+    for (const [name, value] of this.gauges) {
+      lines.push(`# HELP ${name} Custom gauge metric`);
+      lines.push(`# TYPE ${name} gauge`);
+      lines.push(`${name} ${value}`);
+    }
+
+    // Export custom histograms (as summary with avg, count, p50, p95, p99)
+    for (const [name, values] of this.histograms) {
+      if (values.length === 0) continue;
+      const sorted = [...values].sort((a, b) => a - b);
+      const sum = values.reduce((a, b) => a + b, 0);
+      const avg = sum / values.length;
+      const p50 = sorted[Math.floor(sorted.length * 0.5)] || 0;
+      const p95 = sorted[Math.floor(sorted.length * 0.95)] || 0;
+      const p99 = sorted[Math.floor(sorted.length * 0.99)] || 0;
+
+      lines.push(`# HELP ${name} Custom histogram metric`);
+      lines.push(`# TYPE ${name} summary`);
+      lines.push(`${name}_sum ${sum.toFixed(6)}`);
+      lines.push(`${name}_count ${values.length}`);
+      lines.push(`${name}_avg ${avg.toFixed(6)}`);
+      lines.push(`${name}{quantile="0.5"} ${p50.toFixed(6)}`);
+      lines.push(`${name}{quantile="0.95"} ${p95.toFixed(6)}`);
+      lines.push(`${name}{quantile="0.99"} ${p99.toFixed(6)}`);
+    }
 
     return lines.join('\n');
   }

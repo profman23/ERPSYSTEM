@@ -1,0 +1,111 @@
+Bulletproof Concurrent Tenant Code Generation
+Objective
+Design and implement a 100% reliable tenant code generation system that guarantees zero duplicates and zero failures under high concurrent load (50+ simultaneous requests).
+
+Critical Engineering Standards Required
+1. Atomic & Lock-Free Architecture
+No race conditions between SELECT check and INSERT operation
+
+Database-level atomicity as primary guarantee (not just Redis)
+
+Zero dependency on Redis for uniqueness (Redis optional for performance only)
+
+2. Required Technical Implementation
+Use PostgreSQL advisory locks OR SERIALIZABLE transaction isolation for true concurrency safety
+
+Implement database sequence with INSERT ... ON CONFLICT DO UPDATE pattern
+
+Fallback mechanism that works without Redis
+
+Response time guarantee: < 100ms even under 50+ concurrent requests
+
+3. Core Algorithm Requirements
+text
+1. Generate candidate code (VET-XXXXXX format)
+2. Start SERIALIZABLE transaction
+3. Attempt INSERT with ON CONFLICT handling
+4. If conflict, generate new candidate and retry (max 3 attempts)
+5. Commit and return success
+4. Testing Protocol
+Load Test Specification:
+
+bash
+# Simulate 20 concurrent requests
+for i in {1..20}; do
+  curl -X POST /api/v1/tenants/test-concurrent \
+    -H "Content-Type: application/json" \
+    -d '{"name":"Test Tenant $i"}' &
+done
+
+# Measure:
+# 1. All 20 requests return HTTP 200
+# 2. All 20 tenants have unique codes
+# 3. Average response time < 500ms
+# 4. 0% error rate
+5. Monitoring & Validation
+Prometheus metrics for:
+
+tenant_code_generation_duration_seconds (histogram)
+
+tenant_code_conflict_retries_total (counter)
+
+concurrent_code_generation_requests (gauge)
+
+Database constraint: UNIQUE constraint on tenants.code (already exists)
+
+Audit log: Every generation attempt logged with timestamp and result
+
+Acceptance Criteria
+Functional Requirements:
+✅ Every request receives a unique tenant code
+
+✅ Zero "duplicate code" errors returned to users
+
+✅ System handles 50+ concurrent requests without degradation
+
+✅ Works with Redis offline (database-only mode)
+
+Performance Requirements:
+✅ P95 response time < 200ms under 20 concurrent requests
+
+✅ 0 failed requests in load test
+
+✅ Linear scaling to 50+ concurrent requests
+
+Reliability Requirements:
+✅ 100% success rate in concurrent stress test
+
+✅ Automatic retry on conflict (transparent to user)
+
+✅ Graceful degradation if Redis unavailable
+
+Engineering Standards
+Idempotency: Same request generates same code if retried
+
+Atomicity: Entire operation succeeds or fails completely
+
+Isolation: Concurrent requests don't interfere
+
+Durability: Once generated, code is permanently unique
+
+Observability: Full metrics, logs, and monitoring
+
+Deliverables
+Updated TenantCodeGenerator service with atomic database operations
+
+Load test script simulating 20 concurrent requests
+
+Prometheus metrics dashboard for code generation
+
+Updated API documentation with concurrency guarantees
+
+Performance test results meeting all benchmarks
+
+Success Definition
+The system passes this exact test scenario:
+
+text
+20 concurrent requests → 20 successful responses → 20 unique tenant codes
+0 errors → Average response < 500ms → Works with Redis offline
+This prompt provides clear engineering standards, specific implementation requirements, and measurable success criteria for building a production-ready concurrent code generation system.
+

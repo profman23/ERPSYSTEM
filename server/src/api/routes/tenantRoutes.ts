@@ -22,11 +22,23 @@ import {
   getCountries,
   getTenantDetails,
   listTenantsAdvanced,
+  testConcurrentCodeGeneration,
+  getCodeGenerationMetrics,
 } from '../controllers/systemTenantController';
 import { authMiddleware } from '../../middleware/authMiddleware';
 import { routeMetadata, RoutePatterns, enforceRouteMetadata } from '../../middleware/routeMetadata';
 
 const router = Router();
+
+router.post(
+  '/test-concurrent',
+  testConcurrentCodeGeneration
+);
+
+router.get(
+  '/test-metrics',
+  getCodeGenerationMetrics
+);
 
 // All tenant management routes require system scope
 router.post(

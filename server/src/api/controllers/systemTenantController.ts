@@ -5,6 +5,7 @@ import { tenantCodeGenerator } from '../../services/TenantCodeGenerator';
 import { MIDDLE_EAST_COUNTRIES, SUBSCRIPTION_PLANS, SubscriptionPlanType } from '../../db/schemas';
 import { createTenantSchema, updateTenantSchema } from '../../validations/tenantValidation';
 import { contextLogger } from '../../core/context/contextLogger';
+import { metricsCollector } from '../../core/metrics/metricsCollector';
 
 export const createTenantAdvanced = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -255,6 +256,45 @@ export const listTenantsAdvanced = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to list tenants',
+    });
+  }
+};
+
+export const testConcurrentCodeGeneration = async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  
+  try {
+    const result = await tenantCodeGenerator.generateUniqueCodeAtomic();
+    
+    res.json({
+      success: true,
+      code: result.code,
+      retries: result.retries,
+      durationMs: result.durationMs,
+      method: result.method,
+      concurrentRequests: tenantCodeGenerator.getConcurrentRequests(),
+    });
+  } catch (error: any) {
+    const duration = Date.now() - startTime;
+    contextLogger.error('Concurrent code generation test failed', { error, durationMs: duration });
+    
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Code generation failed',
+      durationMs: duration,
+    });
+  }
+};
+
+export const getCodeGenerationMetrics = async (_req: Request, res: Response) => {
+  try {
+    const prometheusFormat = metricsCollector.exportPrometheusFormat();
+    res.set('Content-Type', 'text/plain');
+    res.send(prometheusFormat);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get metrics',
     });
   }
 };

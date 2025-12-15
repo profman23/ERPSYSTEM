@@ -24,7 +24,16 @@ import { tenantLoader } from '../../middleware/tenantLoader';
 import { apiRateLimiter, strictRateLimiter } from '../../middleware/rateLimiter';
 import { panelGuard, requireSystemScope, autoPanelGuard } from '../../middleware/scopeGuard';
 
+import {
+  testConcurrentCodeGeneration,
+  getCodeGenerationMetrics,
+} from '../controllers/systemTenantController';
+
 const router = Router();
+
+// TEST ROUTES - No auth (for load testing only)
+router.post('/tenants/test-concurrent', testConcurrentCodeGeneration);
+router.get('/tenants/test-metrics', getCodeGenerationMetrics);
 
 router.use('/auth', authRoutes);
 
