@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Building2, Plus, Search, Eye, Edit } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { useTenants } from '@/hooks/useHierarchy';
 import { LoadingState } from '@/components/ui/loading-state';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { TenantFormModal } from '@/components/tenants';
 
 const getStatusStyle = (status: string) => {
   switch (status) {
@@ -44,7 +45,19 @@ const getPlanStyle = (plan: string) => {
 export default function SystemTenantsListPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const { data: tenants, isLoading, error } = useTenants();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTenant, setSelectedTenant] = useState<any>(null);
+  const { data: tenants, isLoading, error, refetch } = useTenants();
+
+  const handleCreateClick = () => {
+    setSelectedTenant(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditClick = (tenant: any) => {
+    setSelectedTenant(tenant);
+    setIsModalOpen(true);
+  };
 
   const filteredTenants = useMemo(() => {
     if (!tenants) return [];
@@ -77,17 +90,16 @@ export default function SystemTenantsListPage() {
             Manage organizations in the platform
           </p>
         </div>
-        <Link to="/system/tenants/create">
-          <Button 
-            style={{ 
-              background: 'linear-gradient(135deg, var(--sys-accent), var(--sys-accent-hover))', 
-              color: 'var(--color-text-on-accent)' 
-            }}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Tenant
-          </Button>
-        </Link>
+        <Button 
+          onClick={handleCreateClick}
+          style={{ 
+            background: 'linear-gradient(135deg, var(--sys-accent), var(--sys-accent-hover))', 
+            color: 'var(--color-text-on-accent)' 
+          }}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Tenant
+        </Button>
       </div>
 
       <Card className="border" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
@@ -138,7 +150,7 @@ export default function SystemTenantsListPage() {
               description={searchQuery ? 'Try adjusting your search query' : 'Get started by creating your first tenant'}
               action={!searchQuery ? {
                 label: 'Add Tenant',
-                onClick: () => navigate('/system/tenants/create'),
+                onClick: handleCreateClick,
                 icon: Plus,
               } : undefined}
             />
@@ -226,7 +238,7 @@ export default function SystemTenantsListPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigate(`/system/tenants/${tenant.id}/edit`)}
+                            onClick={() => handleEditClick(tenant)}
                             title="Edit"
                             style={{ color: 'var(--sys-text-secondary)' }}
                           >
@@ -242,6 +254,13 @@ export default function SystemTenantsListPage() {
           )}
         </CardContent>
       </Card>
+
+      <TenantFormModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        tenant={selectedTenant}
+        onSuccess={() => refetch()}
+      />
     </div>
   );
 }

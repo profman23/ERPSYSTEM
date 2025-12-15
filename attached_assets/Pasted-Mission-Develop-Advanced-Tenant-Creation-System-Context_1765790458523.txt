@@ -1,0 +1,265 @@
+Mission: Develop Advanced Tenant Creation System
+Context:
+We are building an enterprise-grade multi-tenant Veterinary ERP SaaS on Replit. You need to develop a reusable TenantFormModal component for the System Admin panel (/system/tenants). This modal will be used for both creating new Tenants and editing existing ones.
+
+🎯 Core Requirements:
+1. User Interface (TenantFormModal):
+Required Fields:
+
+Tenant Code: Auto-generated (instant, non-sequential) - Format: VET-[6chars]-[timestamp]
+
+Organization Name: Required text field
+
+Subscription Plan: 4 options:
+
+Trial: 7 days, max 3 users
+
+Standard: 4 users
+
+Professional: 6 users
+
+Enterprise: Unlimited users
+
+Country: Dropdown with Middle Eastern countries + Egypt only
+
+Timezone: Changes based on selected country
+
+Branding (Primary Color): Color picker
+
+Contact Information: Email (validated), Phone, Address
+
+Design:
+
+Reusable Modal (used for both create and edit)
+
+Two modes: create and edit
+
+Buttons: Create/Update and Cancel
+
+2. Backend System:
+A. Unique Tenant Code Generation
+Problem: 10+ System Admins may create tenants simultaneously
+
+Solution: Lock-Free Code Generation system
+
+Use Redis SETNX for uniqueness verification
+
+Database fallback with retry logic
+
+Code format: VET-A3B9C2-1733865234
+
+B. Complete Tenant Creation Process
+Single Service (TenantSetupService) that:
+
+Saves basic tenant data
+
+Sets user limits based on subscription plan
+
+Copies DPF Structure from Template (not creating from scratch)
+
+Adds heavy tasks to Queue (async)
+
+C. DPF Template System
+Massive performance improvement: From 26,180 DB operations per tenant → 1 operation
+
+Create Template once on system startup
+
+Copy Template for each new tenant
+
+3. High Concurrency Handling:
+Redis-based locking to prevent data conflicts
+
+Expanded connection pooling in PostgreSQL
+
+Queue system (BullMQ) for async tasks
+
+Optimized database indexing
+
+4. Subscription Management:
+subscription_features table defining:
+
+Allowed users per plan
+
+Trial duration (7 days)
+
+Features per plan
+
+5. Scalability for 3,000+ Tenants:
+PM2 Cluster Mode to utilize all CPU cores
+
+Multi-level Redis Caching
+
+Database Query Optimization with proper indexes
+
+Monitoring with Prometheus Metrics
+
+⚙️ Technical Requirements:
+Integration with Existing System:
+Path: /system/tenants
+
+Add Tenant button: Opens TenantFormModal (mode='create')
+
+Edit button: Opens same Modal (mode='edit') with current tenant data
+
+System Deliverables:
+A. Frontend Components:
+TenantFormModal.tsx - Main component
+
+SubscriptionPlanSelector.tsx - Plan selection component
+
+CountryTimezoneSelector.tsx - Country/timezone selector
+
+B. Backend Services:
+TenantCodeGenerator.ts - Unique code generation
+
+TenantSetupService.ts - Complete tenant creation service
+
+DPFTemplateService.ts - DPF template copying
+
+SubscriptionService.ts - Subscription plan management
+
+C. Queue System:
+tenantSetup.queue.ts - Background task processing
+
+D. Database:
+Migrations for subscription_features table
+
+Performance-optimized indexes
+
+Initial data for DPF Template
+
+E. Monitoring:
+tenantMetrics.ts - Prometheus metrics
+
+Basic Grafana dashboard
+
+F. Replit Configuration:
+.replit - Run configurations
+
+replit.nix - System dependencies
+
+ecosystem.config.js - PM2 configuration
+
+📊 Performance Goals:
+For 10+ Concurrent System Admins:
+⏱️ Response Time: < 500ms for creation process
+
+🔄 Throughput: 20-30 operations/second
+
+🚫 Zero Duplicates: Guaranteed unique tenant codes
+
+⚡ Background Processing: Heavy tasks processed asynchronously
+
+For 3,000 Tenants:
+💾 Memory Usage: < 2GB for entire system
+
+⚡ Query Performance: < 100ms for tenant queries
+
+📈 Scalability: Can scale to 10,000+ tenants
+
+🔍 Design Considerations:
+1. Modular Architecture:
+Separate code generation logic from creation logic
+
+Replaceable components without affecting others
+
+2. Graceful Degradation:
+If Redis fails → Fallback to Database
+
+If Queue fails → Synchronous execution with notifications
+
+3. Future-Proofing:
+Feature Flags: Dynamic feature toggling
+
+A/B Testing Ready: Test different flow versions
+
+Easy Migration: Upgrade to more advanced systems
+
+4. Developer Experience:
+Complete API documentation
+
+Usage examples for components
+
+Development and debugging tools
+
+🎯 Acceptance Criteria:
+Functionality:
+✓ System Admin clicks "Add Tenant" → Opens Modal
+
+✓ Tenant Code auto-generates instantly
+
+✓ Subscription Plan selection sets user limits
+
+✓ Saves tenant with all details
+
+✓ Edit functionality works with same Modal
+
+Performance:
+✓ 10 concurrent users creating tenants without issues
+
+✓ < 500ms frontend response time
+
+✓ Heavy tasks processed in background without blocking
+
+Scalability:
+✓ System handles 3,000 tenants
+
+✓ Adding new tenants doesn't slow system
+
+✓ Fast queries on list of 3,000 tenants
+
+📋 Implementation Phases:
+Phase 1 (Days 1-2): Fundamentals
+TenantFormModal with basic fields
+
+Instant tenant code generation
+
+Integration with SystemTenantsListPage
+
+Phase 2 (Days 3-4): Backend System
+Basic TenantSetupService
+
+DPF Template System
+
+Subscription Plan Management
+
+Phase 3 (Days 5-6): Performance
+Redis integration for concurrency
+
+Queue system for async tasks
+
+Database indexing and optimizations
+
+Phase 4 (Day 7): Monitoring & Polish
+Prometheus metrics
+
+Improved error handling
+
+Testing and documentation
+
+💎 Final Notes:
+Focus Areas:
+Lock-Free Code Generation - Most critical for concurrent performance
+
+DPF Template System - Most critical for creation speed
+
+Modular Design - Most critical for future development
+
+Avoid:
+❌ Do NOT use traditional sequential numbering (T0000001)
+
+❌ Do NOT create DPF Structure from scratch per tenant
+
+❌ Do NOT block users during creation process
+
+Expected Outcome:
+A Tenant Creation System that:
+
+Lightning fast for users
+
+Highly flexible for future development
+
+Scalable to 3,000+ tenants
+
+Reliable in concurrent environments
+

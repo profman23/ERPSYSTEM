@@ -33,11 +33,16 @@ export const createTenant = async (req: Request, res: Response, next: any) => {
     // Zod validation (errors will be caught and sent to global error handler)
     const validatedData = createTenantSchema.parse(req.body);
 
+    // Generate code if not provided
+    const tenantCode = validatedData.code 
+      ? validatedData.code.toUpperCase()
+      : `VET-${Date.now().toString(36).toUpperCase()}`;
+
     // Check if tenant code already exists (composite unique validation)
     const [existing] = await db
       .select()
       .from(tenants)
-      .where(eq(tenants.code, validatedData.code.toUpperCase()))
+      .where(eq(tenants.code, tenantCode))
       .limit(1);
 
     if (existing) {
@@ -51,7 +56,7 @@ export const createTenant = async (req: Request, res: Response, next: any) => {
     const [newTenant] = await db
       .insert(tenants)
       .values({
-        code: validatedData.code.toUpperCase(),
+        code: tenantCode,
         name: validatedData.name,
         defaultLanguage: validatedData.defaultLanguage || 'en',
         country: validatedData.country,

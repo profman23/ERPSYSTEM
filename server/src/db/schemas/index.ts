@@ -1,4 +1,5 @@
 export * from './tenants';
+export * from './subscriptionFeatures';
 export * from './businessLines';
 export * from './branches';
 export * from './branchCapacity';

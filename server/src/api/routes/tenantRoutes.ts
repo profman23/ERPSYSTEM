@@ -14,6 +14,15 @@ import {
   updateTenant, 
   deleteTenant 
 } from '../controllers/tenantController';
+import {
+  createTenantAdvanced,
+  updateTenantAdvanced,
+  generateTenantCode,
+  getSubscriptionPlans,
+  getCountries,
+  getTenantDetails,
+  listTenantsAdvanced,
+} from '../controllers/systemTenantController';
 import { authMiddleware } from '../../middleware/authMiddleware';
 import { routeMetadata, RoutePatterns, enforceRouteMetadata } from '../../middleware/routeMetadata';
 
@@ -58,6 +67,46 @@ router.delete(
   authMiddleware,
   enforceRouteMetadata(),
   deleteTenant
+);
+
+router.get(
+  '/meta/generate-code',
+  routeMetadata(RoutePatterns.systemOnly('Generate tenant code')),
+  authMiddleware,
+  enforceRouteMetadata(),
+  generateTenantCode
+);
+
+router.get(
+  '/meta/subscription-plans',
+  routeMetadata(RoutePatterns.systemOnly('Get subscription plans')),
+  authMiddleware,
+  enforceRouteMetadata(),
+  getSubscriptionPlans
+);
+
+router.get(
+  '/meta/countries',
+  routeMetadata(RoutePatterns.systemOnly('Get countries list')),
+  authMiddleware,
+  enforceRouteMetadata(),
+  getCountries
+);
+
+router.post(
+  '/advanced',
+  routeMetadata(RoutePatterns.systemOnly('Create tenant with advanced setup')),
+  authMiddleware,
+  enforceRouteMetadata(),
+  createTenantAdvanced
+);
+
+router.put(
+  '/advanced/:id',
+  routeMetadata(RoutePatterns.systemOnly('Update tenant with advanced options')),
+  authMiddleware,
+  enforceRouteMetadata(),
+  updateTenantAdvanced
 );
 
 export default router;
