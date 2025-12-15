@@ -70,6 +70,41 @@ Features for managing platform users and tenants:
 ### UX Normalization Architecture
 Achieved 100% UX consistency across all platform pages through a declarative token-based design system. This involved eliminating hardcoded colors, standardizing gradients and status badges, and implementing unified loading/empty/error state components.
 
+### Advanced Tenant Creation System (COMPLETE)
+Enterprise-grade tenant creation with automated DPF structure provisioning:
+
+#### Backend Services
+-   **TenantCodeGenerator:** Lock-free unique code generation (VET-XXXXXX format)
+-   **SubscriptionService:** Plan limits management with 4 tiers (trial, standard, professional, enterprise)
+-   **DPFTemplateService:** Fast DPF structure copying for new tenants
+-   **TenantSetupService:** Complete tenant creation orchestrator with BullMQ integration
+
+#### Database Schema
+-   **subscription_features table:** Plan codes, limits (users, branches, business lines, storage, API rate)
+-   **tenants table extensions:** countryCode, subscriptionStartAt, subscriptionExpiresAt, trialExpiresAt, dpfTemplateApplied
+
+#### API Endpoints
+-   `POST /api/v1/tenants/advanced` - Create tenant with full setup
+-   `PUT /api/v1/tenants/advanced/:id` - Update tenant
+-   `GET /api/v1/tenants/meta/generate-code` - Generate unique tenant code
+-   `GET /api/v1/tenants/meta/subscription-plans` - Get available plans
+-   `GET /api/v1/tenants/meta/countries` - Get Middle East countries with timezones
+
+#### Frontend Components
+-   **CountryTimezoneSelector:** Country dropdown with auto timezone selection (13 Middle East countries)
+-   **SubscriptionPlanSelector:** Plan selection cards with feature display
+-   **TenantFormModal:** Create/edit modal with validation
+-   **SystemTenantsListPage:** Integrated with modal for tenant management
+
+#### Key Files
+-   `server/src/services/TenantSetupService.ts` - Tenant creation orchestrator
+-   `server/src/services/TenantCodeGenerator.ts` - Unique code generation
+-   `server/src/services/SubscriptionService.ts` - Plan limits
+-   `server/src/services/DPFTemplateService.ts` - DPF copying
+-   `server/src/api/controllers/systemTenantController.ts` - API endpoints
+-   `server/src/db/schemas/subscriptionFeatures.ts` - Plans and countries
+-   `client/src/components/tenants/*` - Frontend components
+
 ### Phase 7: AGI-Ready Performance Foundation (COMPLETE)
 Enterprise-grade performance architecture for 100k+ concurrent users and AGI integration:
 
