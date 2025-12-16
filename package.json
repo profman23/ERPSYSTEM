@@ -46,7 +46,7 @@
     "on-finished": "^2.4.1",
     "react-hook-form": "^7.66.1",
     "react-router-dom": "^7.9.6",
-    "react-window": "^2.2.3",
+    "react-window": "^1.8.11",
     "redis": "^5.10.0",
     "ulid": "^3.0.1",
     "uuid": "^13.0.0",

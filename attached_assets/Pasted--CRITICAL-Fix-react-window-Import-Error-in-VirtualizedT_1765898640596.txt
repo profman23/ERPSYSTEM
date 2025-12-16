@@ -1,0 +1,112 @@
+# 🔴 CRITICAL: Fix react-window Import Error in VirtualizedTable
+
+## Problem
+Application crashes on `/system/tenants` and `/system/users` with error:
+```
+SyntaxError: The requested module 'react-window' does not provide an export named 'FixedSizeList'
+```
+
+---
+
+## Root Cause
+The `VirtualizedTable` component in `client/src/components/ui/VirtualizedTable.tsx` has an incorrect or missing import for `react-window`.
+
+---
+
+## Engineering Requirements
+
+### 1. Dependency Management
+- Verify `react-window` and `@types/react-window` are installed in `client/package.json`
+- If missing, install them using npm
+- Ensure version compatibility with Vite and React 18
+
+### 2. Import Fix Standards
+- Use correct ESM import syntax compatible with Vite
+- Apply aliased import pattern if needed (e.g., `import { FixedSizeList as List }`)
+- Follow TypeScript best practices for type imports
+
+### 3. Fallback Strategy (if react-window fails)
+- Implement a simple CSS-based virtualization fallback
+- Ensure component API remains unchanged (same props interface)
+- Maintain backward compatibility with existing usages
+
+### 4. Error Handling Enhancement
+- Add an ErrorBoundary component following React best practices
+- Wrap the router with ErrorBoundary to catch all rendering errors
+- Provide user-friendly error UI with reload/back navigation options
+- Log errors to console for debugging
+
+### 5. Testing Requirements
+- Verify pages load without crashes: `/system/tenants`, `/system/users`
+- Confirm no console errors related to imports
+- Test list scrolling performance
+- Validate that build process completes without errors
+
+---
+
+## Quality Standards
+
+Apply these engineering principles:
+
+**Performance:**
+- Virtualization should handle 1000+ items efficiently
+- Page load time < 2 seconds
+- Smooth 60fps scrolling
+
+**Reliability:**
+- Zero crashes on navigation
+- Graceful degradation if virtualization library fails
+- Proper error boundaries prevent white screen of death
+
+**Maintainability:**
+- Clear import patterns following project conventions
+- Reusable ErrorBoundary for future use
+- Component interfaces remain stable
+
+**Developer Experience:**
+- Clear error messages in development
+- Type safety maintained throughout
+- No breaking changes to existing code
+
+---
+
+## Success Criteria
+
+✅ All affected pages load successfully  
+✅ No import-related console errors  
+✅ Lists display correctly with smooth scrolling  
+✅ ErrorBoundary shows friendly UI if errors occur  
+✅ Build process completes without warnings  
+✅ TypeScript compilation passes with no errors  
+
+---
+
+## Implementation Approach
+
+**Priority 1:** Fix the immediate import issue  
+**Priority 2:** Add ErrorBoundary for resilience  
+**Priority 3:** Verify all VirtualizedTable usages work  
+
+**Time estimate:** 10-15 minutes  
+
+**Fallback plan:** If react-window cannot be fixed within 15 minutes, implement simple CSS-based scrolling as temporary solution.
+
+---
+
+Please fix this critical bug following enterprise engineering standards for production-ready systems.
+```
+
+---
+
+## **📊 ليه الـ Prompt ده أفضل؟**
+```
+✅ No code snippets (Agent decides implementation)
+✅ Clear problem statement
+✅ Engineering standards defined
+✅ Quality metrics specified
+✅ Success criteria measurable
+✅ Fallback strategy included
+✅ Time-boxed approach
+✅ Production-ready requirements
+
+= Agent has full autonomy to implement best solution!

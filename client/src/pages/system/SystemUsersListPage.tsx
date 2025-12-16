@@ -395,7 +395,6 @@ export default function SystemUsersListPage() {
             {userTypes.map((type) => {
               const Icon = type.icon;
               const isSelected = selectedType === type.id;
-              const isSystem = type.id === 'system';
               
               return (
                 <button
