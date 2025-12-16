@@ -9,6 +9,7 @@ import { Select } from '@/components/ui/select';
 import { CountryTimezoneSelector } from './CountryTimezoneSelector';
 import { SubscriptionPlanSelector } from './SubscriptionPlanSelector';
 import { Loader2, Building2 } from 'lucide-react';
+import { apiClient } from '@/lib/api';
 
 interface TenantFormData {
   name: string;
@@ -43,35 +44,21 @@ interface TenantFormModalProps {
 }
 
 async function createTenant(data: TenantFormData) {
-  const response = await fetch('/api/v1/tenants/advanced', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('token')}`,
-    },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to create tenant');
+  try {
+    const response = await apiClient.post('/api/v1/tenants/advanced', data);
+    return response.data || { success: true };
+  } catch (error: any) {
+    throw new Error(error.response?.data?.error || 'Failed to create tenant');
   }
-  return response.json();
 }
 
 async function updateTenant(id: string, data: Partial<TenantFormData>) {
-  const response = await fetch(`/api/v1/tenants/advanced/${id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('token')}`,
-    },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to update tenant');
+  try {
+    const response = await apiClient.put(`/api/v1/tenants/advanced/${id}`, data);
+    return response.data || { success: true };
+  } catch (error: any) {
+    throw new Error(error.response?.data?.error || 'Failed to update tenant');
   }
-  return response.json();
 }
 
 const DEFAULT_COLORS = [
