@@ -43,18 +43,22 @@ export const initializeRedis = async (): Promise<Redis> => {
     return redisClient;
   }
 
+  const redisUrl = process.env.REDIS_URL;
   const config = getRedisConfig();
   
   // If REDIS_URL is provided, use it directly
-  if (process.env.REDIS_URL) {
-    redisClient = new Redis(process.env.REDIS_URL, {
-      retryStrategy: config.retryStrategy,
-      maxRetriesPerRequest: config.maxRetriesPerRequest,
-      enableReadyCheck: config.enableReadyCheck,
-      lazyConnect: config.lazyConnect,
-      tls: process.env.REDIS_URL.startsWith('rediss://') ? {} : undefined,
+  if (redisUrl) {
+    console.log('🔌 Connecting to Redis via REDIS_URL (Upstash)...');
+    const usesTls = redisUrl.startsWith('rediss://');
+    
+    redisClient = new Redis(redisUrl, {
+      maxRetriesPerRequest: 3,
+      enableReadyCheck: true,
+      lazyConnect: false, // Connect immediately
+      tls: usesTls ? { rejectUnauthorized: false } : undefined,
     });
   } else {
+    console.log('🔌 Connecting to Redis via HOST/PORT...');
     redisClient = new Redis(config as any);
   }
 
@@ -88,9 +92,29 @@ export const initializeRedis = async (): Promise<Redis> => {
   });
 
   try {
-    await redisClient.connect();
+    // Wait for ready state with timeout
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Redis connection timeout (5s)'));
+      }, 5000);
+
+      if (redisClient!.status === 'ready') {
+        clearTimeout(timeout);
+        resolve();
+      } else {
+        redisClient!.once('ready', () => {
+          clearTimeout(timeout);
+          resolve();
+        });
+        redisClient!.once('error', (err) => {
+          clearTimeout(timeout);
+          reject(err);
+        });
+      }
+    });
+
     await redisClient.ping();
-    console.log('✅ Redis connection established');
+    console.log('✅ Redis connection established successfully');
   } catch (error) {
     console.error('❌ Failed to connect to Redis:', error);
     console.warn('⚠️ Continuing without Redis - caching disabled');

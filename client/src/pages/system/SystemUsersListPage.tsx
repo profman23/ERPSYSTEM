@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Plus, Search, Eye, Edit, Shield, User, Building2, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,14 +6,29 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useAllUsers, useTenants } from '@/hooks/useHierarchy';
 import { LoadingState } from '@/components/ui/loading-state';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { VirtualizedTable, Column } from '@/components/ui/VirtualizedTable';
 
 type UserTypeSelection = 'system' | 'tenant_admin' | null;
+
+interface UserRecord {
+  id: string;
+  email: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  code?: string;
+  phone?: string;
+  avatarUrl?: string;
+  accessScope?: string;
+  status?: string;
+  roleCount?: number;
+  tenantId?: string;
+}
 
 const getScopeStyle = (scope: string) => {
   switch (scope) {
@@ -129,6 +144,130 @@ export default function SystemUsersListPage() {
     setShowUserTypeSelector(false);
   };
 
+  const handleRowClick = useCallback((user: UserRecord) => {
+    navigate(`/system/users/${user.id}`);
+  }, [navigate]);
+
+  const userColumns: Column<UserRecord>[] = useMemo(() => [
+    {
+      key: 'name' as keyof UserRecord,
+      header: 'User',
+      width: 280,
+      render: (_: unknown, user: UserRecord) => (
+        <div className="flex items-center gap-3">
+          {user.avatarUrl ? (
+            <img src={user.avatarUrl} alt={getUserDisplayName(user)} className="w-9 h-9 rounded-full object-cover" />
+          ) : (
+            <div 
+              className="w-9 h-9 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: 'color-mix(in srgb, var(--sys-accent) 20%, transparent)' }}
+            >
+              <User className="w-4 h-4" style={{ color: 'var(--sys-accent)' }} />
+            </div>
+          )}
+          <div>
+            <p className="font-medium" style={{ color: 'var(--sys-text)' }}>{getUserDisplayName(user)}</p>
+            <p className="text-xs" style={{ color: 'var(--sys-text-muted)' }}>{user.email}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'code' as keyof UserRecord,
+      header: 'Code',
+      width: 120,
+      render: (value: unknown) => value ? (
+        <code 
+          className="text-sm px-2 py-1 rounded"
+          style={{ backgroundColor: 'var(--sys-bg)', color: 'var(--sys-text-secondary)' }}
+        >
+          {String(value)}
+        </code>
+      ) : (
+        <span style={{ color: 'var(--sys-text-muted)' }}>-</span>
+      ),
+    },
+    {
+      key: 'accessScope' as keyof UserRecord,
+      header: 'Scope',
+      width: 100,
+      render: (value: unknown) => (
+        <Badge className="border" style={getScopeStyle(String(value || 'branch'))}>
+          {String(value || 'branch')}
+        </Badge>
+      ),
+    },
+    {
+      key: 'phone' as keyof UserRecord,
+      header: 'Contact',
+      width: 130,
+      render: (value: unknown) => value ? (
+        <span style={{ color: 'var(--sys-text-secondary)' }}>{String(value)}</span>
+      ) : (
+        <span style={{ color: 'var(--sys-text-muted)' }}>-</span>
+      ),
+    },
+    {
+      key: 'roleCount' as keyof UserRecord,
+      header: 'Role',
+      width: 100,
+      render: (value: unknown) => value ? (
+        <span className="flex items-center gap-1" style={{ color: 'var(--sys-text-secondary)' }}>
+          <Shield className="w-3 h-3" />
+          {Number(value)} role{Number(value) !== 1 ? 's' : ''}
+        </span>
+      ) : (
+        <span style={{ color: 'var(--sys-text-muted)' }}>No roles</span>
+      ),
+    },
+    {
+      key: 'status' as keyof UserRecord,
+      header: 'Status',
+      width: 100,
+      render: (value: unknown) => (
+        <Badge className="border" style={getStatusStyle(String(value || 'active'))}>
+          {String(value || 'active')}
+        </Badge>
+      ),
+    },
+    {
+      key: 'id' as keyof UserRecord,
+      header: 'Actions',
+      width: 130,
+      render: (_: unknown, user: UserRecord) => (
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => { e.stopPropagation(); navigate(`/system/users/${user.id}`); }}
+            title="View"
+            style={{ color: 'var(--sys-text-secondary)' }}
+          >
+            <Eye className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => { e.stopPropagation(); navigate(`/system/users/${user.id}/edit`); }}
+            title="Edit"
+            style={{ color: 'var(--sys-text-secondary)' }}
+          >
+            <Edit className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => { e.stopPropagation(); navigate(`/system/users/${user.id}/roles`); }}
+            title="Manage Roles"
+            style={{ color: 'var(--sys-text-secondary)' }}
+          >
+            <Shield className="w-4 h-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ], [navigate]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -225,117 +364,14 @@ export default function SystemUsersListPage() {
               } : undefined}
             />
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow style={{ borderColor: 'var(--sys-border)' }}>
-                    <TableHead style={{ color: 'var(--sys-text-secondary)' }}>User</TableHead>
-                    <TableHead style={{ color: 'var(--sys-text-secondary)' }}>Code</TableHead>
-                    <TableHead style={{ color: 'var(--sys-text-secondary)' }}>Scope</TableHead>
-                    <TableHead style={{ color: 'var(--sys-text-secondary)' }}>Contact</TableHead>
-                    <TableHead style={{ color: 'var(--sys-text-secondary)' }}>Role</TableHead>
-                    <TableHead className="text-center" style={{ color: 'var(--sys-text-secondary)' }}>Status</TableHead>
-                    <TableHead className="text-right" style={{ color: 'var(--sys-text-secondary)' }}>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((u) => (
-                    <TableRow 
-                      key={u.id} 
-                      className="transition-colors"
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--sys-surface-hover)'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                      style={{ borderColor: 'var(--sys-border)' }}
-                    >
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-3">
-                          {u.avatarUrl ? (
-                            <img src={u.avatarUrl} alt={getUserDisplayName(u)} className="w-9 h-9 rounded-full object-cover" />
-                          ) : (
-                            <div 
-                              className="w-9 h-9 rounded-full flex items-center justify-center"
-                              style={{ backgroundColor: 'color-mix(in srgb, var(--sys-accent) 20%, transparent)' }}
-                            >
-                              <User className="w-4 h-4" style={{ color: 'var(--sys-accent)' }} />
-                            </div>
-                          )}
-                          <div>
-                            <p className="font-medium" style={{ color: 'var(--sys-text)' }}>{getUserDisplayName(u)}</p>
-                            <p className="text-xs" style={{ color: 'var(--sys-text-muted)' }}>{u.email}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {u.code ? (
-                          <code 
-                            className="text-sm px-2 py-1 rounded"
-                            style={{ backgroundColor: 'var(--sys-bg)', color: 'var(--sys-text-secondary)' }}
-                          >
-                            {u.code}
-                          </code>
-                        ) : (
-                          <span style={{ color: 'var(--sys-text-muted)' }}>-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className="border" style={getScopeStyle(u.accessScope)}>
-                          {u.accessScope || 'branch'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell style={{ color: 'var(--sys-text-secondary)' }}>
-                        {u.phone || <span style={{ color: 'var(--sys-text-muted)' }}>-</span>}
-                      </TableCell>
-                      <TableCell>
-                        {u.roleCount ? (
-                          <span className="flex items-center gap-1" style={{ color: 'var(--sys-text-secondary)' }}>
-                            <Shield className="w-3 h-3" />
-                            {u.roleCount} role{u.roleCount !== 1 ? 's' : ''}
-                          </span>
-                        ) : (
-                          <span style={{ color: 'var(--sys-text-muted)' }}>No roles</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge className="border" style={getStatusStyle(u.status)}>
-                          {u.status || 'active'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/system/users/${u.id}`)}
-                            title="View"
-                            style={{ color: 'var(--sys-text-secondary)' }}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/system/users/${u.id}/edit`)}
-                            title="Edit"
-                            style={{ color: 'var(--sys-text-secondary)' }}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/system/users/${u.id}/roles`)}
-                            title="Manage Roles"
-                            style={{ color: 'var(--sys-text-secondary)' }}
-                          >
-                            <Shield className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <VirtualizedTable<UserRecord>
+              columns={userColumns}
+              data={filteredUsers as UserRecord[]}
+              height={500}
+              rowHeight={56}
+              onRowClick={handleRowClick}
+              emptyMessage="No users found"
+            />
           )}
         </CardContent>
       </Card>

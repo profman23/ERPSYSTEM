@@ -1,16 +1,28 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, Plus, Search, Eye, Edit } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useTenants } from '@/hooks/useHierarchy';
 import { LoadingState } from '@/components/ui/loading-state';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { TenantFormModal } from '@/components/tenants';
+import { VirtualizedTable, Column } from '@/components/ui/VirtualizedTable';
+
+interface TenantRecord {
+  id: string;
+  name: string;
+  code: string;
+  contactEmail?: string;
+  country?: string;
+  status?: string;
+  subscriptionPlan?: string;
+  primaryColor?: string;
+  createdAt?: string;
+}
 
 const getStatusStyle = (status: string) => {
   switch (status) {
@@ -78,6 +90,115 @@ export default function SystemTenantsListPage() {
       day: 'numeric',
     });
   };
+
+  const handleRowClick = useCallback((tenant: TenantRecord) => {
+    navigate(`/system/tenants/${tenant.id}`);
+  }, [navigate]);
+
+  const tenantColumns: Column<TenantRecord>[] = useMemo(() => [
+    {
+      key: 'name' as keyof TenantRecord,
+      header: 'Organization',
+      width: 250,
+      render: (_: unknown, tenant: TenantRecord) => (
+        <div className="flex items-center gap-3">
+          <div 
+            className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold"
+            style={{ 
+              backgroundColor: tenant.primaryColor || 'var(--sys-accent)',
+              color: 'var(--color-text-on-accent)'
+            }}
+          >
+            {tenant.name.charAt(0)}
+          </div>
+          <div>
+            <p className="font-medium" style={{ color: 'var(--sys-text)' }}>{tenant.name}</p>
+            <p className="text-xs" style={{ color: 'var(--sys-text-muted)' }}>{tenant.country || 'Global'}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'code' as keyof TenantRecord,
+      header: 'Code',
+      width: 150,
+      render: (value: unknown) => (
+        <code 
+          className="text-sm px-2 py-1 rounded"
+          style={{ backgroundColor: 'var(--sys-bg)', color: 'var(--sys-text-secondary)' }}
+        >
+          {String(value)}
+        </code>
+      ),
+    },
+    {
+      key: 'contactEmail' as keyof TenantRecord,
+      header: 'Contact',
+      width: 200,
+      render: (value: unknown) => value ? (
+        <span style={{ color: 'var(--sys-text-secondary)' }}>{String(value)}</span>
+      ) : (
+        <span style={{ color: 'var(--sys-text-muted)' }}>-</span>
+      ),
+    },
+    {
+      key: 'subscriptionPlan' as keyof TenantRecord,
+      header: 'Plan',
+      width: 120,
+      render: (value: unknown) => (
+        <Badge className="border" style={getPlanStyle(String(value || 'standard'))}>
+          {String(value || 'standard')}
+        </Badge>
+      ),
+    },
+    {
+      key: 'status' as keyof TenantRecord,
+      header: 'Status',
+      width: 100,
+      render: (value: unknown) => (
+        <Badge className="border" style={getStatusStyle(String(value || 'active'))}>
+          {String(value || 'active')}
+        </Badge>
+      ),
+    },
+    {
+      key: 'createdAt' as keyof TenantRecord,
+      header: 'Created',
+      width: 120,
+      render: (value: unknown) => (
+        <span style={{ color: 'var(--sys-text-muted)' }}>
+          {value ? formatDate(String(value)) : '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'id' as keyof TenantRecord,
+      header: 'Actions',
+      width: 100,
+      render: (_: unknown, tenant: TenantRecord) => (
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => { e.stopPropagation(); navigate(`/system/tenants/${tenant.id}`); }}
+            title="View"
+            style={{ color: 'var(--sys-text-secondary)' }}
+          >
+            <Eye className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => { e.stopPropagation(); handleEditClick(tenant); }}
+            title="Edit"
+            style={{ color: 'var(--sys-text-secondary)' }}
+          >
+            <Edit className="w-4 h-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ], [navigate, handleEditClick]);
 
   return (
     <div className="space-y-6">
@@ -155,102 +276,14 @@ export default function SystemTenantsListPage() {
               } : undefined}
             />
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow style={{ borderColor: 'var(--sys-border)' }}>
-                    <TableHead style={{ color: 'var(--sys-text-secondary)' }}>Organization</TableHead>
-                    <TableHead style={{ color: 'var(--sys-text-secondary)' }}>Code</TableHead>
-                    <TableHead style={{ color: 'var(--sys-text-secondary)' }}>Contact</TableHead>
-                    <TableHead style={{ color: 'var(--sys-text-secondary)' }}>Plan</TableHead>
-                    <TableHead className="text-center" style={{ color: 'var(--sys-text-secondary)' }}>Status</TableHead>
-                    <TableHead style={{ color: 'var(--sys-text-secondary)' }}>Created</TableHead>
-                    <TableHead className="text-right" style={{ color: 'var(--sys-text-secondary)' }}>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTenants.map((tenant) => (
-                    <TableRow 
-                      key={tenant.id} 
-                      className="transition-colors"
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--sys-surface-hover)'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                      style={{ borderColor: 'var(--sys-border)' }}
-                    >
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-3">
-                          <div 
-                            className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold"
-                            style={{ 
-                              backgroundColor: tenant.primaryColor || 'var(--sys-accent)',
-                              color: 'var(--color-text-on-accent)'
-                            }}
-                          >
-                            {tenant.name.charAt(0)}
-                          </div>
-                          <div>
-                            <p className="font-medium" style={{ color: 'var(--sys-text)' }}>{tenant.name}</p>
-                            <p className="text-xs" style={{ color: 'var(--sys-text-muted)' }}>{tenant.country || 'Global'}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <code 
-                          className="text-sm px-2 py-1 rounded"
-                          style={{ backgroundColor: 'var(--sys-bg)', color: 'var(--sys-text-secondary)' }}
-                        >
-                          {tenant.code}
-                        </code>
-                      </TableCell>
-                      <TableCell style={{ color: 'var(--sys-text-secondary)' }}>
-                        {tenant.contactEmail || <span style={{ color: 'var(--sys-text-muted)' }}>-</span>}
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          className="border"
-                          style={getPlanStyle(tenant.subscriptionPlan)}
-                        >
-                          {tenant.subscriptionPlan || 'standard'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge 
-                          className="border"
-                          style={getStatusStyle(tenant.status)}
-                        >
-                          {tenant.status || 'active'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell style={{ color: 'var(--sys-text-muted)' }}>
-                        {tenant.createdAt ? formatDate(tenant.createdAt) : '-'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/system/tenants/${tenant.id}`)}
-                            title="View"
-                            style={{ color: 'var(--sys-text-secondary)' }}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditClick(tenant)}
-                            title="Edit"
-                            style={{ color: 'var(--sys-text-secondary)' }}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <VirtualizedTable<TenantRecord>
+              columns={tenantColumns}
+              data={filteredTenants as TenantRecord[]}
+              height={500}
+              rowHeight={56}
+              onRowClick={handleRowClick}
+              emptyMessage="No tenants found"
+            />
           )}
         </CardContent>
       </Card>

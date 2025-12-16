@@ -161,6 +161,13 @@ Comprehensive observability for AGI decision-making:
 -   **ScopeService resolveTenantId():** Derives tenant from DB when RequestContext unavailable
 -   **Background Job Compatibility:** All cache operations work identically in HTTP and BullMQ contexts
 
+#### Infrastructure Optimization (Latest)
+-   **Redis Cloud Support:** REDIS_URL with TLS (rediss://) for Upstash, fallback to individual env vars
+-   **Database Connection Pool:** max=100 connections, idle_timeout=30s, connect_timeout=10s
+-   **Socket.IO Redis Adapter:** Horizontal scaling ready with proper ioredis connection handling
+-   **Slow Query Logging:** 100ms threshold with automatic performance tracking
+-   **VirtualizedTable Pages:** SystemUsersListPage and SystemTenantsListPage use react-window for efficient rendering
+
 #### Key Files
 -   `server/src/core/cache/cacheService.ts` - AGI-ready tiered cache with context preservation
 -   `server/src/core/cache/types.ts` - Cache types with explicitTenantId support

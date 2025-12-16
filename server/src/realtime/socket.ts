@@ -52,7 +52,24 @@ export const initializeSocket = async (httpServer: HTTPServer) => {
       pubClient.on('error', (err) => logger.warn('Redis pub client error:', err.message));
       subClient.on('error', (err) => logger.warn('Redis sub client error:', err.message));
 
-      await Promise.all([pubClient.connect(), subClient.connect()]);
+      await Promise.all([
+        new Promise<void>((resolve, reject) => {
+          if (pubClient.status === 'ready') {
+            resolve();
+          } else {
+            pubClient.once('ready', () => resolve());
+            pubClient.once('error', (err) => reject(err));
+          }
+        }),
+        new Promise<void>((resolve, reject) => {
+          if (subClient.status === 'ready') {
+            resolve();
+          } else {
+            subClient.once('ready', () => resolve());
+            subClient.once('error', (err) => reject(err));
+          }
+        }),
+      ]);
 
       io.adapter(createAdapter(pubClient, subClient));
       logger.info('✅ Socket.IO Redis adapter enabled (horizontal scaling ready)');
