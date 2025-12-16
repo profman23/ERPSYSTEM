@@ -1,0 +1,392 @@
+# CRITICAL: Frontend Components Not Fetching/Displaying Data
+
+## Problem Verification
+
+Backend API routes are fixed and working, but the frontend components are still not displaying data:
+
+1. **SubscriptionPlanSelector** - No plan cards visible
+2. **CountryTimezoneSelector** - No country options in dropdown
+
+---
+
+## 🔍 Root Cause Analysis Required
+
+### Check Component Implementation
+
+**File 1: `client/src/components/tenants/SubscriptionPlanSelector.tsx`**
+
+Verify:
+- [ ] Does component exist?
+- [ ] Is it fetching data from API (`/api/v1/tenants/meta/subscription-plans`)?
+- [ ] OR is data hardcoded in the component?
+- [ ] Is component returning JSX or null?
+- [ ] Are there console errors?
+
+**File 2: `client/src/components/tenants/CountryTimezoneSelector.tsx`**
+
+Verify:
+- [ ] Does component exist?
+- [ ] Is it fetching data from API (`/api/v1/tenants/meta/countries`)?
+- [ ] OR is data hardcoded in the component?
+- [ ] Is component returning JSX or null?
+- [ ] Are there console errors?
+
+**File 3: `client/src/components/tenants/TenantFormModal.tsx`**
+
+Verify:
+- [ ] Are components imported correctly?
+- [ ] Are components being rendered (not commented out)?
+- [ ] Are props being passed correctly?
+- [ ] Is there conditional rendering hiding them?
+
+---
+
+## 🎯 Solution Requirements
+
+### Option A: If Components Are Fetching from API (Dynamic)
+
+**Issue:** API calls might be failing due to:
+- Missing authentication token
+- CORS errors
+- Wrong API endpoint
+- Incorrect response parsing
+
+**Fix:**
+1. Ensure authentication token is included in requests
+2. Add error handling and loading states
+3. Log API responses to console
+4. Add fallback data if API fails
+
+**Expected behavior:**
+```tsx
+const { data: plans, isLoading, error } = useQuery({
+  queryKey: ['subscription-plans'],
+  queryFn: async () => {
+    const res = await fetch('/api/v1/tenants/meta/subscription-plans', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    if (!res.ok) throw new Error('Failed to fetch plans');
+    return res.json();
+  },
+});
+
+if (isLoading) return Loading plans...;
+if (error) return Error loading plans;
+if (!plans?.length) return No plans available;
+```
+
+---
+
+### Option B: If Components Use Hardcoded Data (Static)
+
+**This is the RECOMMENDED approach for now.**
+
+**Why:**
+- Subscription plans rarely change
+- Countries list is static
+- Faster rendering (no API call)
+- No authentication issues
+- More reliable
+
+**Implementation:**
+
+**File: `client/src/components/tenants/SubscriptionPlanSelector.tsx`**
+```tsx
+import { useState } from 'react';
+import { Label } from '@/components/ui/label';
+
+interface Plan {
+  id: string;
+  name: string;
+  features: string[];
+  price: string;
+  users: string;
+  businessLines: string;
+  branches: string;
+}
+
+const SUBSCRIPTION_PLANS: Plan[] = [
+  {
+    id: 'trial',
+    name: 'Trial',
+    features: ['1 User', '1 Business Line', '1 Branch', '7 days free trial'],
+    price: 'Free',
+    users: '1',
+    businessLines: '1',
+    branches: '1',
+  },
+  {
+    id: 'standard',
+    name: 'Standard',
+    features: ['3 Users', '1 Business Line', '1 Branch', 'Monthly billing'],
+    price: '$49/month',
+    users: '3',
+    businessLines: '1',
+    branches: '1',
+  },
+  {
+    id: 'professional',
+    name: 'Professional',
+    features: ['6 Users', '1 Business Line', 'Unlimited Branches', 'Monthly billing'],
+    price: '$99/month',
+    users: '6',
+    businessLines: '1',
+    branches: 'Unlimited',
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    features: ['Unlimited Users', '2 Business Lines', 'Unlimited Branches', 'Custom pricing'],
+    price: 'Contact us',
+    users: 'Unlimited',
+    businessLines: '2',
+    branches: 'Unlimited',
+  },
+];
+
+interface SubscriptionPlanSelectorProps {
+  value: string;
+  onChange: (plan: string) => void;
+  error?: string;
+}
+
+export function SubscriptionPlanSelector({ value, onChange, error }: SubscriptionPlanSelectorProps) {
+  return (
+    
+      
+        Subscription Plan *
+      
+      
+        {SUBSCRIPTION_PLANS.map((plan) => (
+          <button
+            key={plan.id}
+            type="button"
+            onClick={() => onChange(plan.id)}
+            className={`
+              p-4 rounded-lg border-2 text-left transition-all hover:shadow-md
+              ${value === plan.id 
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md' 
+                : 'border-gray-200 hover:border-gray-300'
+              }
+            `}
+            style={{
+              borderColor: value === plan.id ? 'var(--sys-accent)' : 'var(--sys-border)',
+              backgroundColor: value === plan.id ? 'var(--sys-accent-bg)' : 'transparent',
+            }}
+          >
+            
+              
+                {plan.name}
+              
+              {value === plan.id && (
+                ✓
+              )}
+            
+            
+              {plan.price}
+            
+            
+              {plan.features.map((feature, idx) => (
+                
+                  ✓
+                  {feature}
+                
+              ))}
+            
+          
+        ))}
+      
+      {error && (
+        
+          {error}
+        
+      )}
+    
+  );
+}
+```
+
+---
+
+**File: `client/src/components/tenants/CountryTimezoneSelector.tsx`**
+```tsx
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+
+interface Country {
+  code: string;
+  name: string;
+  emoji: string;
+  timezone: string;
+}
+
+const COUNTRIES: Country[] = [
+  { code: 'SA', name: 'Saudi Arabia', emoji: '🇸🇦', timezone: 'Asia/Riyadh' },
+  { code: 'EG', name: 'Egypt', emoji: '🇪🇬', timezone: 'Africa/Cairo' },
+  { code: 'AE', name: 'UAE', emoji: '🇦🇪', timezone: 'Asia/Dubai' },
+  { code: 'KW', name: 'Kuwait', emoji: '🇰🇼', timezone: 'Asia/Kuwait' },
+  { code: 'QA', name: 'Qatar', emoji: '🇶🇦', timezone: 'Asia/Qatar' },
+  { code: 'BH', name: 'Bahrain', emoji: '🇧🇭', timezone: 'Asia/Bahrain' },
+  { code: 'OM', name: 'Oman', emoji: '🇴🇲', timezone: 'Asia/Muscat' },
+  { code: 'JO', name: 'Jordan', emoji: '🇯🇴', timezone: 'Asia/Amman' },
+  { code: 'LB', name: 'Lebanon', emoji: '🇱🇧', timezone: 'Asia/Beirut' },
+  { code: 'IQ', name: 'Iraq', emoji: '🇮🇶', timezone: 'Asia/Baghdad' },
+  { code: 'PS', name: 'Palestine', emoji: '🇵🇸', timezone: 'Asia/Gaza' },
+  { code: 'SY', name: 'Syria', emoji: '🇸🇾', timezone: 'Asia/Damascus' },
+  { code: 'YE', name: 'Yemen', emoji: '🇾🇪', timezone: 'Asia/Aden' },
+];
+
+interface CountryTimezoneSelectorProps {
+  value: string;
+  onChange: (countryCode: string, timezone: string) => void;
+  error?: string;
+}
+
+export function CountryTimezoneSelector({ value, onChange, error }: CountryTimezoneSelectorProps) {
+  const selectedCountry = COUNTRIES.find(c => c.code === value);
+
+  return (
+    
+      
+        
+          Country *
+        
+        <Select 
+          value={value}
+          onValueChange={(code) => {
+            const country = COUNTRIES.find(c => c.code === code);
+            if (country) {
+              onChange(country.code, country.timezone);
+            }
+          }}
+        >
+          
+            
+          
+          
+            {COUNTRIES.map((country) => (
+              
+                
+                  {country.emoji}
+                  {country.name}
+                
+              
+            ))}
+          
+        
+        {error && (
+          
+            {error}
+          
+        )}
+      
+
+      
+        
+          Timezone
+        
+        
+      
+    
+  );
+}
+```
+
+---
+
+### Verify Integration in TenantFormModal
+
+**File: `client/src/components/tenants/TenantFormModal.tsx`**
+
+Ensure components are rendered:
+```tsx
+// At top of file
+import { SubscriptionPlanSelector } from './SubscriptionPlanSelector';
+import { CountryTimezoneSelector } from './CountryTimezoneSelector';
+
+// Inside :
+<SubscriptionPlanSelector
+  value={subscriptionPlan}
+  onChange={(plan) => setValue('subscriptionPlan', plan)}
+  error={errors.subscriptionPlan?.message}
+/>
+
+<CountryTimezoneSelector
+  value={countryCode}
+  onChange={(code, tz) => {
+    setValue('countryCode', code);
+    setValue('timezone', tz);
+  }}
+  error={errors.countryCode?.message}
+/>
+```
+
+---
+
+## 🧪 Testing Steps
+
+After implementation:
+
+1. **Open TenantFormModal**
+```
+   Navigate to: /system/tenants
+   Click: "Add Tenant" button
+```
+
+2. **Verify SubscriptionPlanSelector**
+   - [ ] 4 plan cards visible (Trial, Standard, Professional, Enterprise)
+   - [ ] Each card shows features list
+   - [ ] Clicking a card highlights it with blue border
+   - [ ] Selected plan value updates in form
+
+3. **Verify CountryTimezoneSelector**
+   - [ ] Country dropdown visible
+   - [ ] Click dropdown shows 13 countries with flags
+   - [ ] Selecting country auto-fills timezone
+   - [ ] Timezone field is read-only (grayed out)
+
+4. **Submit Form**
+   - [ ] Fill all required fields
+   - [ ] Click "Create Tenant"
+   - [ ] Check Network tab: POST request includes subscriptionPlan and countryCode
+   - [ ] Tenant created successfully
+
+---
+
+## ✅ Acceptance Criteria
+
+### Visual Confirmation:
+✅ TenantFormModal displays properly
+✅ 4 subscription plan cards visible (2x2 grid)
+✅ Country dropdown shows 13 options with flag emojis
+✅ Timezone field auto-updates when country selected
+✅ Selected plan has visual highlight
+✅ No console errors
+✅ No "undefined" or "null" displayed
+
+### Functional Confirmation:
+✅ Clicking plan card selects it
+✅ Form state updates with selected plan
+✅ Country selection updates timezone
+✅ Form submission includes correct values
+✅ Backend receives subscriptionPlan and countryCode
+
+---
+
+## 🎯 Expected Outcome
+
+After this fix:
+- System Admin opens "Add Tenant" modal
+- Sees 4 colorful subscription plan cards
+- Sees country dropdown with 13 Middle East countries
+- Can select plan and country
+- Can successfully create tenant

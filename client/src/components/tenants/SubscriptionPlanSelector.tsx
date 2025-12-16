@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Label } from '@/components/ui/label';
 import { Check, Users, Building2, Briefcase, HardDrive, Zap, Crown } from 'lucide-react';
+import { apiClient } from '@/lib/api';
 
 interface SubscriptionPlan {
   code: string;
@@ -21,14 +22,8 @@ interface SubscriptionPlanSelectorProps {
 }
 
 async function fetchSubscriptionPlans(): Promise<SubscriptionPlan[]> {
-  const response = await fetch('/api/v1/tenants/meta/subscription-plans', {
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`,
-    },
-  });
-  if (!response.ok) throw new Error('Failed to fetch subscription plans');
-  const data = await response.json();
-  return data.data;
+  const response = await apiClient.get('/api/v1/tenants/meta/subscription-plans');
+  return response.data.data;
 }
 
 const planIcons: Record<string, typeof Crown> = {
@@ -56,16 +51,17 @@ export function SubscriptionPlanSelector({
   error,
   disabled = false,
 }: SubscriptionPlanSelectorProps) {
-  const { data: plans = [], isLoading } = useQuery({
+  const { data: plans = [], isLoading, isError } = useQuery({
     queryKey: ['subscription-plans'],
     queryFn: fetchSubscriptionPlans,
     staleTime: 1000 * 60 * 60,
+    retry: 2,
   });
 
   if (isLoading) {
     return (
       <div className="space-y-2">
-        <Label style={{ color: 'var(--sys-text)' }}>Subscription Plan</Label>
+        <Label style={{ color: 'var(--sys-text)' }}>Subscription Plan *</Label>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {[1, 2, 3, 4].map(i => (
             <div
@@ -79,9 +75,27 @@ export function SubscriptionPlanSelector({
     );
   }
 
+  if (isError || plans.length === 0) {
+    return (
+      <div className="space-y-2">
+        <Label style={{ color: 'var(--sys-text)' }}>Subscription Plan *</Label>
+        <div 
+          className="p-4 rounded-lg border text-sm"
+          style={{ 
+            backgroundColor: 'var(--badge-warning-bg)', 
+            borderColor: 'var(--badge-warning-border)',
+            color: 'var(--color-text-warning)'
+          }}
+        >
+          Unable to load subscription plans. Please try again.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
-      <Label style={{ color: 'var(--sys-text)' }}>Subscription Plan</Label>
+      <Label style={{ color: 'var(--sys-text)' }}>Subscription Plan *</Label>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         {plans.map(plan => {
           const isSelected = value === plan.code;
