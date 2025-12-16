@@ -38,3 +38,8 @@ externalPort = 80
 [nix]
 channel = "stable-25_05"
 packages = ["jq"]
+
+[userenv]
+
+[userenv.shared]
+REDIS_URL = "rediss://default:AV3MAAIncDE5MjM5NjYzZDdjMzM0OTU1YWJhYmE0ZTFjOTY3NTRiN3AxMjQwMTI@polished-deer-24012.upstash.io:6379"

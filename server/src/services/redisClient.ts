@@ -2,21 +2,40 @@ import Redis from 'ioredis';
 
 let redisClient: Redis | null = null;
 
-const REDIS_CONFIG = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379', 10),
-  password: process.env.REDIS_PASSWORD,
-  retryStrategy: (times: number) => {
-    if (times > 3) {
-      return null;
-    }
-    const delay = Math.min(times * 100, 1000);
-    return delay;
-  },
-  maxRetriesPerRequest: 3,
-  enableReadyCheck: true,
-  lazyConnect: true,
-  reconnectOnError: () => false,
+const getRedisConfig = () => {
+  // Prefer REDIS_URL for single connection string (Upstash, etc.)
+  if (process.env.REDIS_URL) {
+    return {
+      connectionString: process.env.REDIS_URL,
+      retryStrategy: (times: number) => {
+        if (times > 3) {
+          return null;
+        }
+        return Math.min(times * 100, 1000);
+      },
+      maxRetriesPerRequest: 3,
+      enableReadyCheck: true,
+      lazyConnect: true,
+      reconnectOnError: () => false,
+    };
+  }
+
+  // Fallback to individual environment variables
+  return {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379', 10),
+    password: process.env.REDIS_PASSWORD,
+    retryStrategy: (times: number) => {
+      if (times > 3) {
+        return null;
+      }
+      return Math.min(times * 100, 1000);
+    },
+    maxRetriesPerRequest: 3,
+    enableReadyCheck: true,
+    lazyConnect: true,
+    reconnectOnError: () => false,
+  };
 };
 
 export const initializeRedis = async (): Promise<Redis> => {
@@ -24,7 +43,20 @@ export const initializeRedis = async (): Promise<Redis> => {
     return redisClient;
   }
 
-  redisClient = new Redis(REDIS_CONFIG);
+  const config = getRedisConfig();
+  
+  // If REDIS_URL is provided, use it directly
+  if (process.env.REDIS_URL) {
+    redisClient = new Redis(process.env.REDIS_URL, {
+      retryStrategy: config.retryStrategy,
+      maxRetriesPerRequest: config.maxRetriesPerRequest,
+      enableReadyCheck: config.enableReadyCheck,
+      lazyConnect: config.lazyConnect,
+      tls: process.env.REDIS_URL.startsWith('rediss://') ? {} : undefined,
+    });
+  } else {
+    redisClient = new Redis(config as any);
+  }
 
   let connectionAttempted = false;
 
