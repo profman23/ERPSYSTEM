@@ -40,47 +40,7 @@ router.get(
   getCodeGenerationMetrics
 );
 
-// All tenant management routes require system scope
-router.post(
-  '/',
-  routeMetadata(RoutePatterns.systemOnly('Create tenant')),
-  authMiddleware,
-  enforceRouteMetadata(),
-  createTenant
-);
-
-router.get(
-  '/',
-  routeMetadata(RoutePatterns.systemOnly('Get all tenants')),
-  authMiddleware,
-  enforceRouteMetadata(),
-  getAllTenants
-);
-
-router.get(
-  '/:id',
-  routeMetadata(RoutePatterns.systemOnly('Get tenant by ID')),
-  authMiddleware,
-  enforceRouteMetadata(),
-  getTenantById
-);
-
-router.put(
-  '/:id',
-  routeMetadata(RoutePatterns.systemOnly('Update tenant')),
-  authMiddleware,
-  enforceRouteMetadata(),
-  updateTenant
-);
-
-router.delete(
-  '/:id',
-  routeMetadata(RoutePatterns.systemOnly('Delete tenant')),
-  authMiddleware,
-  enforceRouteMetadata(),
-  deleteTenant
-);
-
+// Meta routes MUST be registered BEFORE /:id routes to avoid route matching conflicts
 router.get(
   '/meta/generate-code',
   routeMetadata(RoutePatterns.systemOnly('Generate tenant code')),
@@ -105,6 +65,7 @@ router.get(
   getCountries
 );
 
+// Advanced routes MUST be before /:id routes
 router.post(
   '/advanced',
   routeMetadata(RoutePatterns.systemOnly('Create tenant with advanced setup')),
@@ -119,6 +80,48 @@ router.put(
   authMiddleware,
   enforceRouteMetadata(),
   updateTenantAdvanced
+);
+
+// All tenant management routes require system scope
+router.post(
+  '/',
+  routeMetadata(RoutePatterns.systemOnly('Create tenant')),
+  authMiddleware,
+  enforceRouteMetadata(),
+  createTenant
+);
+
+router.get(
+  '/',
+  routeMetadata(RoutePatterns.systemOnly('Get all tenants')),
+  authMiddleware,
+  enforceRouteMetadata(),
+  getAllTenants
+);
+
+// IMPORTANT: /:id routes must come AFTER /meta/* and /advanced/* routes
+router.get(
+  '/:id',
+  routeMetadata(RoutePatterns.systemOnly('Get tenant by ID')),
+  authMiddleware,
+  enforceRouteMetadata(),
+  getTenantById
+);
+
+router.put(
+  '/:id',
+  routeMetadata(RoutePatterns.systemOnly('Update tenant')),
+  authMiddleware,
+  enforceRouteMetadata(),
+  updateTenant
+);
+
+router.delete(
+  '/:id',
+  routeMetadata(RoutePatterns.systemOnly('Delete tenant')),
+  authMiddleware,
+  enforceRouteMetadata(),
+  deleteTenant
 );
 
 export default router;
