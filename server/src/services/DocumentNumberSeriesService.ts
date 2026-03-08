@@ -111,7 +111,7 @@ export class DocumentNumberSeriesService extends BaseService {
    * @param branchSequence - Order of this branch (1st=1, 2nd=2, etc.)
    */
   static async seedForBranch(
-    tx: typeof db,
+    tx: typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0],
     tenantId: string,
     branchId: string,
     branchSequence: number,

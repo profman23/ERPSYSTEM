@@ -245,6 +245,7 @@ export class TenantSetupService {
           buildingNumber: '1',
           vatRegistrationNumber: 'PENDING',
           commercialRegistrationNumber: 'PENDING',
+          isActive: true,
         });
         contextLogger.info('Default branch created', {
           tenantId: newTenant.id,

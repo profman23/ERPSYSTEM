@@ -22,6 +22,7 @@ export interface DPFScreenDefinition {
   route?: string;
   description?: string;
   descriptionAr?: string;
+  sortOrder?: string;
 }
 
 /**

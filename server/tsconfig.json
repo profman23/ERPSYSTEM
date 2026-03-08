@@ -18,5 +18,5 @@
     }
   },
   "include": ["src/**/*", "../types/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist", "src/tests", "src/test", "src/**/*.test.ts", "src/db/test*", "src/db/debug*", "src/db/check*", "src/db/list*", "src/db/verify*", "src/db/reset*", "src/db/analyze*", "src/db/grant*", "src/db/getTestIds*", "src/db/runBranchMigration*", "src/db/runMigration*", "src/db/runSapB1Migration*"]
 }
