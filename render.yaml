@@ -4,7 +4,7 @@
 services:
   # ── Backend API (Staging) ──────────────────────────────────────────────────
   - type: web
-    name: vetclinic-api-staging
+    name: erpsystem-api-staging
     runtime: node
     region: frankfurt
     plan: free
@@ -24,11 +24,11 @@ services:
       - key: SERVER_PORT
         value: "5500"
       - key: CLIENT_URL
-        sync: false  # e.g., https://vetclinic-app-staging.onrender.com
+        sync: false  # e.g., https://erpsystem-app-staging.onrender.com
 
   # ── Frontend App (Staging) ─────────────────────────────────────────────────
   - type: web
-    name: vetclinic-app-staging
+    name: erpsystem-app-staging
     runtime: static
     branch: main
     buildCommand: cd client && npm ci && npm run build
@@ -43,11 +43,11 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        sync: false  # e.g., https://vetclinic-api-staging.onrender.com
+        sync: false  # e.g., https://erpsystem-api-staging.onrender.com
 
   # ── Backend API (Production) ───────────────────────────────────────────────
   - type: web
-    name: vetclinic-api-production
+    name: erpsystem-api-production
     runtime: node
     region: frankfurt
     plan: starter
@@ -71,7 +71,7 @@ services:
 
   # ── Frontend App (Production) ──────────────────────────────────────────────
   - type: web
-    name: vetclinic-app-production
+    name: erpsystem-app-production
     runtime: static
     branch: production
     buildCommand: cd client && npm ci && npm run build
