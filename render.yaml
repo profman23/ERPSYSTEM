@@ -4,7 +4,7 @@
 services:
   # ── Backend API (Staging) ──────────────────────────────────────────────────
   - type: web
-    name: erpsystem-api-staging
+    name: erpsystem-staging-backend
     runtime: node
     region: frankfurt
     plan: free
@@ -24,11 +24,11 @@ services:
       - key: SERVER_PORT
         value: "5500"
       - key: CLIENT_URL
-        sync: false  # e.g., https://erpsystem-app-staging.onrender.com
+        sync: false  # e.g., https://erpsystem-staging-frontend.onrender.com
 
   # ── Frontend App (Staging) ─────────────────────────────────────────────────
   - type: web
-    name: erpsystem-app-staging
+    name: erpsystem-staging-frontend
     runtime: static
     branch: main
     buildCommand: cd client && npm ci && npm run build
@@ -43,11 +43,11 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        sync: false  # e.g., https://erpsystem-api-staging.onrender.com
+        sync: false  # e.g., https://erpsystem-staging-backend.onrender.com
 
   # ── Backend API (Production) ───────────────────────────────────────────────
   - type: web
-    name: erpsystem-api-production
+    name: erpsystem-production-backend
     runtime: node
     region: frankfurt
     plan: starter
@@ -71,7 +71,7 @@ services:
 
   # ── Frontend App (Production) ──────────────────────────────────────────────
   - type: web
-    name: erpsystem-app-production
+    name: erpsystem-production-frontend
     runtime: static
     branch: production
     buildCommand: cd client && npm ci && npm run build
