@@ -14,7 +14,7 @@ import {
 } from '../ui/dialog';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 import { Button } from '../ui/button';
-import type { RoleListItem } from '../../../../types/dpf';
+import type { RoleListItem } from '@types/dpf';
 
 interface DeleteRoleDialogProps {
   open: boolean;

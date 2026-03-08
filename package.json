@@ -10,7 +10,8 @@
     "build": "npm run build:client && npm run build:server",
     "build:client": "cd client && npm run build",
     "build:server": "cd server && npm run build",
-    "install:all": "npm install && cd client && npm install && cd ../server && npm install"
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
+    "test:e2e": "npx playwright test"
   },
   "workspaces": [
     "client",
@@ -18,7 +19,9 @@
     "types"
   ],
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "concurrently": "^8.2.2",
+    "dotenv": "^17.3.1",
     "drizzle-orm": "^0.44.7"
   },
   "dependencies": {
@@ -52,5 +55,9 @@
     "uuid": "^13.0.0",
     "winston": "^3.18.3",
     "zod": "^4.1.12"
+  },
+  "overrides": {
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
   }
 }

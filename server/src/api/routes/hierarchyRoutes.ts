@@ -92,6 +92,14 @@ router.get(
   hierarchyController.getTenantHierarchy
 );
 
+router.get(
+  '/tenant-quota',
+  routeMetadata(RoutePatterns.appPanel('Get tenant quota info')),
+  authMiddleware,
+  enforceRouteMetadata(),
+  hierarchyController.getTenantQuotaInfo
+);
+
 // ================
 // APP PANEL ROUTES
 // ================

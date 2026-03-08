@@ -1,10 +1,10 @@
 /**
- * usePermissions Hook - Enterprise RBAC Permission Checking
- * Complete DPF-AGI integration with hierarchical permission checks
+ * usePermissions Hook - SAP B1 Style Authorization
+ * Screen-level authorization with 3 levels: None (0), Read (1), Full (2)
  */
 
 import { useContext, useCallback, useMemo } from 'react';
-import { PermissionContext } from '../contexts/PermissionContext';
+import { PermissionContext, AuthorizationLevel } from '../contexts/PermissionContext';
 
 export function usePermissions() {
   const context = useContext(PermissionContext);
@@ -14,26 +14,25 @@ export function usePermissions() {
   }
 
   const {
-    permissionCodes,
-    rolePermissions,
-    permissionMatrix,
-    allPermissions,
-    modules,
-    screens,
-    actions,
+    screenAuthorizations,
     loading,
     error,
+    getScreenAuth,
+    canAccessScreen,
+    canModifyScreen,
+    hasReadAccess,
+    hasFullAccess,
     hasPermission,
-    hasAction,
     hasAnyPermission,
     hasAllPermissions,
     refreshPermissions,
     clearPermissions,
   } = context;
 
-  // ═══════════════════════════════════════════════════════════════
+  // ===================================================================
   // CRUD HELPER METHODS (RESOURCE-BASED)
-  // ═══════════════════════════════════════════════════════════════
+  // Maps legacy resource.action to screen authorization
+  // ===================================================================
 
   const can = useCallback(
     (action: string, resource?: string): boolean => {
@@ -71,88 +70,83 @@ export function usePermissions() {
     [can]
   );
 
-  // ═══════════════════════════════════════════════════════════════
-  // DPF HIERARCHICAL HELPERS
-  // ═══════════════════════════════════════════════════════════════
+  // ===================================================================
+  // SAP B1 STYLE HELPERS
+  // ===================================================================
 
+  // Check if user can access any screen in a module
   const canAccessModule = useCallback(
     (moduleCode: string): boolean => {
-      // Check if user has ANY permission within this module
-      return permissionCodes.some(code => code.startsWith(`${moduleCode}:`));
+      // Check if any screen with module prefix has access
+      for (const [screenCode, level] of Object.entries(screenAuthorizations)) {
+        if (screenCode.startsWith(moduleCode) && level >= AuthorizationLevel.READ_ONLY) {
+          return true;
+        }
+      }
+      return false;
     },
-    [permissionCodes]
+    [screenAuthorizations]
   );
 
-  const canAccessScreen = useCallback(
-    (moduleCode: string, screenCode: string): boolean => {
-      // Check if user has ANY permission for this screen
-      const prefix = `${moduleCode}:${screenCode}`;
-      return permissionCodes.some(code => code.startsWith(prefix));
-    },
-    [permissionCodes]
-  );
+  // Get all screens user has access to
+  const getAccessibleScreens = useCallback((): string[] => {
+    return Object.entries(screenAuthorizations)
+      .filter(([_, level]) => level >= AuthorizationLevel.READ_ONLY)
+      .map(([screenCode]) => screenCode);
+  }, [screenAuthorizations]);
 
-  const getModulePermissions = useCallback(
-    (moduleCode: string): string[] => {
-      return permissionCodes.filter(code => code.startsWith(`${moduleCode}:`));
-    },
-    [permissionCodes]
-  );
+  // Get screens with full access
+  const getModifiableScreens = useCallback((): string[] => {
+    return Object.entries(screenAuthorizations)
+      .filter(([_, level]) => level === AuthorizationLevel.FULL)
+      .map(([screenCode]) => screenCode);
+  }, [screenAuthorizations]);
 
-  const getScreenPermissions = useCallback(
-    (moduleCode: string, screenCode: string): string[] => {
-      const prefix = `${moduleCode}:${screenCode}`;
-      return permissionCodes.filter(code => code.startsWith(prefix));
-    },
-    [permissionCodes]
-  );
-
-  // ═══════════════════════════════════════════════════════════════
+  // ===================================================================
   // RETURN COMPREHENSIVE API
-  // ═══════════════════════════════════════════════════════════════
+  // ===================================================================
 
   return {
-    // Raw Data
-    permissions: permissionCodes,
-    rolePermissions,
-    permissionMatrix,
-    allPermissions,
-    modules,
-    screens,
-    actions,
-    
+    // Raw Data (SAP B1 Style)
+    screenAuthorizations,
+
     // State
     loading,
     error,
-    
-    // Core Permission Checks
+
+    // SAP B1 Style Check Methods
+    getScreenAuth,
+    canAccessScreen,
+    canModifyScreen,
+    hasReadAccess,
+    hasFullAccess,
+
+    // Legacy compatibility (maps to screen auth)
     hasPermission,
-    hasAction,
     hasAnyPermission,
     hasAllPermissions,
-    
+
     // CRUD Helpers (Resource-based)
     can,
     canCreate,
     canView,
     canUpdate,
     canDelete,
-    
-    // DPF Hierarchical Helpers
+
+    // Module/Screen Helpers
     canAccessModule,
-    canAccessScreen,
-    getModulePermissions,
-    getScreenPermissions,
-    
+    getAccessibleScreens,
+    getModifiableScreens,
+
     // Utility
     refresh: refreshPermissions,
     clear: clearPermissions,
   };
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ===================================================================
 // SPECIALIZED HOOKS FOR OPTIMIZED CHECKS
-// ═══════════════════════════════════════════════════════════════
+// ===================================================================
 
 /**
  * Check a single permission with memoization
@@ -171,7 +165,7 @@ export function usePermissionChecks(permissionCodes: string[]): Record<string, b
   const { hasPermission } = usePermissions();
   return useMemo(() => {
     const result: Record<string, boolean> = {};
-    permissionCodes.forEach(code => {
+    permissionCodes.forEach((code: string) => {
       result[code] = hasPermission(code);
     });
     return result;
@@ -187,22 +181,35 @@ export function useModuleAccess(moduleCode: string): boolean {
 }
 
 /**
- * Check if user can access a screen
+ * Check if user can access a screen (SAP B1 style)
  */
-export function useScreenAccess(moduleCode: string, screenCode: string): boolean {
+export function useScreenAccess(screenCode: string): boolean {
   const { canAccessScreen } = usePermissions();
-  return useMemo(
-    () => canAccessScreen(moduleCode, screenCode),
-    [canAccessScreen, moduleCode, screenCode]
-  );
+  return useMemo(() => canAccessScreen(screenCode), [canAccessScreen, screenCode]);
 }
 
 /**
- * Check CRUD permissions for a resource
+ * Check if user can modify a screen (SAP B1 style)
+ */
+export function useScreenModify(screenCode: string): boolean {
+  const { canModifyScreen } = usePermissions();
+  return useMemo(() => canModifyScreen(screenCode), [canModifyScreen, screenCode]);
+}
+
+/**
+ * Get screen authorization level (SAP B1 style)
+ */
+export function useScreenAuth(screenCode: string): AuthorizationLevel {
+  const { getScreenAuth } = usePermissions();
+  return useMemo(() => getScreenAuth(screenCode), [getScreenAuth, screenCode]);
+}
+
+/**
+ * Check CRUD permissions for a resource (legacy compatibility)
  */
 export function useResourcePermissions(resource: string) {
   const { canCreate, canView, canUpdate, canDelete } = usePermissions();
-  
+
   return useMemo(() => ({
     canCreate: canCreate(resource),
     canView: canView(resource),

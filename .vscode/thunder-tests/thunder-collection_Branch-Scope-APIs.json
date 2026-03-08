@@ -1,0 +1,295 @@
+{
+  "client": "Thunder Client",
+  "collectionName": "Branch Scope APIs",
+  "dateExported": "2025-12-18",
+  "version": "1.1",
+  "folders": [
+    {
+      "_id": "setup",
+      "name": "1. Setup & Auth",
+      "containerId": "",
+      "created": "2025-12-18T00:00:00.000Z",
+      "sortNum": 10000
+    },
+    {
+      "_id": "branch-apis",
+      "name": "2. Branch Scope APIs",
+      "containerId": "",
+      "created": "2025-12-18T00:00:00.000Z",
+      "sortNum": 20000
+    },
+    {
+      "_id": "scenarios",
+      "name": "3. Test Scenarios",
+      "containerId": "",
+      "created": "2025-12-18T00:00:00.000Z",
+      "sortNum": 30000
+    }
+  ],
+  "requests": [
+    {
+      "_id": "login",
+      "colId": "branch-scope",
+      "containerId": "setup",
+      "name": "Login",
+      "url": "{{baseUrl}}/api/auth/login",
+      "method": "POST",
+      "sortNum": 10000,
+      "created": "2025-12-18T00:00:00.000Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"email\": \"branch-test@example.com\",\n  \"password\": \"your-password\"\n}",
+        "form": []
+      },
+      "tests": []
+    },
+    {
+      "_id": "get-branches",
+      "colId": "branch-scope",
+      "containerId": "setup",
+      "name": "Get All Branches",
+      "url": "{{baseUrl}}/api/tenant/branches",
+      "method": "GET",
+      "sortNum": 20000,
+      "created": "2025-12-18T00:00:00.000Z",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{authToken}}"
+        }
+      ],
+      "tests": []
+    },
+    {
+      "_id": "get-user-roles",
+      "colId": "branch-scope",
+      "containerId": "setup",
+      "name": "Get User Roles",
+      "url": "{{baseUrl}}/api/tenant/dpf/user-roles",
+      "method": "GET",
+      "sortNum": 30000,
+      "created": "2025-12-18T00:00:00.000Z",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{authToken}}"
+        }
+      ],
+      "tests": []
+    },
+    {
+      "_id": "assign-branches",
+      "colId": "branch-scope",
+      "containerId": "branch-apis",
+      "name": "Assign Branches to User Role",
+      "url": "{{baseUrl}}/api/tenant/dpf/user-role-branches",
+      "method": "POST",
+      "sortNum": 10000,
+      "created": "2025-12-18T00:00:00.000Z",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{authToken}}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"userRoleId\": \"{{userRoleId}}\",\n  \"branchIds\": [\n    \"{{branch1Id}}\",\n    \"{{branch2Id}}\"\n  ]\n}",
+        "form": []
+      },
+      "tests": [
+        {
+          "type": "res-code",
+          "value": "200"
+        },
+        {
+          "type": "json-query",
+          "custom": "json.success",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "_id": "get-user-branches",
+      "colId": "branch-scope",
+      "containerId": "branch-apis",
+      "name": "Get User Role Branches",
+      "url": "{{baseUrl}}/api/tenant/dpf/user-role-branches/{{userRoleId}}",
+      "method": "GET",
+      "sortNum": 20000,
+      "created": "2025-12-18T00:00:00.000Z",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{authToken}}"
+        }
+      ],
+      "tests": [
+        {
+          "type": "res-code",
+          "value": "200"
+        }
+      ]
+    },
+    {
+      "_id": "remove-branch",
+      "colId": "branch-scope",
+      "containerId": "branch-apis",
+      "name": "Remove Specific Branch",
+      "url": "{{baseUrl}}/api/tenant/dpf/user-role-branches/{{userRoleId}}/branch/{{branch1Id}}",
+      "method": "DELETE",
+      "sortNum": 30000,
+      "created": "2025-12-18T00:00:00.000Z",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{authToken}}"
+        }
+      ],
+      "tests": [
+        {
+          "type": "res-code",
+          "value": "200"
+        }
+      ]
+    },
+    {
+      "_id": "remove-all-branches",
+      "colId": "branch-scope",
+      "containerId": "branch-apis",
+      "name": "Remove All Branches",
+      "url": "{{baseUrl}}/api/tenant/dpf/user-role-branches/{{userRoleId}}",
+      "method": "DELETE",
+      "sortNum": 40000,
+      "created": "2025-12-18T00:00:00.000Z",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{authToken}}"
+        }
+      ],
+      "tests": [
+        {
+          "type": "res-code",
+          "value": "200"
+        }
+      ]
+    },
+    {
+      "_id": "get-users-by-branch",
+      "colId": "branch-scope",
+      "containerId": "branch-apis",
+      "name": "Get Users by Branch",
+      "url": "{{baseUrl}}/api/tenant/dpf/branches/{{branch1Id}}/users",
+      "method": "GET",
+      "sortNum": 50000,
+      "created": "2025-12-18T00:00:00.000Z",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{authToken}}"
+        }
+      ],
+      "tests": [
+        {
+          "type": "res-code",
+          "value": "200"
+        }
+      ]
+    },
+    {
+      "_id": "scenario-assign-2",
+      "colId": "branch-scope",
+      "containerId": "scenarios",
+      "name": "Scenario 1: Assign 2 Branches",
+      "url": "{{baseUrl}}/api/tenant/dpf/user-role-branches",
+      "method": "POST",
+      "sortNum": 10000,
+      "created": "2025-12-18T00:00:00.000Z",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{authToken}}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"userRoleId\": \"{{userRoleId}}\",\n  \"branchIds\": [\n    \"{{branch1Id}}\",\n    \"{{branch2Id}}\"\n  ]\n}",
+        "form": []
+      },
+      "tests": [
+        {
+          "type": "res-code",
+          "value": "200"
+        }
+      ]
+    },
+    {
+      "_id": "scenario-update-1",
+      "colId": "branch-scope",
+      "containerId": "scenarios",
+      "name": "Scenario 2: Update to 1 Branch",
+      "url": "{{baseUrl}}/api/tenant/dpf/user-role-branches",
+      "method": "POST",
+      "sortNum": 20000,
+      "created": "2025-12-18T00:00:00.000Z",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{authToken}}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"userRoleId\": \"{{userRoleId}}\",\n  \"branchIds\": [\n    \"{{branch1Id}}\"\n  ]\n}",
+        "form": []
+      },
+      "tests": [
+        {
+          "type": "res-code",
+          "value": "200"
+        }
+      ]
+    },
+    {
+      "_id": "scenario-remove-all",
+      "colId": "branch-scope",
+      "containerId": "scenarios",
+      "name": "Scenario 3: Remove All",
+      "url": "{{baseUrl}}/api/tenant/dpf/user-role-branches/{{userRoleId}}",
+      "method": "DELETE",
+      "sortNum": 30000,
+      "created": "2025-12-18T00:00:00.000Z",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{authToken}}"
+        }
+      ],
+      "tests": [
+        {
+          "type": "res-code",
+          "value": "200"
+        }
+      ]
+    }
+  ]
+}

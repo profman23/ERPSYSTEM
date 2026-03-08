@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Calendar, ClipboardList, Clock, Stethoscope, Bell } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,11 +6,12 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function AppDashboard() {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const todayStats = [
-    { title: 'Appointments', value: '8', icon: Calendar, color: 'var(--app-accent)' },
-    { title: 'Pending Tasks', value: '3', icon: ClipboardList, color: 'var(--app-warning)' },
-    { title: 'Patients Today', value: '12', icon: Stethoscope, color: 'var(--app-info)' },
+    { key: 'appointments', title: t('app.appointments'), value: '8', icon: Calendar, color: 'var(--app-accent)' },
+    { key: 'tasks', title: t('app.pendingTasks'), value: '3', icon: ClipboardList, color: 'var(--app-warning)' },
+    { key: 'patients', title: t('app.patientsToday'), value: '12', icon: Stethoscope, color: 'var(--app-info)' },
   ];
 
   const upcomingAppointments = [
@@ -26,22 +28,19 @@ export default function AppDashboard() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: 'var(--app-text)' }}>
-            Good morning, {user?.name || 'Doctor'}!
+            {t('common.welcome')}, {user?.name || 'Doctor'}!
           </h1>
-          <p className="mt-1" style={{ color: 'var(--app-text-secondary)' }}>
-            Here's your schedule for today
-          </p>
         </div>
-        <Button 
+        <Button
           className="text-white"
           style={{ background: 'linear-gradient(135deg, var(--app-accent), var(--app-accent-hover))' }}
         >
-          <Calendar className="w-4 h-4 mr-2" />
-          View Full Schedule
+          <Calendar className="w-4 h-4 me-2" />
+          {t('app.viewFullSchedule')}
         </Button>
       </div>
 
@@ -49,8 +48,8 @@ export default function AppDashboard() {
         {todayStats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <Card 
-              key={stat.title} 
+            <Card
+              key={stat.key}
               className="border shadow-sm hover:shadow-md transition-shadow"
               style={{ backgroundColor: 'var(--app-surface)', borderColor: 'var(--app-border)' }}
             >
@@ -74,29 +73,29 @@ export default function AppDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card 
+        <Card
           className="lg:col-span-2 border shadow-sm"
           style={{ backgroundColor: 'var(--app-surface)', borderColor: 'var(--app-border)' }}
         >
           <CardHeader>
             <CardTitle className="flex items-center gap-2" style={{ color: 'var(--app-text)' }}>
               <Clock className="w-5 h-5" style={{ color: 'var(--app-accent)' }} />
-              Upcoming Appointments
+              {t('app.upcomingAppointments')}
             </CardTitle>
             <CardDescription style={{ color: 'var(--app-text-secondary)' }}>
-              Your schedule for today
+              {t('app.yourScheduleToday')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {upcomingAppointments.map((apt, index) => (
-                <div 
-                  key={index} 
+                <div
+                  key={index}
                   className="flex items-center justify-between p-4 rounded-xl transition-colors cursor-pointer"
                   style={{ backgroundColor: 'var(--app-surface-hover)' }}
                 >
                   <div className="flex items-center gap-4">
-                    <div 
+                    <div
                       className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
                       style={{ background: 'linear-gradient(135deg, var(--app-accent), var(--app-accent-hover))' }}
                     >
@@ -107,7 +106,7 @@ export default function AppDashboard() {
                       <p className="text-sm" style={{ color: 'var(--app-text-secondary)' }}>{apt.owner}</p>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div>
                     <p className="font-semibold" style={{ color: 'var(--app-accent)' }}>{apt.time}</p>
                     <p className="text-sm" style={{ color: 'var(--app-text-secondary)' }}>{apt.type}</p>
                   </div>
@@ -117,30 +116,30 @@ export default function AppDashboard() {
           </CardContent>
         </Card>
 
-        <Card 
+        <Card
           className="border shadow-sm"
           style={{ backgroundColor: 'var(--app-surface)', borderColor: 'var(--app-border)' }}
         >
           <CardHeader>
             <CardTitle className="flex items-center gap-2" style={{ color: 'var(--app-text)' }}>
               <Bell className="w-5 h-5" style={{ color: 'var(--app-warning)' }} />
-              Notifications
+              {t('nav.notifications')}
             </CardTitle>
             <CardDescription style={{ color: 'var(--app-text-secondary)' }}>
-              Recent updates
+              {t('app.recentUpdates')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {notifications.map((notification, index) => (
-                <div 
-                  key={index} 
+                <div
+                  key={index}
                   className="p-3 rounded-lg"
-                  style={{ 
-                    backgroundColor: notification.type === 'warning' 
-                      ? 'var(--badge-warning-bg)' 
-                      : notification.type === 'reminder' 
-                        ? 'var(--badge-info-bg)' 
+                  style={{
+                    backgroundColor: notification.type === 'warning'
+                      ? 'var(--badge-warning-bg)'
+                      : notification.type === 'reminder'
+                        ? 'var(--badge-info-bg)'
                         : 'var(--app-surface-hover)'
                   }}
                 >
@@ -149,12 +148,12 @@ export default function AppDashboard() {
                 </div>
               ))}
             </div>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="w-full mt-4"
               style={{ color: 'var(--app-accent)' }}
             >
-              View All Notifications
+              {t('app.viewAllNotifications')}
             </Button>
           </CardContent>
         </Card>

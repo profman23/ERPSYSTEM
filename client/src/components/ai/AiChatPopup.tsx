@@ -6,7 +6,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { X, Send, Mic, MicOff, AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
-import type { AgiMessage, AgiApproval, AiButtonState } from '../../../../types/agi';
+import type { AgiMessage, AgiApproval, AiButtonState } from '@types/agi';
 
 export type VoicePhase = 'idle' | 'listening' | 'listening_for_wake' | 'responding' | 'listening_for_command';
 

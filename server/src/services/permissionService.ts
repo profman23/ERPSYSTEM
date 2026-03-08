@@ -9,8 +9,8 @@ import { dpfRolePermissions } from '../db/schemas/dpfRolePermissions';
 import { dpfModules } from '../db/schemas/dpfModules';
 import { dpfScreens } from '../db/schemas/dpfScreens';
 import { dpfActions } from '../db/schemas/dpfActions';
-import { eq, and, inArray } from 'drizzle-orm';
-import { CacheService } from '../services/CacheService';
+import { eq, and, inArray, asc } from 'drizzle-orm';
+import { cacheService } from '../services/CacheService';
 import type { DPFPermission, PermissionMatrixModule, AssignPermissionsInput } from '../../../types/dpf';
 
 /**
@@ -18,20 +18,42 @@ import type { DPFPermission, PermissionMatrixModule, AssignPermissionsInput } fr
  * Services NEVER access AsyncLocalStorage directly - this prevents context leaks
  */
 
+export interface PermissionMatrixOptions {
+  systemOnly?: boolean; // If true, returns only SYSTEM modules (platform-level)
+  tenantOnly?: boolean; // If true, returns only tenant modules (non-system)
+}
+
 export class PermissionService {
   /**
    * Get all permissions for current tenant (organized by module → screen → action)
+   * @param tenantId - Tenant ID
+   * @param options - Filter options (systemOnly, tenantOnly)
    */
-  static async getPermissionMatrix(tenantId: string): Promise<PermissionMatrixModule[]> {
+  static async getPermissionMatrix(
+    tenantId: string,
+    options: PermissionMatrixOptions = {}
+  ): Promise<PermissionMatrixModule[]> {
+    const { systemOnly, tenantOnly } = options;
+
+    // Build module filter conditions
+    const moduleConditions = [
+      eq(dpfModules.tenantId, tenantId),
+      eq(dpfModules.isActive, 'true'),
+    ];
+
+    // Filter by system/tenant modules if specified
+    if (systemOnly) {
+      moduleConditions.push(eq(dpfModules.isSystemModule, 'true'));
+    } else if (tenantOnly) {
+      moduleConditions.push(eq(dpfModules.isSystemModule, 'false'));
+    }
 
     const [modules, screens, actions, permissions] = await Promise.all([
       db.query.dpfModules.findMany({
-        where: and(eq(dpfModules.tenantId, tenantId), eq(dpfModules.isActive, 'true')),
-        orderBy: (modules, { asc }) => [asc(modules.displayOrder)],
+        where: and(...moduleConditions),
       }),
       db.query.dpfScreens.findMany({
         where: and(eq(dpfScreens.tenantId, tenantId), eq(dpfScreens.isActive, 'true')),
-        orderBy: (screens, { asc }) => [asc(screens.displayOrder)],
       }),
       db.query.dpfActions.findMany({
         where: and(eq(dpfActions.tenantId, tenantId), eq(dpfActions.isActive, 'true')),
@@ -117,7 +139,7 @@ export class PermissionService {
     }
 
     const cacheKey = `permissions:role:${roleId}`;
-    await CacheService.invalidatePattern(`${cacheKey}*`);
+    await cacheService.invalidatePattern(`${cacheKey}*`);
 
     return { success: true };
   }

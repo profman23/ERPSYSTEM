@@ -6,6 +6,7 @@ import { dpfPermissions } from './dpfPermissions';
 /**
  * DPF Role Permissions - Junction table
  * Links roles to permissions with tenant isolation
+ * Relations: see ./relations.ts
  */
 export const dpfRolePermissions = pgTable('dpf_role_permissions', {
   id: uuid('id').primaryKey().defaultRandom(),

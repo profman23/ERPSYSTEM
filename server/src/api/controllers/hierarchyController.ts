@@ -4,258 +4,232 @@
  * Also handles system user and tenant admin creation
  */
 
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { HierarchyService } from '../../services/HierarchyService';
 import { SystemUserService } from '../../services/SystemUserService';
 import { ScopeService } from '../../services/ScopeService';
-import { contextLogger } from '../../core/context';
+import { AppError, NotFoundError, ForbiddenError } from '../../core/errors';
+import { db } from '../../db';
+import { tenants, businessLines, branches, users } from '../../db/schemas';
+import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 
 const createTenantSchema = z.object({
-  code: z.string().min(2).max(50),
-  name: z.string().min(2).max(255),
+  code: z.string().min(2, 'Tenant code must be at least 2 characters').max(50, 'Tenant code is too long'),
+  name: z.string().min(2, 'Organization name must be at least 2 characters').max(255, 'Organization name is too long'),
   country: z.string().max(100).optional(),
   timezone: z.string().max(100).optional(),
   subscriptionPlan: z.enum(['trial', 'standard', 'professional', 'enterprise']).optional(),
-  contactEmail: z.string().email().optional(),
+  contactEmail: z.string().email('Please enter a valid contact email').optional(),
   contactPhone: z.string().max(50).optional(),
   address: z.string().optional(),
+  aiAssistantEnabled: z.boolean().optional().default(false),
 });
 
 const createBusinessLineSchema = z.object({
-  tenantId: z.string().uuid(),
-  code: z.string().min(2).max(50),
-  name: z.string().min(2).max(255),
+  tenantId: z.string().uuid('Please select a valid tenant'),
+  code: z.string().min(2, 'Code must be at least 2 characters').max(50).optional(),
+  name: z.string().min(2, 'Business line name must be at least 2 characters').max(255, 'Business line name is too long'),
   businessLineType: z.enum([
-    'general', 'emergency', 'surgery', 'grooming', 'pharmacy',
+    'general', 'veterinary_clinic', 'pet_store', 'emergency', 'surgery', 'grooming', 'pharmacy',
     'laboratory', 'boarding', 'rehabilitation', 'dental', 'imaging', 'specialty', 'mobile'
   ]).optional(),
   description: z.string().optional(),
-  contactEmail: z.string().email().optional(),
+  contactEmail: z.string().email('Please enter a valid contact email').optional(),
   contactPhone: z.string().max(50).optional(),
 });
 
 const createBranchSchema = z.object({
-  businessLineId: z.string().uuid(),
-  code: z.string().min(2).max(50),
-  name: z.string().min(2).max(255),
+  businessLineId: z.string().uuid('Please select a valid business line'),
+  code: z.string().min(2, 'Code must be at least 2 characters').max(50).optional(),
+  name: z.string().min(2, 'Branch name must be at least 2 characters').max(255, 'Branch name is too long'),
   city: z.string().max(100).optional(),
   state: z.string().max(100).optional(),
   country: z.string().max(100).optional(),
   postalCode: z.string().max(20).optional(),
   address: z.string().optional(),
+  buildingNumber: z.string().max(50).optional(),
+  district: z.string().max(100).optional(),
+  vatRegistrationNumber: z.string().max(50).optional(),
+  commercialRegistrationNumber: z.string().max(100).optional(),
   phone: z.string().max(50).optional(),
-  email: z.string().email().optional(),
+  email: z.string().email('Please enter a valid email address').optional(),
   timezone: z.string().max(100).optional(),
 });
 
 const createUserSchema = z.object({
-  branchId: z.string().uuid(),
+  branchId: z.string().uuid('Please select a valid branch'),
   code: z.string().max(50).optional(),
-  firstName: z.string().min(1).max(100),
-  lastName: z.string().min(1).max(100),
-  email: z.string().email(),
+  firstName: z.string().min(1, 'First name is required').max(100, 'First name is too long'),
+  lastName: z.string().min(1, 'Last name is required').max(100, 'Last name is too long'),
+  email: z.string().email('Please enter a valid email address'),
   phone: z.string().max(50).optional(),
-  password: z.string().min(8),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
   role: z.string().max(50).optional(),
   accessScope: z.enum(['tenant', 'business_line', 'branch', 'mixed']).optional(),
+  allowedBranchIds: z.array(z.string().uuid()).optional().default([]),
+  roleId: z.string().uuid('Invalid role ID').optional(),
 });
 
 const createSystemUserSchema = z.object({
-  firstName: z.string().min(1).max(100),
-  lastName: z.string().min(1).max(100),
-  email: z.string().email(),
+  firstName: z.string().min(1, 'First name is required').max(100, 'First name is too long'),
+  lastName: z.string().min(1, 'Last name is required').max(100, 'Last name is too long'),
+  email: z.string().email('Please enter a valid email address'),
   phone: z.string().max(50).optional(),
-  password: z.string().min(8),
-  roleCode: z.enum(['SYSTEM_ADMIN', 'SUPPORT_STAFF', 'BILLING_STAFF']),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  roleCode: z.enum(['SYSTEM_ADMIN', 'SUPPORT_STAFF', 'BILLING_STAFF']).optional(),
+  roleId: z.string().uuid().optional(),
+}).refine(data => data.roleCode || data.roleId, {
+  message: 'Please select a role',
 });
 
 const createTenantAdminSchema = z.object({
-  firstName: z.string().min(1).max(100),
-  lastName: z.string().min(1).max(100),
-  email: z.string().email(),
+  firstName: z.string().min(1, 'First name is required').max(100, 'First name is too long'),
+  lastName: z.string().min(1, 'Last name is required').max(100, 'Last name is too long'),
+  email: z.string().email('Please enter a valid email address'),
   phone: z.string().max(50).optional(),
-  password: z.string().min(8),
-  tenantId: z.string().uuid(),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  tenantId: z.string().uuid('Please select a valid tenant'),
 });
 
 export const hierarchyController = {
-  async createTenant(req: Request, res: Response) {
+  async createTenant(req: Request, res: Response, next: NextFunction) {
     try {
-      const validation = createTenantSchema.safeParse(req.body);
-      if (!validation.success) {
-        return res.status(400).json({
-          success: false,
-          error: 'Validation failed',
-          details: validation.error.errors,
-        });
-      }
-
-      const tenant = await HierarchyService.createTenant(validation.data);
+      const validated = createTenantSchema.parse(req.body);
+      const tenant = await HierarchyService.createTenant(validated);
 
       res.status(201).json({
         success: true,
         data: tenant,
         message: 'Tenant created successfully',
       });
-    } catch (error: any) {
-      contextLogger.error('Failed to create tenant', { error: error.message });
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to create tenant',
-      });
+    } catch (error) {
+      next(error);
     }
   },
 
-  async createBusinessLine(req: Request, res: Response) {
+  async createBusinessLine(req: Request, res: Response, next: NextFunction) {
     try {
-      const validation = createBusinessLineSchema.safeParse(req.body);
-      if (!validation.success) {
-        return res.status(400).json({
-          success: false,
-          error: 'Validation failed',
-          details: validation.error.errors,
-        });
+      const validated = createBusinessLineSchema.parse(req.body);
+
+      const blQuotaOk = await HierarchyService.validateBusinessLineQuota(validated.tenantId);
+      if (!blQuotaOk) {
+        throw new AppError('Business line quota exceeded for your subscription plan', 429, 'QUOTA_EXCEEDED');
       }
 
-      const businessLine = await HierarchyService.createBusinessLine(validation.data);
+      const businessLine = await HierarchyService.createBusinessLine(validated);
 
       res.status(201).json({
         success: true,
         data: businessLine,
         message: 'Business line created successfully',
       });
-    } catch (error: any) {
-      contextLogger.error('Failed to create business line', { error: error.message });
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to create business line',
-      });
+    } catch (error) {
+      next(error);
     }
   },
 
-  async createBranch(req: Request, res: Response) {
+  async createBranch(req: Request, res: Response, next: NextFunction) {
     try {
-      const validation = createBranchSchema.safeParse(req.body);
-      if (!validation.success) {
-        return res.status(400).json({
-          success: false,
-          error: 'Validation failed',
-          details: validation.error.errors,
-        });
+      const validated = createBranchSchema.parse(req.body);
+
+      // Resolve tenantId from businessLineId for quota check
+      const parentBL = await db.query.businessLines.findFirst({
+        where: eq(businessLines.id, validated.businessLineId),
+      });
+      if (!parentBL) {
+        throw new NotFoundError('Business line');
       }
 
-      const branch = await HierarchyService.createBranch(validation.data);
+      const branchQuotaOk = await HierarchyService.validateBranchQuota(parentBL.tenantId);
+      if (!branchQuotaOk) {
+        throw new AppError('Branch quota exceeded for your subscription plan', 429, 'QUOTA_EXCEEDED');
+      }
+
+      const branch = await HierarchyService.createBranch(validated);
 
       res.status(201).json({
         success: true,
         data: branch,
         message: 'Branch created successfully',
       });
-    } catch (error: any) {
-      contextLogger.error('Failed to create branch', { error: error.message });
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to create branch',
-      });
+    } catch (error) {
+      next(error);
     }
   },
 
-  async createUser(req: Request, res: Response) {
+  async createUser(req: Request, res: Response, next: NextFunction) {
     try {
-      const validation = createUserSchema.safeParse(req.body);
-      if (!validation.success) {
-        return res.status(400).json({
-          success: false,
-          error: 'Validation failed',
-          details: validation.error.errors,
-        });
+      const validated = createUserSchema.parse(req.body);
+
+      // Resolve tenantId from branchId for quota check
+      const parentBranch = await db.query.branches.findFirst({
+        where: eq(branches.id, validated.branchId),
+      });
+      if (!parentBranch) {
+        throw new NotFoundError('Branch');
       }
 
-      const capacityOk = await HierarchyService.validateBranchCapacity(validation.data.branchId);
-      if (!capacityOk) {
-        return res.status(400).json({
-          success: false,
-          error: 'User quota exceeded for this tenant',
-        });
+      const userQuotaOk = await HierarchyService.validateUserQuota(parentBranch.tenantId);
+      if (!userQuotaOk) {
+        throw new AppError('User quota exceeded for your subscription plan', 429, 'QUOTA_EXCEEDED');
       }
 
-      const user = await HierarchyService.createUser(validation.data);
+      const user = await HierarchyService.createUser(validated);
 
       res.status(201).json({
         success: true,
         data: user,
         message: 'User created successfully',
       });
-    } catch (error: any) {
-      contextLogger.error('Failed to create user', { error: error.message });
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to create user',
-      });
+    } catch (error) {
+      next(error);
     }
   },
 
-  async getTenantHierarchy(req: Request, res: Response) {
+  async getTenantHierarchy(req: Request, res: Response, next: NextFunction) {
     try {
       const { tenantId } = req.params;
 
       const hierarchy = await HierarchyService.getTenantHierarchy(tenantId);
       if (!hierarchy) {
-        return res.status(404).json({
-          success: false,
-          error: 'Tenant not found',
-        });
+        throw new NotFoundError('Tenant');
       }
 
       res.json({
         success: true,
         data: hierarchy,
       });
-    } catch (error: any) {
-      contextLogger.error('Failed to get tenant hierarchy', { error: error.message });
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to get tenant hierarchy',
-      });
+    } catch (error) {
+      next(error);
     }
   },
 
-  async getUserContext(req: Request, res: Response) {
+  async getUserContext(req: Request, res: Response, next: NextFunction) {
     try {
       const { userId } = req.params;
 
       const context = await HierarchyService.resolveUserContext(userId);
       if (!context) {
-        return res.status(404).json({
-          success: false,
-          error: 'User not found',
-        });
+        throw new NotFoundError('User');
       }
 
       res.json({
         success: true,
         data: context,
       });
-    } catch (error: any) {
-      contextLogger.error('Failed to get user context', { error: error.message });
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to get user context',
-      });
+    } catch (error) {
+      next(error);
     }
   },
 
-  async getUserScope(req: Request, res: Response) {
+  async getUserScope(req: Request, res: Response, next: NextFunction) {
     try {
       const { userId } = req.params;
 
       const scope = await ScopeService.resolveUserScope(userId);
       if (!scope) {
-        return res.status(404).json({
-          success: false,
-          error: 'User not found',
-        });
+        throw new NotFoundError('User');
       }
 
       const accessibleBranches = await ScopeService.getAccessibleBranches(userId);
@@ -269,12 +243,8 @@ export const hierarchyController = {
           accessibleBusinessLines,
         },
       });
-    } catch (error: any) {
-      contextLogger.error('Failed to get user scope', { error: error.message });
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to get user scope',
-      });
+    } catch (error) {
+      next(error);
     }
   },
 
@@ -282,39 +252,23 @@ export const hierarchyController = {
    * Create a system-level user (SYSTEM PANEL only)
    * System users have no branch/business line and accessScope = 'system'
    */
-  async createSystemUser(req: Request, res: Response) {
+  async createSystemUser(req: Request, res: Response, next: NextFunction) {
     try {
       const user = (req as any).user;
-
       if (user.accessScope !== 'system') {
-        return res.status(403).json({
-          success: false,
-          error: 'Forbidden: System access required',
-        });
+        throw new ForbiddenError('System access required');
       }
 
-      const validation = createSystemUserSchema.safeParse(req.body);
-      if (!validation.success) {
-        return res.status(400).json({
-          success: false,
-          error: 'Validation failed',
-          details: validation.error.errors,
-        });
-      }
-
-      const newUser = await SystemUserService.createSystemUser(validation.data);
+      const validated = createSystemUserSchema.parse(req.body);
+      const newUser = await SystemUserService.createSystemUser(validated);
 
       res.status(201).json({
         success: true,
         data: newUser,
         message: 'System user created successfully',
       });
-    } catch (error: any) {
-      contextLogger.error('Failed to create system user', { error: error.message });
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to create system user',
-      });
+    } catch (error) {
+      next(error);
     }
   },
 
@@ -322,54 +276,34 @@ export const hierarchyController = {
    * Create a tenant admin user (SYSTEM PANEL only)
    * Tenant admins have accessScope = 'tenant' and belong to a specific tenant
    */
-  async createTenantAdmin(req: Request, res: Response) {
+  async createTenantAdmin(req: Request, res: Response, next: NextFunction) {
     try {
       const user = (req as any).user;
-
       if (user.accessScope !== 'system') {
-        return res.status(403).json({
-          success: false,
-          error: 'Forbidden: System access required',
-        });
+        throw new ForbiddenError('System access required');
       }
 
-      const validation = createTenantAdminSchema.safeParse(req.body);
-      if (!validation.success) {
-        return res.status(400).json({
-          success: false,
-          error: 'Validation failed',
-          details: validation.error.errors,
-        });
-      }
-
-      const newUser = await SystemUserService.createTenantAdmin(validation.data);
+      const validated = createTenantAdminSchema.parse(req.body);
+      const newUser = await SystemUserService.createTenantAdmin(validated);
 
       res.status(201).json({
         success: true,
         data: newUser,
         message: 'Tenant admin created successfully',
       });
-    } catch (error: any) {
-      contextLogger.error('Failed to create tenant admin', { error: error.message });
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to create tenant admin',
-      });
+    } catch (error) {
+      next(error);
     }
   },
 
   /**
    * Get available system user roles
    */
-  async getSystemUserRoles(req: Request, res: Response) {
+  async getSystemUserRoles(req: Request, res: Response, next: NextFunction) {
     try {
       const user = (req as any).user;
-
       if (user.accessScope !== 'system') {
-        return res.status(403).json({
-          success: false,
-          error: 'Forbidden: System access required',
-        });
+        throw new ForbiddenError('System access required');
       }
 
       const roles = SystemUserService.getSystemUserRoles();
@@ -378,12 +312,52 @@ export const hierarchyController = {
         success: true,
         data: roles,
       });
-    } catch (error: any) {
-      contextLogger.error('Failed to get system user roles', { error: error.message });
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to get system user roles',
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Get tenant quota usage info
+   * Returns current usage vs limits for business lines, branches, and users
+   */
+  async getTenantQuotaInfo(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = (req as any).user;
+      const tenantId = (req.query.tenantId as string) || user?.tenantId;
+
+      if (!tenantId) {
+        throw new NotFoundError('Tenant ID');
+      }
+
+      const tenant = await db.query.tenants.findFirst({
+        where: eq(tenants.id, tenantId),
       });
+      if (!tenant) {
+        throw new NotFoundError('Tenant');
+      }
+
+      const blList = await db.query.businessLines.findMany({
+        where: and(eq(businessLines.tenantId, tenantId), eq(businessLines.isActive, true)),
+      });
+      const branchList = await db.query.branches.findMany({
+        where: and(eq(branches.tenantId, tenantId), eq(branches.isActive, true)),
+      });
+      const userList = await db.query.users.findMany({
+        where: and(eq(users.tenantId, tenantId), eq(users.isActive, true)),
+      });
+
+      res.json({
+        success: true,
+        data: {
+          businessLines: { used: blList.length, limit: tenant.allowedBusinessLines ?? 999999 },
+          branches: { used: branchList.length, limit: tenant.allowedBranches ?? 999999 },
+          users: { used: userList.length, limit: tenant.allowedUsers ?? 999999 },
+          subscriptionPlan: tenant.subscriptionPlan,
+        },
+      });
+    } catch (error) {
+      next(error);
     }
   },
 };

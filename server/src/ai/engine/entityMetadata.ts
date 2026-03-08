@@ -16,6 +16,7 @@ export interface EntityFieldDef {
   labelAr: string;
   type: 'string' | 'email' | 'password' | 'uuid' | 'boolean' | 'number';
   validation?: string; // Hint for Claude: "must be valid email"
+  options?: { value: string; label: string; labelAr: string }[]; // Predefined choices
 }
 
 export interface EntityMeta {
@@ -41,12 +42,18 @@ export const ENTITY_REGISTRY: Record<string, EntityMeta> = {
       { name: 'firstName', label: 'First Name', labelAr: 'الاسم الأول', type: 'string' },
       { name: 'lastName', label: 'Last Name', labelAr: 'اسم العائلة', type: 'string' },
       { name: 'email', label: 'Email', labelAr: 'البريد الإلكتروني', type: 'email', validation: 'valid email address' },
-      { name: 'password', label: 'Password', labelAr: 'كلمة المرور', type: 'password', validation: 'minimum 6 characters' },
+      { name: 'password', label: 'Password', labelAr: 'كلمة المرور', type: 'password', validation: 'minimum 8 characters' },
+      { name: 'role', label: 'Role', labelAr: 'الدور', type: 'string', validation: 'must be one of the predefined roles', options: [
+        { value: 'admin', label: 'Admin', labelAr: 'مدير' },
+        { value: 'doctor', label: 'Doctor', labelAr: 'طبيب' },
+        { value: 'receptionist', label: 'Receptionist', labelAr: 'موظف استقبال' },
+        { value: 'technician', label: 'Technician', labelAr: 'فني' },
+        { value: 'accountant', label: 'Accountant', labelAr: 'محاسب' },
+      ] },
       { name: 'branchId', label: 'Branch', labelAr: 'الفرع', type: 'uuid', validation: 'valid branch UUID' },
     ],
     optionalFields: [
       { name: 'phone', label: 'Phone', labelAr: 'الهاتف', type: 'string' },
-      { name: 'role', label: 'Role', labelAr: 'الدور', type: 'string' },
       { name: 'accessScope', label: 'Access Scope', labelAr: 'نطاق الوصول', type: 'string' },
     ],
     serviceName: 'HierarchyService',
@@ -146,6 +153,17 @@ export function buildEntityPromptSection(language: 'en' | 'ar'): string {
     lines.push(`  ${language === 'ar' ? 'إلزامي' : 'Required'}: ${required}`);
     if (optional) {
       lines.push(`  ${language === 'ar' ? 'اختياري' : 'Optional'}: ${optional}`);
+    }
+
+    // Show predefined options for fields that have them
+    const fieldsWithOptions = [...meta.requiredFields, ...meta.optionalFields].filter(f => f.options && f.options.length > 0);
+    for (const field of fieldsWithOptions) {
+      const fieldLabel = language === 'ar' ? field.labelAr : field.label;
+      const optionsList = field.options!.map((o, i) =>
+        `${i + 1}. ${language === 'ar' ? o.labelAr : o.label} (${o.value})`
+      ).join(', ');
+      lines.push(`  ${language === 'ar' ? 'اختيارات' : 'Choices for'} ${fieldLabel}: ${optionsList}`);
+      lines.push(`  ${language === 'ar' ? '⚠️ عند سؤال المستخدم عن هذا الحقل، اعرض الاختيارات كقائمة مرقمة ليختار منها' : '⚠️ When asking for this field, show choices as a numbered list for user to pick from'}`);
     }
   }
 

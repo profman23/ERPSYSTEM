@@ -1,4 +1,8 @@
 import { AsyncLocalStorage } from 'async_hooks';
+import { db } from '../../db';
+import { tenants } from '../../db/schemas';
+import { eq } from 'drizzle-orm';
+import logger from '../../config/logger';
 
 /**
  * AsyncLocalStorage-based Tenant Context
@@ -16,6 +20,9 @@ interface TenantContextData {
 }
 
 const asyncLocalStorage = new AsyncLocalStorage<TenantContextData>();
+
+// Cache SYSTEM tenant ID to avoid repeated DB queries
+let cachedSystemTenantId: string | null = null;
 
 export class TenantContext {
   /**
@@ -76,12 +83,57 @@ export class TenantContext {
   }
 
   /**
+   * Get SYSTEM tenant ID (cached)
+   * Used by controllers that need to operate on SYSTEM tenant for system users
+   */
+  static async getSystemTenantId(): Promise<string | null> {
+    if (cachedSystemTenantId) return cachedSystemTenantId;
+
+    const result = await db
+      .select({ id: tenants.id })
+      .from(tenants)
+      .where(eq(tenants.code, 'SYSTEM'))
+      .limit(1);
+
+    if (result.length > 0) {
+      cachedSystemTenantId = result[0].id;
+    }
+
+    return cachedSystemTenantId;
+  }
+
+  /**
+   * Get effective tenant ID for the current context
+   * For system users, returns SYSTEM tenant ID
+   * For regular users, returns their tenant ID
+   */
+  static async getEffectiveTenantId(): Promise<string | null> {
+    const context = asyncLocalStorage.getStore();
+    if (!context) return null;
+
+    // For system users, use SYSTEM tenant
+    if (context.accessScope === 'system') {
+      return await TenantContext.getSystemTenantId();
+    }
+
+    return context.tenantId;
+  }
+
+  /**
+   * Check if current user is a system user
+   */
+  static isSystemUser(): boolean {
+    const context = asyncLocalStorage.getStore();
+    return context?.accessScope === 'system';
+  }
+
+  /**
    * Legacy methods for backward compatibility (deprecated)
    * These are no-ops now since AsyncLocalStorage manages lifecycle
    */
   static setTenantId(_tenantId: string): void {
     // No-op: AsyncLocalStorage handles setting via run()
-    console.warn('TenantContext.setTenantId() is deprecated. Use AsyncLocalStorage via run().');
+    logger.warn('TenantContext.setTenantId() is deprecated. Use AsyncLocalStorage via run().');
   }
 
   static clear(): void {

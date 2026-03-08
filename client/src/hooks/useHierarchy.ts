@@ -26,6 +26,7 @@ export interface Tenant {
   allowedUsers: number;
   storageLimitGB: number;
   apiRateLimit: number;
+  aiAssistantEnabled: boolean;
   settings: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
@@ -59,11 +60,15 @@ export interface Branch {
   businessLineId: string;
   code: string;
   name: string;
+  country: string | null;
   city: string | null;
   state: string | null;
-  country: string | null;
   postalCode: string | null;
   address: string | null;
+  buildingNumber: string | null;
+  district: string | null;
+  vatRegistrationNumber: string | null;
+  commercialRegistrationNumber: string | null;
   phone: string | null;
   email: string | null;
   timezone: string | null;
@@ -91,11 +96,17 @@ export interface User {
   branchId: string | null;
   businessLineId: string | null;
   tenantId: string | null;
+  tenantName?: string | null;
+  businessLineName?: string | null;
+  branchName?: string | null;
   allowedBranchIds: string[];
   preferences: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
   roleCount?: number;
+  dpfRoleId?: string | null;
+  dpfRoleName?: string | null;
+  dpfRoleCode?: string | null;
 }
 
 export interface TenantHierarchy extends Tenant {
@@ -125,6 +136,7 @@ export interface CreateTenantInput {
   contactEmail?: string;
   contactPhone?: string;
   address?: string;
+  aiAssistantEnabled?: boolean;
 }
 
 export interface CreateBusinessLineInput {
@@ -141,17 +153,19 @@ export interface CreateBusinessLineInput {
 export interface CreateBranchInput {
   businessLineId: string;
   name: string;
+  country: string;
+  city: string;
+  address: string;
+  buildingNumber: string;
+  vatRegistrationNumber: string;
+  commercialRegistrationNumber: string;
   code?: string;
-  city?: string;
   state?: string;
-  country?: string;
   postalCode?: string;
-  address?: string;
+  district?: string;
   phone?: string;
   email?: string;
   timezone?: string;
-  workingHours?: Record<string, string>;
-  settings?: Record<string, unknown>;
 }
 
 export interface CreateUserInput {
@@ -165,17 +179,23 @@ export interface CreateUserInput {
   role?: string;
   accessScope?: string;
   allowedBranchIds?: string[];
+  roleId?: string;
 }
 
-export function useTenants() {
+/**
+ * Get all tenants (System Panel)
+ * Uses /system/tenants endpoint with SYSTEM_TENANT_LIST authorization
+ */
+export function useTenants(enabled = true) {
   return useQuery({
     queryKey: ['tenants'],
     queryFn: async () => {
-      const response = await apiClient.get('/api/v1/tenants', {
+      const response = await apiClient.get('/system/tenants', {
         headers: getAuthHeaders(),
       });
       return response.data.data as Tenant[];
     },
+    enabled,
   });
 }
 
@@ -184,7 +204,7 @@ export function useTenant(tenantId: string | undefined) {
     queryKey: ['tenant', tenantId],
     queryFn: async () => {
       if (!tenantId) return null;
-      const response = await apiClient.get(`/api/v1/hierarchy/tenants/${tenantId}/hierarchy`, {
+      const response = await apiClient.get(`/hierarchy/tenants/${tenantId}/hierarchy`, {
         headers: getAuthHeaders(),
       });
       return response.data.data as TenantHierarchy;
@@ -197,7 +217,7 @@ export function useCreateTenant() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: CreateTenantInput) => {
-      const response = await apiClient.post('/api/v1/hierarchy/tenants', input, {
+      const response = await apiClient.post('/hierarchy/tenants', input, {
         headers: getAuthHeaders(),
       });
       return response.data;
@@ -208,11 +228,15 @@ export function useCreateTenant() {
   });
 }
 
+/**
+ * Update a tenant (System Panel)
+ * Uses /system/tenants endpoint with SYSTEM_TENANT_LIST authorization
+ */
 export function useUpdateTenant() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...input }: Partial<CreateTenantInput> & { id: string }) => {
-      const response = await apiClient.patch(`/api/v1/tenants/${id}`, input, {
+      const response = await apiClient.put(`/system/tenants/${id}`, input, {
         headers: getAuthHeaders(),
       });
       return response.data;
@@ -229,10 +253,11 @@ export function useBusinessLines(tenantId: string | undefined) {
     queryKey: ['businessLines', tenantId],
     queryFn: async () => {
       if (!tenantId) return [];
-      const response = await apiClient.get(`/api/v1/business-lines?tenantId=${tenantId}`, {
+      const response = await apiClient.get(`/business-lines?tenantId=${tenantId}&limit=100`, {
         headers: getAuthHeaders(),
       });
-      return response.data.data as BusinessLine[];
+      const payload = response.data.data;
+      return (Array.isArray(payload) ? payload : payload?.data ?? []) as BusinessLine[];
     },
     enabled: !!tenantId,
   });
@@ -243,7 +268,7 @@ export function useBusinessLine(businessLineId: string | undefined) {
     queryKey: ['businessLine', businessLineId],
     queryFn: async () => {
       if (!businessLineId) return null;
-      const response = await apiClient.get(`/api/v1/business-lines/${businessLineId}`, {
+      const response = await apiClient.get(`/business-lines/${businessLineId}`, {
         headers: getAuthHeaders(),
       });
       return response.data.data as BusinessLine;
@@ -256,7 +281,7 @@ export function useCreateBusinessLine() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: CreateBusinessLineInput) => {
-      const response = await apiClient.post('/api/v1/hierarchy/business-lines', input, {
+      const response = await apiClient.post('/hierarchy/business-lines', input, {
         headers: getAuthHeaders(),
       });
       return response.data;
@@ -264,6 +289,7 @@ export function useCreateBusinessLine() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['businessLines', variables.tenantId] });
       queryClient.invalidateQueries({ queryKey: ['tenant', variables.tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['tenantQuota'] });
     },
   });
 }
@@ -272,7 +298,7 @@ export function useUpdateBusinessLine() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...input }: Partial<CreateBusinessLineInput> & { id: string }) => {
-      const response = await apiClient.patch(`/api/v1/business-lines/${id}`, input, {
+      const response = await apiClient.put(`/business-lines/${id}`, input, {
         headers: getAuthHeaders(),
       });
       return response.data;
@@ -287,7 +313,7 @@ export function useDeleteBusinessLine() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await apiClient.delete(`/api/v1/business-lines/${id}`, {
+      const response = await apiClient.delete(`/business-lines/${id}`, {
         headers: getAuthHeaders(),
       });
       return response.data;
@@ -295,6 +321,7 @@ export function useDeleteBusinessLine() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['businessLines'] });
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
+      queryClient.invalidateQueries({ queryKey: ['tenantQuota'] });
     },
   });
 }
@@ -304,10 +331,11 @@ export function useBranches(businessLineId: string | undefined) {
     queryKey: ['branches', businessLineId],
     queryFn: async () => {
       if (!businessLineId) return [];
-      const response = await apiClient.get(`/api/v1/branches?businessLineId=${businessLineId}`, {
+      const response = await apiClient.get(`/branches?businessLineId=${businessLineId}&limit=100`, {
         headers: getAuthHeaders(),
       });
-      return response.data.data as Branch[];
+      const payload = response.data.data;
+      return (Array.isArray(payload) ? payload : payload?.data ?? []) as Branch[];
     },
     enabled: !!businessLineId,
   });
@@ -317,10 +345,12 @@ export function useAllBusinessLines() {
   return useQuery({
     queryKey: ['allBusinessLines'],
     queryFn: async () => {
-      const response = await apiClient.get('/api/v1/business-lines', {
+      const response = await apiClient.get('/business-lines?limit=100', {
         headers: getAuthHeaders(),
       });
-      return response.data.data as BusinessLine[];
+      // Paginated endpoint returns { success, data: { data: [...], pagination } }
+      const payload = response.data.data;
+      return (Array.isArray(payload) ? payload : payload?.data ?? []) as BusinessLine[];
     },
   });
 }
@@ -329,10 +359,10 @@ export function useAllBranchesNoFilter() {
   return useQuery({
     queryKey: ['allBranchesNoFilter'],
     queryFn: async () => {
-      const response = await apiClient.get('/api/v1/branches', {
-        headers: getAuthHeaders(),
-      });
-      return response.data.data as Branch[];
+      const response = await apiClient.get('/tenant/branches?limit=100');
+      // Paginated endpoint returns { success, data: { data: [...], pagination } }
+      const payload = response.data.data;
+      return (Array.isArray(payload) ? payload : payload?.data ?? []) as Branch[];
     },
   });
 }
@@ -341,10 +371,12 @@ export function useAllUsers() {
   return useQuery({
     queryKey: ['allUsers'],
     queryFn: async () => {
-      const response = await apiClient.get('/api/v1/tenant/users', {
+      const response = await apiClient.get('/system/users?limit=100', {
         headers: getAuthHeaders(),
       });
-      return response.data.data as User[];
+      // Paginated endpoint returns { success, data: { data: [...], pagination } }
+      const payload = response.data.data;
+      return (Array.isArray(payload) ? payload : payload?.data ?? []) as User[];
     },
   });
 }
@@ -354,10 +386,11 @@ export function useAllBranches(tenantId: string | undefined) {
     queryKey: ['allBranches', tenantId],
     queryFn: async () => {
       if (!tenantId) return [];
-      const response = await apiClient.get(`/api/v1/branches?tenantId=${tenantId}`, {
+      const response = await apiClient.get(`/branches?tenantId=${tenantId}&limit=100`, {
         headers: getAuthHeaders(),
       });
-      return response.data.data as Branch[];
+      const payload = response.data.data;
+      return (Array.isArray(payload) ? payload : payload?.data ?? []) as Branch[];
     },
     enabled: !!tenantId,
   });
@@ -368,7 +401,7 @@ export function useBranch(branchId: string | undefined) {
     queryKey: ['branch', branchId],
     queryFn: async () => {
       if (!branchId) return null;
-      const response = await apiClient.get(`/api/v1/branches/${branchId}`, {
+      const response = await apiClient.get(`/branches/${branchId}`, {
         headers: getAuthHeaders(),
       });
       return response.data.data as Branch;
@@ -381,7 +414,7 @@ export function useCreateBranch() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: CreateBranchInput) => {
-      const response = await apiClient.post('/api/v1/hierarchy/branches', input, {
+      const response = await apiClient.post('/hierarchy/branches', input, {
         headers: getAuthHeaders(),
       });
       return response.data;
@@ -389,6 +422,7 @@ export function useCreateBranch() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['branches', variables.businessLineId] });
       queryClient.invalidateQueries({ queryKey: ['businessLines'] });
+      queryClient.invalidateQueries({ queryKey: ['tenantQuota'] });
     },
   });
 }
@@ -397,13 +431,15 @@ export function useUpdateBranch() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...input }: Partial<CreateBranchInput> & { id: string }) => {
-      const response = await apiClient.patch(`/api/v1/branches/${id}`, input, {
+      const response = await apiClient.patch(`/branches/${id}`, input, {
         headers: getAuthHeaders(),
       });
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['branches'] });
+      queryClient.invalidateQueries({ queryKey: ['allBranches'] });
+      queryClient.invalidateQueries({ queryKey: ['branch'] });
     },
   });
 }
@@ -412,7 +448,7 @@ export function useDeleteBranch() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await apiClient.delete(`/api/v1/branches/${id}`, {
+      const response = await apiClient.delete(`/branches/${id}`, {
         headers: getAuthHeaders(),
       });
       return response.data;
@@ -420,11 +456,31 @@ export function useDeleteBranch() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['branches'] });
       queryClient.invalidateQueries({ queryKey: ['businessLines'] });
+      queryClient.invalidateQueries({ queryKey: ['tenantQuota'] });
     },
   });
 }
 
-export function useUsers(filters?: { tenantId?: string; businessLineId?: string; branchId?: string }) {
+export interface PaginatedUsersResponse {
+  data: User[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+
+export function useUsers(filters?: {
+  tenantId?: string;
+  businessLineId?: string;
+  branchId?: string;
+  page?: number;
+  limit?: number;
+  search?: string;
+}) {
   return useQuery({
     queryKey: ['users', filters],
     queryFn: async () => {
@@ -432,13 +488,18 @@ export function useUsers(filters?: { tenantId?: string; businessLineId?: string;
       if (filters?.tenantId) params.append('tenantId', filters.tenantId);
       if (filters?.businessLineId) params.append('businessLineId', filters.businessLineId);
       if (filters?.branchId) params.append('branchId', filters.branchId);
+      if (filters?.page) params.append('page', String(filters.page));
+      if (filters?.limit) params.append('limit', String(filters.limit));
+      if (filters?.search) params.append('search', filters.search);
       const queryString = params.toString();
-      const url = `/api/v1/tenant/users${queryString ? `?${queryString}` : ''}`;
+      const url = `/tenant/users${queryString ? `?${queryString}` : ''}`;
       const response = await apiClient.get(url, {
         headers: getAuthHeaders(),
       });
-      return response.data.data as User[];
+      // API returns { success, data: { data: [...], pagination } }
+      return response.data.data as PaginatedUsersResponse;
     },
+    placeholderData: (prev: PaginatedUsersResponse | undefined) => prev,
   });
 }
 
@@ -447,10 +508,20 @@ export function useUser(userId: string | undefined) {
     queryKey: ['user', userId],
     queryFn: async () => {
       if (!userId) return null;
-      const response = await apiClient.get(`/api/v1/hierarchy/users/${userId}/context`, {
+      const response = await apiClient.get(`/hierarchy/users/${userId}/context`, {
         headers: getAuthHeaders(),
       });
-      return response.data.data as User;
+      const data = response.data.data;
+      // API returns { user, branch, businessLine, tenant } — extract user with tenant info
+      if (data?.user) {
+        return {
+          ...data.user,
+          tenantName: data.tenant?.name || null,
+          branchName: data.branch?.name || null,
+          businessLineName: data.businessLine?.name || null,
+        } as User;
+      }
+      return data as User;
     },
     enabled: !!userId,
   });
@@ -460,7 +531,7 @@ export function useCreateUser() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: CreateUserInput) => {
-      const response = await apiClient.post('/api/v1/hierarchy/users', input, {
+      const response = await apiClient.post('/hierarchy/users', input, {
         headers: getAuthHeaders(),
       });
       return response.data;
@@ -468,6 +539,7 @@ export function useCreateUser() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['branches'] });
+      queryClient.invalidateQueries({ queryKey: ['tenantQuota'] });
     },
   });
 }
@@ -476,7 +548,7 @@ export function useUpdateUser() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...input }: Partial<CreateUserInput> & { id: string }) => {
-      const response = await apiClient.patch(`/api/v1/tenant/users/${id}`, input, {
+      const response = await apiClient.patch(`/tenant/users/${id}`, input, {
         headers: getAuthHeaders(),
       });
       return response.data;
@@ -492,7 +564,7 @@ export function useToggleUserStatus() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
-      const response = await apiClient.patch(`/api/v1/tenant/users/${id}`, { isActive }, {
+      const response = await apiClient.patch(`/tenant/users/${id}`, { isActive }, {
         headers: getAuthHeaders(),
       });
       return response.data;
@@ -500,5 +572,28 @@ export function useToggleUserStatus() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
+  });
+}
+
+// --- Tenant Quota ---
+
+export interface TenantQuota {
+  businessLines: { used: number; limit: number };
+  branches: { used: number; limit: number };
+  users: { used: number; limit: number };
+  subscriptionPlan: string;
+}
+
+export function useTenantQuota(tenantId: string | undefined) {
+  return useQuery({
+    queryKey: ['tenantQuota', tenantId],
+    queryFn: async () => {
+      const response = await apiClient.get(`/hierarchy/tenant-quota?tenantId=${tenantId}`, {
+        headers: getAuthHeaders(),
+      });
+      return response.data.data as TenantQuota;
+    },
+    enabled: !!tenantId,
+    staleTime: 30_000,
   });
 }

@@ -5,10 +5,11 @@
  */
 
 import { db } from '../db';
-import { eq, and } from 'drizzle-orm';
-import { users, tenants, dpfRoles, dpfUserRoles } from '../db/schemas';
+import { eq, and, sql } from 'drizzle-orm';
+import { users, tenants, dpfRoles, dpfUserRoles, dpfRoleScreenAuthorizations } from '../db/schemas';
 import { auditService } from '../core/audit';
 import { contextLogger } from '../core/context';
+import { getTenantModules } from '../rbac/dpfStructure';
 import bcrypt from 'bcryptjs';
 
 export interface CreateSystemUserInput {
@@ -17,7 +18,8 @@ export interface CreateSystemUserInput {
   email: string;
   password: string;
   phone?: string;
-  roleCode: 'SYSTEM_ADMIN' | 'SUPPORT_STAFF' | 'BILLING_STAFF';
+  roleCode?: 'SYSTEM_ADMIN' | 'SUPPORT_STAFF' | 'BILLING_STAFF'; // Built-in role code
+  roleId?: string; // Custom role ID - use this OR roleCode, not both
 }
 
 export interface CreateTenantAdminInput {
@@ -65,6 +67,34 @@ export class SystemUserService {
     const passwordHash = await bcrypt.hash(input.password, 12);
     const userCode = `SYS-${Date.now().toString(36).toUpperCase()}`;
 
+    // Determine role - either by roleId or roleCode
+    let role = null;
+    if (input.roleId) {
+      // Custom role by ID
+      [role] = await db
+        .select()
+        .from(dpfRoles)
+        .where(and(
+          eq(dpfRoles.tenantId, systemTenantId),
+          eq(dpfRoles.id, input.roleId)
+        ))
+        .limit(1);
+
+      if (!role) {
+        throw new Error('Role not found in SYSTEM tenant');
+      }
+    } else if (input.roleCode) {
+      // Built-in role by code
+      [role] = await db
+        .select()
+        .from(dpfRoles)
+        .where(and(
+          eq(dpfRoles.tenantId, systemTenantId),
+          eq(dpfRoles.roleCode, input.roleCode)
+        ))
+        .limit(1);
+    }
+
     const [user] = await db.insert(users).values({
       code: userCode,
       firstName: input.firstName,
@@ -73,7 +103,7 @@ export class SystemUserService {
       email: input.email,
       phone: input.phone,
       passwordHash,
-      role: input.roleCode.toLowerCase(),
+      role: role?.roleCode?.toLowerCase() || 'system_user',
       accessScope: 'system',
       status: 'active',
       isActive: true,
@@ -81,15 +111,6 @@ export class SystemUserService {
       businessLineId: null,
       tenantId: null,
     }).returning();
-
-    const [role] = await db
-      .select()
-      .from(dpfRoles)
-      .where(and(
-        eq(dpfRoles.tenantId, systemTenantId),
-        eq(dpfRoles.roleCode, input.roleCode)
-      ))
-      .limit(1);
 
     if (role) {
       await db.insert(dpfUserRoles).values({
@@ -107,12 +128,13 @@ export class SystemUserService {
       resourceId: user.id,
       newData: { ...user, passwordHash: '[REDACTED]' } as unknown as Record<string, unknown>,
       severity: 'high',
-      metadata: { userType: 'system', roleCode: input.roleCode },
+      metadata: { userType: 'system', roleCode: role?.roleCode, roleId: role?.id },
     });
 
     contextLogger.info('System user created', {
       userId: user.id,
-      roleCode: input.roleCode,
+      roleCode: role?.roleCode,
+      roleId: role?.id,
     });
 
     return { ...user, passwordHash: undefined };
@@ -176,13 +198,24 @@ export class SystemUserService {
         tenantId: input.tenantId,
         roleCode: 'TENANT_ADMIN',
         roleName: 'Tenant Administrator',
+        roleNameAr: 'مدير المستأجر',
         description: 'Full access to all tenant resources',
+        descriptionAr: 'وصول كامل لجميع موارد المستأجر',
+        roleType: 'TENANT',
+        roleLevel: 'ADMIN',
+        isSystemRole: 'true',
         isProtected: 'true',
         isBuiltIn: 'true',
         isDefault: 'true',
         isActive: 'true',
       }).returning();
       tenantAdminRole = newRole;
+
+      // Seed full screen authorizations for all tenant screens
+      await this.seedTenantAdminAuthorizations(input.tenantId, newRole.id);
+    } else {
+      // Self-heal: if role exists but has no authorizations, seed them
+      await this.ensureTenantAdminAuthorizations(input.tenantId, tenantAdminRole.id);
     }
 
     if (tenantAdminRole) {
@@ -210,6 +243,62 @@ export class SystemUserService {
     });
 
     return { ...user, passwordHash: undefined };
+  }
+
+  /**
+   * Seed full screen authorizations (level 2) for TENANT_ADMIN role
+   * Uses getTenantModules() as source of truth — auto-scales with new modules
+   */
+  private static async seedTenantAdminAuthorizations(
+    tenantId: string,
+    roleId: string
+  ): Promise<void> {
+    const tenantModules = getTenantModules();
+    const authRows = tenantModules.flatMap(module =>
+      module.screens.map(screen => ({
+        tenantId,
+        roleId,
+        screenCode: screen.screenCode,
+        authorizationLevel: 2, // Full Authorization
+      }))
+    );
+
+    if (authRows.length > 0) {
+      await db.insert(dpfRoleScreenAuthorizations).values(authRows);
+      contextLogger.info('TENANT_ADMIN screen authorizations seeded', {
+        tenantId,
+        roleId,
+        screenCount: authRows.length,
+      });
+    }
+  }
+
+  /**
+   * Self-healing: ensure existing TENANT_ADMIN role has authorizations
+   * If role exists but has 0 screen authorizations, seed them
+   * Idempotent — safe to call multiple times
+   */
+  private static async ensureTenantAdminAuthorizations(
+    tenantId: string,
+    roleId: string
+  ): Promise<void> {
+    const [{ count }] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(dpfRoleScreenAuthorizations)
+      .where(
+        and(
+          eq(dpfRoleScreenAuthorizations.tenantId, tenantId),
+          eq(dpfRoleScreenAuthorizations.roleId, roleId)
+        )
+      );
+
+    if (Number(count) === 0) {
+      await this.seedTenantAdminAuthorizations(tenantId, roleId);
+      contextLogger.warn('Self-healed TENANT_ADMIN missing authorizations', {
+        tenantId,
+        roleId,
+      });
+    }
   }
 
   /**

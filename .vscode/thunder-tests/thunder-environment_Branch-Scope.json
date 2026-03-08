@@ -1,0 +1,43 @@
+{
+  "client": "Thunder Client",
+  "environmentName": "Branch Scope Development",
+  "dateExported": "2025-12-18",
+  "version": "1.0",
+  "variables": [
+    {
+      "name": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "text"
+    },
+    {
+      "name": "authToken",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "name": "tenantId",
+      "value": "",
+      "type": "text"
+    },
+    {
+      "name": "userRoleId",
+      "value": "",
+      "type": "text"
+    },
+    {
+      "name": "branch1Id",
+      "value": "",
+      "type": "text"
+    },
+    {
+      "name": "branch2Id",
+      "value": "",
+      "type": "text"
+    },
+    {
+      "name": "branch3Id",
+      "value": "",
+      "type": "text"
+    }
+  ]
+}

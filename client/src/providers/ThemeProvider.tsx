@@ -477,8 +477,27 @@ const removeTenantBrandingCSS = () => {
 };
 
 export const ThemeProvider = ({ children }: ThemeProviderProps) => {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  // Initialize theme from localStorage or default to 'dark'
+  const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+      return savedTheme || 'dark';
+    }
+    return 'dark';
+  });
   const [tenantBranding, setTenantBranding] = useState<TenantBranding | null>(null);
+
+  // Apply theme to document and save to localStorage
+  const setTheme = useCallback((newTheme: 'light' | 'dark') => {
+    setThemeState(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+  }, []);
+
+  // Apply theme on initial load
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, []);
 
   const loadTenantBranding = useCallback((branding: TenantBranding) => {
     const sanitized = sanitizeTenantBranding(branding);

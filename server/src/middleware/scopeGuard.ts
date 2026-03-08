@@ -13,7 +13,8 @@
  * Access Hierarchy:
  * - SYSTEM scope: Full access to all panels and resources
  * - TENANT scope: Access to admin + app panels within their tenant
- * - BRANCH/BUSINESS_LINE/MIXED scope: Access to app panel only, within their scope
+ * - MIXED scope: Access to admin + app panels — multi-branch user (SAP B1 style)
+ * - BRANCH/BUSINESS_LINE scope: Access to admin + app panels — DPF controls granular access
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -90,7 +91,11 @@ function isPanelAccessAllowed(userScope: AccessScope, panel: PanelType): boolean
     case 'system':
       return userScope === 'system';
     case 'admin':
-      return userScope === 'system' || userScope === 'tenant';
+      // DPF screen authorizations provide granular per-route access control.
+      // Allow all authenticated users — individual routes enforce
+      // permissions via requireScreenAuth() / requirePermission().
+      // Tenant isolation is guaranteed by tenantLoader middleware.
+      return true;
     case 'app':
       return true;
     default:

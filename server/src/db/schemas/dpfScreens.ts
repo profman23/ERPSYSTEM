@@ -19,6 +19,7 @@ export const dpfScreens = pgTable('dpf_screens', {
   screenNameAr: varchar('screen_name_ar', { length: 255 }),
   description: text('description'),
   descriptionAr: text('description_ar'),
+  sortOrder: varchar('sort_order', { length: 50 }).default('0'),
   route: varchar('route', { length: 255 }), // Frontend route
   componentPath: varchar('component_path', { length: 500 }), // Component file path
   isActive: varchar('is_active', { length: 10 }).notNull().default('true'),

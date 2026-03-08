@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/accordion';
 import { PermissionCheckbox } from './PermissionCheckbox';
 import { Badge } from '@/components/ui/badge';
-import type { PermissionMatrixModule, PermissionMatrixScreen, DPFAction } from '../../../../types/dpf';
+import type { PermissionMatrixModule, PermissionMatrixScreen, DPFAction } from '@types/dpf';
 
 interface PermissionTreeProps {
   modules: PermissionMatrixModule[];

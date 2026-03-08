@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, boolean, text, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, boolean, text, jsonb, index } from 'drizzle-orm/pg-core';
 import { tenants } from './tenants';
 import { businessLines } from './businessLines';
 
@@ -13,6 +13,10 @@ export const branches = pgTable('branches', {
   country: varchar('country', { length: 100 }),
   postalCode: varchar('postal_code', { length: 20 }),
   address: text('address'),
+  buildingNumber: varchar('building_number', { length: 50 }),
+  district: varchar('district', { length: 100 }),
+  vatRegistrationNumber: varchar('vat_registration_number', { length: 50 }),
+  commercialRegistrationNumber: varchar('commercial_registration_number', { length: 100 }),
   phone: varchar('phone', { length: 50 }),
   email: varchar('email', { length: 255 }),
   timezone: varchar('timezone', { length: 100 }),
@@ -21,7 +25,12 @@ export const branches = pgTable('branches', {
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  tenantIsActiveIdx: index('branches_tenant_is_active_idx').on(table.tenantId, table.isActive),
+  tenantCodeIdx: index('branches_tenant_code_idx').on(table.tenantId, table.code),
+  businessLineIdx: index('branches_business_line_idx').on(table.businessLineId),
+  tenantBusinessLineIdx: index('branches_tenant_bl_idx').on(table.tenantId, table.businessLineId),
+}));
 
 export type Branch = typeof branches.$inferSelect;
 export type NewBranch = typeof branches.$inferInsert;

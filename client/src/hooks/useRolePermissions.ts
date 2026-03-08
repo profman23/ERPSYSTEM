@@ -1,73 +1,71 @@
 /**
  * React Query Hooks for Permission Management
- * Provides permission matrix and role permission assignment
+ * Uses apiClient exclusively for consistent auth, dedup, and error handling.
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
-import { useAuth } from '@/contexts/AuthContext';
+import { apiClient } from '@/lib/api';
 import type {
   PermissionMatrixModule,
   DPFPermission,
   AssignPermissionsInput,
-  ApiResponse,
-} from '../../../types/dpf';
+} from '@types/dpf';
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
-
+/**
+ * GET /api/v1/tenant/dpf/permissions/matrix
+ */
 export function usePermissionMatrix() {
   return useQuery({
     queryKey: ['permissions', 'matrix'],
     queryFn: async (): Promise<PermissionMatrixModule[]> => {
-      const { data } = await axios.get<ApiResponse<PermissionMatrixModule[]>>(
-        `${API_BASE}/tenant/permissions/matrix`
-      );
-      return data.data!;
+      const { data } = await apiClient.get('/tenant/dpf/permissions/matrix');
+      return data.data;
     },
   });
 }
 
+/**
+ * GET /api/v1/tenant/dpf/permissions/all
+ */
 export function useAllPermissions() {
   return useQuery({
     queryKey: ['permissions', 'all'],
     queryFn: async (): Promise<DPFPermission[]> => {
-      const { data } = await axios.get<ApiResponse<DPFPermission[]>>(
-        `${API_BASE}/tenant/permissions/all`
-      );
-      return data.data!;
+      const { data } = await apiClient.get('/tenant/dpf/permissions/all');
+      return data.data;
     },
   });
 }
 
+/**
+ * GET /api/v1/tenant/dpf/permissions/roles/:roleId/permissions
+ */
 export function useRolePermissions(roleId: string | undefined) {
   return useQuery({
     queryKey: ['role-permissions', roleId],
     queryFn: async (): Promise<string[]> => {
-      const { data } = await axios.get<ApiResponse<string[]>>(
-        `${API_BASE}/tenant/roles/${roleId}/permissions`
-      );
-      return data.data!;
+      const { data } = await apiClient.get(`/tenant/dpf/permissions/roles/${roleId}/permissions`);
+      return data.data;
     },
     enabled: !!roleId,
   });
 }
 
+/**
+ * Batch fetch permissions for multiple roles
+ */
 export function useBatchRolePermissions(roleIds: string[]) {
-  const { accessToken } = useAuth();
-  
   return useQuery({
     queryKey: ['batch-role-permissions', roleIds.sort().join(',')],
     queryFn: async () => {
-      if (roleIds.length === 0 || !accessToken) {
+      if (roleIds.length === 0) {
         return { permissions: [], rolePermissionsMap: {} };
       }
 
       const responses = await Promise.all(
         roleIds.map(roleId =>
-          axios.get<ApiResponse<{ roleId: string; permissions: DPFPermission[] }>>(
-            `${API_BASE}/tenant/roles/${roleId}/permissions`,
-            { headers: { Authorization: `Bearer ${accessToken}` } }
-          ).catch(() => ({ data: { data: { roleId, permissions: [] } } }))
+          apiClient.get(`/tenant/dpf/permissions/roles/${roleId}/permissions`)
+            .catch(() => ({ data: { data: { roleId, permissions: [] } } }))
         )
       );
 
@@ -80,8 +78,8 @@ export function useBatchRolePermissions(roleIds: string[]) {
         if (responseData && responseData.permissions) {
           const { roleId, permissions } = responseData;
           rolePermissionsMap[roleId] = permissions;
-          
-          permissions.forEach(perm => {
+
+          permissions.forEach((perm: DPFPermission) => {
             if (!permissionCodesSeen.has(perm.permissionCode)) {
               permissionCodesSeen.add(perm.permissionCode);
               allPermissions.push(perm);
@@ -95,21 +93,24 @@ export function useBatchRolePermissions(roleIds: string[]) {
         rolePermissionsMap,
       };
     },
-    enabled: roleIds.length > 0 && !!accessToken,
+    enabled: roleIds.length > 0,
     staleTime: 5 * 60 * 1000,
   });
 }
 
+/**
+ * POST /api/v1/tenant/dpf/permissions/roles/:roleId/permissions
+ */
 export function useAssignPermissions() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (input: AssignPermissionsInput) => {
-      const { data } = await axios.post<ApiResponse<{ success: boolean }>>(
-        `${API_BASE}/tenant/roles/${input.roleId}/permissions`,
+      const { data } = await apiClient.post(
+        `/tenant/dpf/permissions/roles/${input.roleId}/permissions`,
         { permissionIds: input.permissionIds }
       );
-      return data.data!;
+      return data.data;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['role-permissions', variables.roleId] });

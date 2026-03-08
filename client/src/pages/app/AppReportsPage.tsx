@@ -1,8 +1,12 @@
-import { FileText, Download, Calendar, TrendingUp } from 'lucide-react';
+import { FileText, Download, Calendar, TrendingUp, BarChart3 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { useRouteBreadcrumbs } from '@/hooks/useRouteBreadcrumbs';
+import { StyledIcon } from '@/components/ui/StyledIcon';
 
 export default function AppReportsPage() {
+  const { items: breadcrumbs, homeHref } = useRouteBreadcrumbs();
   const reports = [
     { name: 'Daily Summary', description: 'Overview of today\'s activities', date: 'Today', type: 'daily' },
     { name: 'Weekly Performance', description: 'Week performance metrics', date: 'This Week', type: 'weekly' },
@@ -11,16 +15,25 @@ export default function AppReportsPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--app-text)' }}>Reports</h1>
-          <p className="mt-1" style={{ color: 'var(--app-text-secondary)' }}>View and download performance reports</p>
+    <div className="space-y-4">
+      <div>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <StyledIcon icon={BarChart3} emoji="📊" className="w-8 h-8 text-[var(--color-accent)]" />
+              <h1 className="text-2xl font-bold" style={{ color: 'var(--app-text)' }}>Reports</h1>
+            </div>
+          </div>
+          <Button variant="outline">
+            <Calendar className="w-4 h-4 mr-2" />
+            Select Period
+          </Button>
         </div>
-        <Button variant="outline">
-          <Calendar className="w-4 h-4 mr-2" />
-          Select Period
-        </Button>
+        {breadcrumbs.length > 0 && (
+          <div className="mt-2">
+            <Breadcrumbs items={breadcrumbs} showHome homeHref={homeHref} />
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -34,7 +47,7 @@ export default function AppReportsPage() {
                 <p className="text-sm font-medium" style={{ color: 'var(--app-accent)' }}>Appointments This Week</p>
                 <p className="text-3xl font-bold mt-1" style={{ color: 'var(--app-text)' }}>47</p>
                 <p className="text-sm mt-1 flex items-center gap-1" style={{ color: 'var(--app-success)' }}>
-                  <TrendingUp className="w-4 h-4" />
+                  <StyledIcon icon={TrendingUp} className="w-4 h-4" />
                   +12% from last week
                 </p>
               </div>
@@ -42,7 +55,7 @@ export default function AppReportsPage() {
                 className="w-12 h-12 rounded-xl flex items-center justify-center"
                 style={{ backgroundColor: `color-mix(in srgb, var(--app-accent) 20%, transparent)` }}
               >
-                <Calendar className="w-6 h-6" style={{ color: 'var(--app-accent)' }} />
+                <StyledIcon icon={Calendar} emoji="📅" className="w-6 h-6" style={{ color: 'var(--app-accent)' }} />
               </div>
             </div>
           </CardContent>
@@ -62,7 +75,7 @@ export default function AppReportsPage() {
                 className="w-12 h-12 rounded-xl flex items-center justify-center"
                 style={{ backgroundColor: `color-mix(in srgb, var(--app-info) 20%, transparent)` }}
               >
-                <FileText className="w-6 h-6" style={{ color: 'var(--app-info)' }} />
+                <StyledIcon icon={FileText} emoji="📊" className="w-6 h-6" style={{ color: 'var(--app-info)' }} />
               </div>
             </div>
           </CardContent>
@@ -75,7 +88,7 @@ export default function AppReportsPage() {
       >
         <CardHeader>
           <CardTitle className="flex items-center gap-2" style={{ color: 'var(--app-text)' }}>
-            <FileText className="w-5 h-5" style={{ color: 'var(--app-accent)' }} />
+            <StyledIcon icon={FileText} emoji="📊" className="w-5 h-5" style={{ color: 'var(--app-accent)' }} />
             Available Reports
           </CardTitle>
           <CardDescription style={{ color: 'var(--app-text-secondary)' }}>Generate and download reports</CardDescription>
@@ -99,13 +112,15 @@ export default function AppReportsPage() {
                       } 20%, transparent)` 
                     }}
                   >
-                    <FileText 
-                      className="w-5 h-5" 
-                      style={{ 
+                    <StyledIcon
+                      icon={FileText}
+                      emoji="📊"
+                      className="w-5 h-5"
+                      style={{
                         color: report.type === 'daily' ? 'var(--app-info)' :
                           report.type === 'weekly' ? 'var(--color-accent)' :
                           report.type === 'monthly' ? 'var(--app-success)' : 'var(--app-warning)'
-                      }} 
+                      }}
                     />
                   </div>
                   <div>

@@ -1,18 +1,14 @@
 /**
  * useSessionGuard Hook - HARDENED Session Security
- * 
- * PHASE 3 HARDENED - Dec 2024
- * 
+ *
+ * 2-Panel Architecture: /system + /app
+ *
  * SECURITY GUARANTEES:
  * 1. Real-time scope mismatch detection
  * 2. Multi-tab session synchronization
  * 3. Role change detection during active session
  * 4. Automatic redirect on scope violation
  * 5. Session integrity validation
- * 
- * Usage:
- * Call this hook in any component that needs session security.
- * It will automatically handle scope changes and multi-tab scenarios.
  */
 
 import { useEffect, useCallback, useState } from 'react';
@@ -27,8 +23,8 @@ import {
 interface SessionGuardResult {
   isValid: boolean;
   isScopeMismatch: boolean;
-  currentPanel: 'system' | 'admin' | 'app' | null;
-  expectedPanel: 'system' | 'admin' | 'app';
+  currentPanel: 'system' | 'app' | null;
+  expectedPanel: 'system' | 'app';
   correctPath: string;
   forceRedirect: () => void;
 }
@@ -48,7 +44,6 @@ export function useSessionGuard(): SessionGuardResult {
   const expectedPanel = (() => {
     switch (userScope) {
       case 'system': return 'system' as const;
-      case 'tenant': return 'admin' as const;
       default: return 'app' as const;
     }
   })();
@@ -158,8 +153,7 @@ export function useScopeMismatchAlert(): {
 
   const panelNames = {
     system: 'System Admin',
-    admin: 'Tenant Admin',
-    app: 'App',
+    app: 'Application',
   };
 
   return {

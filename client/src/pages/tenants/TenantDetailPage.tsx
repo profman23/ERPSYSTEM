@@ -1,13 +1,16 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, Building2, Users, MapPin, GitBranch, 
-  Plus, ChevronRight, Eye, Edit 
+import {
+  Building2, Users, MapPin, GitBranch,
+  Plus, ChevronRight, Eye, Edit
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useTenant } from '@/hooks/useHierarchy';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { useRouteBreadcrumbs } from '@/hooks/useRouteBreadcrumbs';
 import { LoadingState } from '@/components/ui/loading-state';
 import { EmptyState } from '@/components/ui/empty-state';
 
@@ -28,8 +31,10 @@ const statusColors: Record<string, 'default' | 'success' | 'warning' | 'error'> 
 export default function TenantDetailPage() {
   const { tenantId } = useParams<{ tenantId: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { data: tenant, isLoading, error } = useTenant(tenantId);
   const [expandedBL, setExpandedBL] = useState<string | null>(null);
+  const { items: breadcrumbs, homeHref } = useRouteBreadcrumbs();
 
   if (isLoading) {
     return <LoadingState size="lg" message="Loading tenant..." fullPage />;
@@ -42,7 +47,7 @@ export default function TenantDetailPage() {
         title="Tenant Not Found"
         description="The tenant you're looking for doesn't exist or you don't have access."
         action={{
-          label: 'Back to Tenants',
+          label: t('common.back'),
           onClick: () => navigate('/tenants'),
         }}
       />
@@ -50,61 +55,57 @@ export default function TenantDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <Link
-          to="/tenants"
-          className="inline-flex items-center gap-2 text-sm mb-4 transition-colors hover:opacity-70"
-          style={{ color: 'var(--color-text-secondary)' }}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Tenants
-        </Link>
-      </div>
-
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-4">
-          <div
-            className="w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold"
-            style={{ 
-              backgroundColor: tenant.primaryColor || 'var(--color-accent)',
-              color: 'var(--color-text-on-accent)'
-            }}
-          >
-            {tenant.name.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
-              {tenant.name}
-            </h1>
-            <div className="flex items-center gap-3 mt-2">
-              <code 
-                className="text-sm px-2 py-1 rounded"
-                style={{ backgroundColor: 'var(--color-surface-hover)' }}
-              >
-                {tenant.code}
-              </code>
-              <Badge variant={planColors[tenant.subscriptionPlan] || 'default'}>
-                {tenant.subscriptionPlan}
-              </Badge>
-              <Badge variant={statusColors[tenant.status] || 'default'}>
-                {tenant.status}
-              </Badge>
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-4">
+            <div
+              className="w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold"
+              style={{
+                backgroundColor: tenant.primaryColor || 'var(--color-accent)',
+                color: 'var(--color-text-on-accent)'
+              }}
+            >
+              {tenant.name.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
+                <Building2 className="w-8 h-8 text-[var(--color-accent)]" /> {tenant.name}
+              </h1>
+              <div className="flex items-center gap-3 mt-2">
+                <code
+                  className="text-sm px-2 py-1 rounded"
+                  style={{ backgroundColor: 'var(--color-surface-hover)' }}
+                >
+                  {tenant.code}
+                </code>
+                <Badge variant={planColors[tenant.subscriptionPlan] || 'default'}>
+                  {tenant.subscriptionPlan}
+                </Badge>
+                <Badge variant={statusColors[tenant.status] || 'default'}>
+                  {tenant.status}
+                </Badge>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate(`/tenants/${tenantId}/edit`)}>
-            <Edit className="w-4 h-4 mr-2" />
-            Edit
-          </Button>
-          <Link to={`/business-lines?tenantId=${tenantId}`}>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Business Line
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate(`/tenants/${tenantId}/edit`)}>
+              <Edit className="w-4 h-4 mr-2" />
+              {t('common.edit')}
             </Button>
-          </Link>
+            <Link to={`/business-lines?tenantId=${tenantId}`}>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                {t('businessLines.createBusinessLine')}
+              </Button>
+            </Link>
+          </div>
         </div>
+        {breadcrumbs.length > 0 && (
+          <div className="mt-2">
+            <Breadcrumbs items={breadcrumbs} showHome homeHref={homeHref} />
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -122,7 +123,7 @@ export default function TenantDetailPage() {
                   {tenant.businessLineCount || tenant.businessLines?.length || 0}
                 </p>
                 <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                  Business Lines
+                  {t('tenants.businessLines')}
                 </p>
               </div>
             </div>
@@ -142,7 +143,7 @@ export default function TenantDetailPage() {
                   {tenant.totalBranches || 0}
                 </p>
                 <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                  Branches
+                  {t('tenants.branches')}
                 </p>
               </div>
             </div>
@@ -162,7 +163,7 @@ export default function TenantDetailPage() {
                   {tenant.totalUsers || 0}
                 </p>
                 <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                  Users
+                  {t('tenants.users')}
                 </p>
               </div>
             </div>
@@ -172,7 +173,7 @@ export default function TenantDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Organization Hierarchy</CardTitle>
+          <CardTitle className="flex items-center gap-2"><Building2 className="w-5 h-5" /> Organization Hierarchy</CardTitle>
           <CardDescription>
             View all business lines, branches, and users under this organization
           </CardDescription>
@@ -307,7 +308,7 @@ export default function TenantDetailPage() {
       {tenant.contactEmail || tenant.contactPhone || tenant.address ? (
         <Card>
           <CardHeader>
-            <CardTitle>Contact Information</CardTitle>
+            <CardTitle>{t('tenants.contactInfo')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

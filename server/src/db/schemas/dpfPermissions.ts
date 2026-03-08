@@ -25,6 +25,7 @@ export const dpfPermissions = pgTable('dpf_permissions', {
   screenId: uuid('screen_id').references(() => dpfScreens.id), // Optional - for screen-specific permissions
   actionId: uuid('action_id').references(() => dpfActions.id), // Optional - for action-specific permissions
   permissionType: varchar('permission_type', { length: 50 }).notNull(), // 'MODULE', 'SCREEN', 'ACTION', 'API', 'SOCKET'
+  permissionLevel: varchar('permission_level', { length: 20 }).notNull().default('APP'), // 'SYSTEM', 'ADMIN', 'APP'
   requiredScope: varchar('required_scope', { length: 50 }), // Minimum scope required
   isActive: varchar('is_active', { length: 10 }).notNull().default('true'),
   createdAt: timestamp('created_at').defaultNow().notNull(),

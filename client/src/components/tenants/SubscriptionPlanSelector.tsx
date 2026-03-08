@@ -22,7 +22,7 @@ interface SubscriptionPlanSelectorProps {
 }
 
 async function fetchSubscriptionPlans(): Promise<SubscriptionPlan[]> {
-  const response = await apiClient.get('/api/v1/tenants/meta/subscription-plans');
+  const response = await apiClient.get('/tenants/meta/subscription-plans');
   return response.data.data;
 }
 
@@ -150,6 +150,10 @@ export function SubscriptionPlanSelector({
                 <div className="flex items-center gap-1.5">
                   <Building2 className="w-3.5 h-3.5" />
                   <span>{formatLimit(plan.maxBranches)} branches</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Briefcase className="w-3.5 h-3.5" />
+                  <span>{formatLimit(plan.maxBusinessLines)} business lines</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <HardDrive className="w-3.5 h-3.5" />

@@ -1,12 +1,12 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'outline' | 'secondary';
   size?: 'default' | 'sm' | 'lg';
 }
 
-export const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
+export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
   ({ className, variant = 'default', size = 'default', style, ...props }, ref) => {
     const getVariantStyles = (): React.CSSProperties => {
       switch (variant) {
@@ -67,7 +67,7 @@ export const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
     };
 
     return (
-      <div
+      <span
         ref={ref}
         className={cn(
           'inline-flex items-center rounded-full font-semibold border transition-colors',

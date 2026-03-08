@@ -33,6 +33,23 @@ export class ActionExecutor {
     userId: string,
     action: AgiAction
   ): Promise<ExecutionResult> {
+    const params = action.params || {};
+
+    // READ actions don't require entity metadata — handleRead supports extra entities like 'roles'
+    if (action.type === 'READ') {
+      try {
+        return this.handleRead(tenantId, action.target, params);
+      } catch (error) {
+        const errMessage = error instanceof Error ? error.message : 'Unknown error';
+        return {
+          success: false,
+          message: `Failed to read: ${errMessage}`,
+          messageAr: `فشل الاستعلام: ${errMessage}`,
+        };
+      }
+    }
+
+    // For mutations (CREATE, UPDATE, DELETE) — validate entity metadata and required fields
     const meta = getEntityMeta(action.target);
     if (!meta) {
       return {
@@ -42,28 +59,21 @@ export class ActionExecutor {
       };
     }
 
-    const params = action.params || {};
-
-    // Defense-in-depth: validate required fields (only for mutations, not READ)
-    if (action.type !== 'READ') {
-      const missingFields = meta.requiredFields.filter(f => !params[f.name]);
-      if (missingFields.length > 0) {
-        const missingEn = missingFields.map(f => f.label).join(', ');
-        const missingAr = missingFields.map(f => f.labelAr).join('، ');
-        return {
-          success: false,
-          message: `Missing required fields: ${missingEn}`,
-          messageAr: `حقول مطلوبة ناقصة: ${missingAr}`,
-        };
-      }
+    const missingFields = meta.requiredFields.filter(f => !params[f.name]);
+    if (missingFields.length > 0) {
+      const missingEn = missingFields.map(f => f.label).join(', ');
+      const missingAr = missingFields.map(f => f.labelAr).join('، ');
+      return {
+        success: false,
+        message: `Missing required fields: ${missingEn}`,
+        messageAr: `حقول مطلوبة ناقصة: ${missingAr}`,
+      };
     }
 
     try {
       switch (action.type) {
         case 'CREATE':
           return this.handleCreate(tenantId, action.target, params);
-        case 'READ':
-          return this.handleRead(tenantId, action.target, params);
         default:
           return {
             success: false,
@@ -183,13 +193,15 @@ export class ActionExecutor {
 
     switch (entity) {
       case 'branches': {
-        const allBranches: { name: string; city: string; blName: string; userCount: number }[] = [];
+        const allBranches: { id: string; name: string; city: string; blName: string; blId: string; userCount: number }[] = [];
         for (const bl of hierarchy.businessLines) {
           for (const branch of bl.branches) {
             allBranches.push({
+              id: (branch as any).id || '',
               name: branch.name,
               city: (branch as any).city || '',
               blName: bl.name,
+              blId: (bl as any).id || '',
               userCount: (branch as any).userCount || 0,
             });
           }
@@ -207,11 +219,12 @@ export class ActionExecutor {
         const displayed = allBranches.slice(0, MAX_DISPLAY);
         const remaining = allBranches.length - displayed.length;
 
+        // Include IDs in display so Claude can reference them for create_entity
         const linesAr = displayed.map((b, i) =>
-          `${i + 1}. ${b.name} — ${b.city} (${b.blName}) — ${b.userCount} مستخدم`
+          `${i + 1}. ${b.name} — ${b.city} (${b.blName}) — ${b.userCount} مستخدم [id: ${b.id}]`
         );
         const linesEn = displayed.map((b, i) =>
-          `${i + 1}. ${b.name} — ${b.city} (${b.blName}) — ${b.userCount} users`
+          `${i + 1}. ${b.name} — ${b.city} (${b.blName}) — ${b.userCount} users [id: ${b.id}]`
         );
 
         const suffixAr = remaining > 0 ? `\n... و${remaining} فرع آخر` : '';
@@ -241,10 +254,10 @@ export class ActionExecutor {
         const remaining = bls.length - displayed.length;
 
         const linesAr = displayed.map((bl, i) =>
-          `${i + 1}. ${bl.name} — ${bl.branchCount} فرع — ${bl.totalUsers} مستخدم`
+          `${i + 1}. ${bl.name} — ${bl.branchCount} فرع — ${bl.totalUsers} مستخدم [id: ${(bl as any).id || ''}]`
         );
         const linesEn = displayed.map((bl, i) =>
-          `${i + 1}. ${bl.name} — ${bl.branchCount} branches — ${bl.totalUsers} users`
+          `${i + 1}. ${bl.name} — ${bl.branchCount} branches — ${bl.totalUsers} users [id: ${(bl as any).id || ''}]`
         );
 
         const suffixAr = remaining > 0 ? `\n... و${remaining} خط عمل آخر` : '';

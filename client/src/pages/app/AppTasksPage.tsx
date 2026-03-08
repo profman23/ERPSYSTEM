@@ -1,8 +1,12 @@
-import { ClipboardList, Plus, CheckCircle, Circle } from 'lucide-react';
+import { ClipboardList, Plus, CheckCircle, Circle, ListChecks } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { useRouteBreadcrumbs } from '@/hooks/useRouteBreadcrumbs';
+import { StyledIcon } from '@/components/ui/StyledIcon';
 
 export default function AppTasksPage() {
+  const { items: breadcrumbs, homeHref } = useRouteBreadcrumbs();
   const tasks = [
     { id: 1, title: 'Review lab results for Max', priority: 'high', status: 'pending', dueTime: 'Today, 11:00 AM' },
     { id: 2, title: 'Prepare medication for Luna', priority: 'medium', status: 'pending', dueTime: 'Today, 12:00 PM' },
@@ -15,19 +19,28 @@ export default function AppTasksPage() {
   const completedTasks = tasks.filter(t => t.status === 'completed');
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--app-text)' }}>Tasks</h1>
-          <p className="mt-1" style={{ color: 'var(--app-text-secondary)' }}>Track and manage your daily tasks</p>
+    <div className="space-y-4">
+      <div>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <StyledIcon icon={ListChecks} emoji="✅" className="w-8 h-8 text-[var(--color-accent)]" />
+              <h1 className="text-2xl font-bold" style={{ color: 'var(--app-text)' }}>Tasks</h1>
+            </div>
+          </div>
+          <Button
+            className="text-white"
+            style={{ background: 'linear-gradient(135deg, var(--app-accent), var(--app-accent-hover))' }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Task
+          </Button>
         </div>
-        <Button 
-          className="text-white"
-          style={{ background: 'linear-gradient(135deg, var(--app-accent), var(--app-accent-hover))' }}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Task
-        </Button>
+        {breadcrumbs.length > 0 && (
+          <div className="mt-2">
+            <Breadcrumbs items={breadcrumbs} showHome homeHref={homeHref} />
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -45,7 +58,7 @@ export default function AppTasksPage() {
                 className="w-10 h-10 rounded-full flex items-center justify-center"
                 style={{ backgroundColor: `color-mix(in srgb, var(--app-warning) 20%, transparent)` }}
               >
-                <ClipboardList className="w-5 h-5" style={{ color: 'var(--app-warning)' }} />
+                <StyledIcon icon={ClipboardList} emoji="✅" className="w-5 h-5" style={{ color: 'var(--app-warning)' }} />
               </div>
             </div>
           </CardContent>
@@ -64,7 +77,7 @@ export default function AppTasksPage() {
                 className="w-10 h-10 rounded-full flex items-center justify-center"
                 style={{ backgroundColor: `color-mix(in srgb, var(--app-info) 20%, transparent)` }}
               >
-                <Circle className="w-5 h-5" style={{ color: 'var(--app-info)' }} />
+                <StyledIcon icon={Circle} className="w-5 h-5" style={{ color: 'var(--app-info)' }} />
               </div>
             </div>
           </CardContent>
@@ -83,7 +96,7 @@ export default function AppTasksPage() {
                 className="w-10 h-10 rounded-full flex items-center justify-center"
                 style={{ backgroundColor: `color-mix(in srgb, var(--app-success) 20%, transparent)` }}
               >
-                <CheckCircle className="w-5 h-5" style={{ color: 'var(--app-success)' }} />
+                <StyledIcon icon={CheckCircle} className="w-5 h-5" style={{ color: 'var(--app-success)' }} />
               </div>
             </div>
           </CardContent>
@@ -115,9 +128,9 @@ export default function AppTasksPage() {
                     style={{ borderColor: 'var(--app-border)' }}
                   >
                     {task.status === 'completed' ? (
-                      <CheckCircle className="w-5 h-5" style={{ color: 'var(--app-accent)' }} />
+                      <StyledIcon icon={CheckCircle} className="w-5 h-5" style={{ color: 'var(--app-accent)' }} />
                     ) : (
-                      <Circle className="w-4 h-4" style={{ color: 'var(--app-text-muted)' }} />
+                      <StyledIcon icon={Circle} className="w-4 h-4" style={{ color: 'var(--app-text-muted)' }} />
                     )}
                   </button>
                   <div>

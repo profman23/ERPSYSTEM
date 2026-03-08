@@ -5,6 +5,29 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Veterinary ERP SaaS</title>
+    <!-- Prevent flash of black background during initial load -->
+    <style>
+      /* Default to light background to prevent flash */
+      html, body {
+        background-color: #F3F4F6;
+        margin: 0;
+        padding: 0;
+      }
+      /* If dark mode is detected, use dark background */
+      @media (prefers-color-scheme: dark) {
+        html, body {
+          background-color: #0D0D0D;
+        }
+      }
+      /* System panel dark theme */
+      html[data-panel="system"] body {
+        background-color: #0D0D0D;
+      }
+      /* System panel light theme */
+      html[data-panel="system"][data-theme="light"] body {
+        background-color: #FFFFFF;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
 import { db } from '../../db';
-import { users, tenants } from '../../db/schemas';
-import { eq, and } from 'drizzle-orm';
+import { users, tenants, branches } from '../../db/schemas';
+import { eq, and, inArray } from 'drizzle-orm';
 import { AuthService } from '../../services/AuthService';
+import { dpfEngine } from '../../rbac/dpfEngine';
+import logger from '../../config/logger';
 
 /**
  * POST /auth/login
@@ -27,6 +29,7 @@ export const login = async (req: Request, res: Response) => {
       .limit(1);
 
     if (!tenant) {
+      console.warn(`[AUTH] Login failed: tenant code "${tenantCode}" not found`);
       return res.status(401).json({
         error: 'Invalid tenant code',
       });
@@ -44,6 +47,7 @@ export const login = async (req: Request, res: Response) => {
       .limit(1);
 
     if (!user) {
+      console.warn(`[AUTH] Login failed: email "${normalizedEmail}" not found (tenant: ${tenantCode})`);
       return res.status(401).json({
         error: 'Invalid email or password',
       });
@@ -52,6 +56,7 @@ export const login = async (req: Request, res: Response) => {
     // CRITICAL: Validate tenant association BEFORE password check
     // This prevents cross-tenant access
     if (user.accessScope !== 'system' && user.tenantId !== tenant.id) {
+      console.warn(`[AUTH] Login failed: tenant mismatch for "${normalizedEmail}" - user.tenantId=${user.tenantId}, tenant.id=${tenant.id} (code: ${tenantCode})`);
       return res.status(401).json({
         error: 'Invalid email or password',
       });
@@ -71,6 +76,7 @@ export const login = async (req: Request, res: Response) => {
     );
 
     if (!isPasswordValid) {
+      console.warn(`[AUTH] Login failed: wrong password for "${normalizedEmail}" (tenant: ${tenantCode})`);
       return res.status(401).json({
         error: 'Invalid email or password',
       });
@@ -99,6 +105,29 @@ export const login = async (req: Request, res: Response) => {
     // Update last login time
     await AuthService.updateLastLogin(user.id);
 
+    // Fetch user's branch details for multi-branch users (avoids extra API call)
+    const allowedBranchIds: string[] = (user as any).allowedBranchIds || [];
+    const allBranchIds = new Set<string>();
+    if (user.branchId) allBranchIds.add(user.branchId);
+    allowedBranchIds.forEach(id => allBranchIds.add(id));
+
+    let userBranches: Array<{ id: string; name: string; code: string; city: string | null; country: string | null }> = [];
+    if (allBranchIds.size > 0) {
+      userBranches = await db.select({
+        id: branches.id,
+        name: branches.name,
+        code: branches.code,
+        city: branches.city,
+        country: branches.country,
+      }).from(branches).where(inArray(branches.id, Array.from(allBranchIds)));
+    }
+
+    // Pre-warm permission cache (fire-and-forget, does not block login response)
+    const warmupTenantId = user.tenantId || tenant.id;
+    dpfEngine.getEffectivePermissions(user.id, warmupTenantId).catch(err => {
+      logger.warn('Permission cache warmup failed on login', { userId: user.id, error: (err as Error).message });
+    });
+
     // Return tokens and user data
     return res.status(200).json({
       accessToken,
@@ -112,6 +141,8 @@ export const login = async (req: Request, res: Response) => {
         tenantId: user.tenantId,
         businessLineId: user.businessLineId,
         branchId: user.branchId,
+        allowedBranchIds,
+        branches: userBranches,
       },
     });
   } catch (error) {

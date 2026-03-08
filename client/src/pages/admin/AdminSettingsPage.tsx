@@ -1,10 +1,13 @@
-import { Building2, Bell, Lock, Globe } from 'lucide-react';
+import { Building2, Bell, Lock, Globe, Settings } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { useRouteBreadcrumbs } from '@/hooks/useRouteBreadcrumbs';
 
 export default function AdminSettingsPage() {
   const { user } = useAuth();
+  const { items: breadcrumbs, homeHref } = useRouteBreadcrumbs();
 
   const settingsSections = [
     { name: 'Organization Profile', description: 'Update tenant name, logo, and contact info', icon: Building2 },
@@ -14,14 +17,19 @@ export default function AdminSettingsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
-          Tenant Settings
-        </h1>
-        <p className="mt-2" style={{ color: 'var(--color-text-secondary)' }}>
-          Configure your organization's settings and preferences
-        </p>
+        <div className="flex items-center gap-3">
+          <Settings className="w-8 h-8 text-[var(--color-accent)]" />
+          <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
+            Tenant Settings
+          </h1>
+        </div>
+        {breadcrumbs.length > 0 && (
+          <div className="mt-2">
+            <Breadcrumbs items={breadcrumbs} showHome homeHref={homeHref} />
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

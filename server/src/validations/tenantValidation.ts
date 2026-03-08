@@ -26,6 +26,7 @@ export const createTenantSchema = z.object({
   contactPhone: z.string().max(50).optional(),
   address: z.string().max(500).optional(),
   defaultLanguage: z.enum(['en', 'ar']).optional().default('en'),
+  aiAssistantEnabled: z.boolean().optional().default(false),
 });
 
 export const updateTenantSchema = z.object({
@@ -46,6 +47,7 @@ export const updateTenantSchema = z.object({
   address: z.string().max(500).optional(),
   defaultLanguage: z.enum(['en', 'ar']).optional(),
   status: z.enum(['active', 'inactive', 'suspended']).optional(),
+  aiAssistantEnabled: z.boolean().optional(),
 });
 
 export const checkTenantCodeSchema = z.object({

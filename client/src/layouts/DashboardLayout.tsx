@@ -1,20 +1,23 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { 
-  LayoutDashboard, 
-  Building2, 
-  Users, 
-  GitBranch, 
+import {
+  LayoutDashboard,
+  Building2,
+  Users,
+  GitBranch,
   Briefcase,
   Menu,
   X,
   ChevronRight
 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 
 export default function DashboardLayout() {
+  const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
-  const [isRTL, setIsRTL] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -22,24 +25,6 @@ export default function DashboardLayout() {
     return () => {
       document.documentElement.removeAttribute('data-panel');
     };
-  }, []);
-
-  useEffect(() => {
-    const checkRTL = () => {
-      const dir = document.documentElement.getAttribute('dir') || 'ltr';
-      const lang = document.documentElement.lang || 'en';
-      setIsRTL(dir === 'rtl' || lang === 'ar');
-    };
-
-    checkRTL();
-
-    const observer = new MutationObserver(checkRTL);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['dir', 'lang'],
-    });
-
-    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -59,11 +44,11 @@ export default function DashboardLayout() {
   }, []);
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, nameAr: 'لوحة التحكم' },
-    { name: 'Tenants', href: '/tenants', icon: Building2, nameAr: 'العملاء' },
-    { name: 'Business Lines', href: '/business-lines', icon: Briefcase, nameAr: 'خطوط الأعمال' },
-    { name: 'Branches', href: '/branches', icon: GitBranch, nameAr: 'الفروع' },
-    { name: 'Users', href: '/users', icon: Users, nameAr: 'المستخدمين' },
+    { key: 'nav.dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { key: 'nav.tenants', href: '/tenants', icon: Building2 },
+    { key: 'nav.businessLines', href: '/business-lines', icon: Briefcase },
+    { key: 'nav.branches', href: '/branches', icon: GitBranch },
+    { key: 'nav.users', href: '/users', icon: Users },
   ];
 
   const isActiveRoute = (href: string) => {
@@ -78,27 +63,27 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className={`min-h-screen bg-panel flex ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+    <div className="min-h-screen bg-panel flex flex-row">
       <aside
         className={`
           ${isSidebarOpen ? 'translate-x-0' : isRTL ? 'translate-x-full' : '-translate-x-full'}
-          ${isMobile ? 'fixed inset-y-0 z-50 w-64' : 'relative w-64'}
+          ${isMobile ? `fixed inset-y-0 z-50 w-64 ${isRTL ? 'right-0' : 'left-0'}` : 'relative w-64'}
           bg-surface border-panel
-          ${isRTL ? 'border-l' : 'border-r'}
+          border-e
           transition-transform duration-300 ease-in-out
           flex flex-col
         `}
       >
-        <div className={`h-16 flex items-center px-6 border-b border-panel ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div 
+        <div className="h-16 flex items-center px-6 border-b border-panel">
+          <div className="flex items-center gap-3">
+            <div
               className="w-8 h-8 rounded-lg flex items-center justify-center bg-accent"
             >
               <Building2 className="w-5 h-5 text-white" />
             </div>
-            <div className={isRTL ? 'text-right' : 'text-left'}>
+            <div>
               <h1 className="text-sm font-bold text-panel">
-                {isRTL ? 'نظام ERP البيطري' : 'Veterinary ERP'}
+                {t('nav.veterinaryErp')}
               </h1>
             </div>
           </div>
@@ -106,9 +91,9 @@ export default function DashboardLayout() {
 
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
           {navigation.map((item) => {
-            const Icon = item.icon;
+            const ItemIcon = item.icon;
             const active = isActiveRoute(item.href);
-            
+
             return (
               <Link
                 key={item.href}
@@ -116,14 +101,13 @@ export default function DashboardLayout() {
                 onClick={() => isMobile && setIsSidebarOpen(false)}
                 className={`
                   flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                  ${isRTL ? 'flex-row-reverse' : ''}
                   ${active ? 'sidebar-item-active' : 'sidebar-item'}
                 `}
               >
-                <Icon className="w-5 h-5" />
-                <span>{isRTL ? item.nameAr : item.name}</span>
+                <ItemIcon className="w-5 h-5 flex-shrink-0" />
+                <span>{t(item.key)}</span>
                 {active && (
-                  <ChevronRight className={`w-4 h-4 ml-auto ${isRTL ? 'rotate-180' : ''}`} />
+                  <ChevronRight className="w-4 h-4 me-auto rtl:rotate-180" />
                 )}
               </Link>
             );
@@ -132,7 +116,7 @@ export default function DashboardLayout() {
 
         <div className="p-4 border-t border-panel">
           <div className="text-xs text-center text-muted">
-            {isRTL ? 'الإصدار 1.0.0' : 'Version 1.0.0'}
+            {t('common.version')} 1.0.0
           </div>
         </div>
       </aside>
@@ -145,8 +129,15 @@ export default function DashboardLayout() {
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 bg-surface border-b border-panel flex items-center px-6">
-          <div className={`flex items-center gap-4 flex-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <header
+          className="h-16 border-b flex items-center px-6"
+          style={{
+            backgroundColor: 'var(--header-bg, var(--color-surface))',
+            borderColor: 'var(--header-border, var(--color-border))',
+            color: 'var(--header-text, var(--color-text))',
+          }}
+        >
+          <div className="flex items-center gap-4 flex-1">
             <button
               onClick={toggleSidebar}
               className="lg:hidden p-2 rounded-lg btn-ghost transition-colors"
@@ -159,14 +150,8 @@ export default function DashboardLayout() {
             </button>
 
             <h2 className="text-lg font-semibold text-panel">
-              {isRTL ? 'لوحة التحكم' : 'Dashboard'}
+              {t('nav.dashboard')}
             </h2>
-          </div>
-
-          <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className="text-sm text-secondary">
-              {isRTL ? 'مستخدم تجريبي' : 'Demo User'}
-            </div>
           </div>
         </header>
 

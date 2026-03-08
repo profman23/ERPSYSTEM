@@ -20,6 +20,7 @@ export const dpfRoles = pgTable('dpf_roles', {
   description: text('description'),
   descriptionAr: text('description_ar'),
   roleType: varchar('role_type', { length: 50 }).notNull(), // 'SYSTEM', 'TENANT', 'CUSTOM'
+  roleLevel: varchar('role_level', { length: 20 }).notNull().default('APP'), // 'SYSTEM', 'ADMIN', 'APP'
   defaultAgiLevel: varchar('default_agi_level', { length: 50 }), // Default AGI access level for this role
   isSystemRole: varchar('is_system_role', { length: 10 }).notNull().default('false'), // Predefined system roles
   isBuiltIn: varchar('is_built_in', { length: 10 }).notNull().default('false'), // Built-in roles (SYSTEM_ADMIN, TENANT_ADMIN)

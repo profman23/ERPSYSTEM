@@ -12,25 +12,38 @@ let io: SocketIOServer;
 
 export const initializeSocket = async (httpServer: HTTPServer) => {
   io = new SocketIOServer(httpServer, {
+    // Transport: prefer WebSocket, fallback to polling
+    transports: ['websocket', 'polling'],
+
+    // Payload limits: prevent large message attacks (100KB max)
+    maxHttpBufferSize: 1e5,
+
+    // Keepalive: detect dead connections faster
+    pingInterval: 25000,
+    pingTimeout: 20000,
+
+    // Connection upgrade timeout
+    upgradeTimeout: 10000,
+
+    // Limit per-message overhead
+    httpCompression: true,
+
     cors: {
       origin: (origin, callback) => {
-        // Allow requests with no origin
         if (!origin) {
           callback(null, true);
           return;
         }
-        
-        // Allow all .replit.dev domains for Replit environment
+
         if (origin.endsWith('.replit.dev')) {
           callback(null, true);
           return;
         }
-        
-        // Allow configured origins
+
         if (allowedOrigins.includes(origin)) {
           callback(null, true);
         } else {
-          logger.warn(`❌ Socket.IO CORS rejected origin: ${origin}`);
+          logger.warn(`Socket.IO CORS rejected origin: ${origin}`);
           callback(new Error('Not allowed by CORS'));
         }
       },
@@ -81,6 +94,46 @@ export const initializeSocket = async (httpServer: HTTPServer) => {
   }
 
   io.on('connection', handleConnection);
+
+  // Clean up socket.data on disconnect to prevent memory leaks
+  io.on('connection', (socket) => {
+    socket.on('disconnect', () => {
+      socket.data = {};
+    });
+  });
+
+  // Heap memory monitoring - shed connections under pressure
+  const HEAP_CHECK_INTERVAL = 60000; // Check every 60s
+  const HEAP_WARN_THRESHOLD = 0.75;   // 75% heap used
+  const HEAP_SHED_THRESHOLD = 0.90;   // 90% heap used
+
+  setInterval(() => {
+    const mem = process.memoryUsage();
+    const heapUsedRatio = mem.heapUsed / mem.heapTotal;
+
+    if (heapUsedRatio > HEAP_SHED_THRESHOLD) {
+      const sockets = io.sockets.sockets;
+      const count = sockets.size;
+      if (count === 0) return; // No connections to shed
+      const toShed = Math.ceil(count * 0.1); // Shed 10% of connections
+      logger.error(
+        `Heap at ${(heapUsedRatio * 100).toFixed(1)}% - shedding ${toShed}/${count} connections`
+      );
+
+      let shed = 0;
+      for (const [, socket] of sockets) {
+        if (shed >= toShed) break;
+        socket.disconnect(true);
+        shed++;
+      }
+    } else if (heapUsedRatio > HEAP_WARN_THRESHOLD) {
+      logger.warn(
+        `Heap at ${(heapUsedRatio * 100).toFixed(1)}% ` +
+        `(${Math.round(mem.heapUsed / 1024 / 1024)}MB / ${Math.round(mem.heapTotal / 1024 / 1024)}MB) - ` +
+        `${io.sockets.sockets.size} active connections`
+      );
+    }
+  }, HEAP_CHECK_INTERVAL);
 
   logger.info('✅ Socket.IO initialized');
 

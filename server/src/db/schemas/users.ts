@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, boolean, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, boolean, jsonb, index } from 'drizzle-orm/pg-core';
 import { tenants } from './tenants';
 import { businessLines } from './businessLines';
 import { branches } from './branches';
@@ -31,7 +31,12 @@ export const users = pgTable('users', {
   lastLoginAt: timestamp('last_login_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  tenantIsActiveIdx: index('users_tenant_is_active_idx').on(table.tenantId, table.isActive),
+  tenantEmailIdx: index('users_tenant_email_idx').on(table.tenantId, table.email),
+  branchIdx: index('users_branch_idx').on(table.branchId),
+  businessLineIdx: index('users_business_line_idx').on(table.businessLineId),
+}));
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;

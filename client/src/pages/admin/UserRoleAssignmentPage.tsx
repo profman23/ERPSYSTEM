@@ -1,46 +1,71 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserRoleAssignmentDrawer } from '@/components/roles/UserRoleAssignmentDrawer';
+import { BranchScopeManager } from '@/components/roles/BranchScopeManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/providers/SocketProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useRoles } from '@/hooks/useRoles';
 import { useBatchRolePermissions } from '@/hooks/useRolePermissions';
 import { useUser, useUserRoles, useBatchAssignRoles, useBatchRemoveRoles } from '@/hooks/useUserRoles';
-import { ArrowLeft, Loader2, Shield, Settings } from 'lucide-react';
+import { ArrowLeft, Loader2, Shield, Settings, User, Mail, BarChart3, Calendar, Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { useRouteBreadcrumbs } from '@/hooks/useRouteBreadcrumbs';
 import axios from 'axios';
-import type { DPFPermission } from '../../../../types/dpf';
+import type { DPFPermission } from '@types/dpf';
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/api/v1';
 
 export default function UserRoleAssignmentPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
-  const { accessToken } = useAuth();
+  const { accessToken, user: authUser } = useAuth();
   const { socket } = useSocket();
   const { hasPermission } = usePermissions();
-  
+
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [allPermissions, setAllPermissions] = useState<DPFPermission[]>([]);
 
-  const canAssignRoles = hasPermission('roles.assign');
-  const canViewRoles = hasPermission('roles.view');
-  const canViewUsers = hasPermission('users.view');
+  // SYSTEM users have full access to role management
+  const isSystemUser = authUser?.accessScope === 'system';
+  const canAssignRoles = isSystemUser || hasPermission('roles.assign');
+  const canViewRoles = isSystemUser || hasPermission('roles.view');
+  const canViewUsers = isSystemUser || hasPermission('users.view');
 
   const { data: user, isLoading: isLoadingUser, error: userError } = useUser(userId);
   const { data: userRoles = [], isLoading: isLoadingRoles } = useUserRoles(userId);
-  const { data: rolesData, isLoading: isLoadingAllRoles } = useRoles({ page: 1, limit: 100 });
+
+  // Extract tenantId from user context - needed for SYSTEM users to fetch roles
+  const userTenantId = (user as any)?.tenantId || (user as any)?.tenant?.id;
+
+  // Determine the target user's access scope to decide which roles to fetch
+  const targetUserAccessScope = (user as any)?.accessScope;
+  const isTargetSystemUser = targetUserAccessScope === 'system';
+
+  // Pass tenantId to useRoles for cross-tenant role fetching
+  // For SYSTEM target users (no tenant), fetch system-level roles
+  // For tenant users, fetch their tenant's roles
+  const { data: rolesData, isLoading: isLoadingAllRoles } = useRoles({
+    page: 1,
+    limit: 100,
+    tenantId: isSystemUser && userTenantId ? userTenantId : undefined,
+    systemOnly: isSystemUser && isTargetSystemUser && !userTenantId ? true : undefined,
+    // Enable query when: non-system user, or system user with tenantId, or system user targeting system user
+    enabled: !isSystemUser || !!userTenantId || isTargetSystemUser,
+  });
   const batchAssignMutation = useBatchAssignRoles();
   const batchRemoveMutation = useBatchRemoveRoles();
 
   const allRoles = rolesData?.data || [];
   const currentRoles = userRoles.map(ur => allRoles.find(r => r.id === ur.roleId)).filter(Boolean) as any[];
   
+  const { items: breadcrumbs, homeHref } = useRouteBreadcrumbs();
   const currentRoleIds = currentRoles.map(r => r.id);
   const { data: currentRolePermsData, isLoading: isLoadingCurrentPerms } = useBatchRolePermissions(currentRoleIds);
   const currentPermissions = currentRolePermsData?.permissions || [];
@@ -50,7 +75,7 @@ export default function UserRoleAssignmentPage() {
       if (!accessToken) return;
       try {
         const response = await axios.get<{ data: DPFPermission[] }>(
-          `${API_BASE}/tenant/permissions/all`,
+          `${API_BASE}/tenant/dpf/permissions/all`,
           { headers: { Authorization: `Bearer ${accessToken}` } }
         );
         setAllPermissions(response.data.data || []);
@@ -108,10 +133,12 @@ export default function UserRoleAssignmentPage() {
     const toRemove = Array.from(currentRoleIds).filter(id => !selectedRoleIdsSet.has(id));
 
     try {
+      // Don't pass tenantId - let the server auto-detect from the target user
+      // This fixes issues with SYSTEM users who don't have a tenantId
       if (toRemove.length > 0) {
         await batchRemoveMutation.mutateAsync({ userId, roleIds: toRemove });
       }
-      
+
       if (toAssign.length > 0) {
         await batchAssignMutation.mutateAsync({ userId, roleIds: toAssign });
       }
@@ -122,26 +149,29 @@ export default function UserRoleAssignmentPage() {
 
   if (!canViewUsers || !canViewRoles) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="space-y-4">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <Shield 
+            <Shield
               className="mx-auto h-12 w-12"
               style={{ color: 'var(--color-text-muted)' }}
             />
-            <h3 
+            <h3
               className="mt-2 text-sm font-medium"
               style={{ color: 'var(--color-text)' }}
             >
               Access Denied
             </h3>
-            <p 
+            <p
               className="mt-1 text-sm"
               style={{ color: 'var(--color-text-muted)' }}
             >
               You don't have permission to view user roles.
             </p>
-            <Button onClick={() => navigate('/users')} className="mt-4">
+            <Button onClick={() => {
+              const isSystemPath = location.pathname.startsWith('/system');
+              navigate(isSystemPath ? '/system/administration/users' : '/app/administration/users');
+            }} className="mt-4">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Users
             </Button>
@@ -153,9 +183,9 @@ export default function UserRoleAssignmentPage() {
 
   if (isLoadingUser || isLoadingRoles || isLoadingAllRoles || isLoadingCurrentPerms) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="space-y-4">
         <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 
+          <Loader2
             className="h-8 w-8 animate-spin"
             style={{ color: 'var(--color-text-muted)' }}
           />
@@ -166,21 +196,24 @@ export default function UserRoleAssignmentPage() {
 
   if (userError || !user) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="space-y-4">
         <div className="text-center">
-          <h2 
+          <h2
             className="text-2xl font-bold"
             style={{ color: 'var(--color-danger)' }}
           >
             Error
           </h2>
-          <p 
+          <p
             className="mt-2"
             style={{ color: 'var(--color-text-muted)' }}
           >
             {axios.isAxiosError(userError) ? userError.response?.data?.error : 'Failed to load user'}
           </p>
-          <Button onClick={() => navigate('/users')} className="mt-4">
+          <Button onClick={() => {
+            const isSystemPath = location.pathname.startsWith('/system');
+            navigate(isSystemPath ? '/system/administration/users' : '/app/administration/users');
+          }} className="mt-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Users
           </Button>
@@ -190,39 +223,27 @@ export default function UserRoleAssignmentPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="space-y-4">
       <div className="mb-6">
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/users')}
-          className="mb-4"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Users
-        </Button>
         <div className="flex items-center justify-between">
           <div>
-            <h1 
+            <h1
               className="text-3xl font-bold tracking-tight"
               style={{ color: 'var(--color-text)' }}
             >
-              User Role Management
+              <User className="w-8 h-8 text-[var(--color-accent)]" /> User Role Management
             </h1>
-            <p 
-              className="mt-1"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
-              Manage roles and permissions for{' '}
-              <span className="font-semibold">{user.firstName} {user.lastName}</span>
-            </p>
           </div>
         </div>
+        {breadcrumbs.length > 0 && (
+          <Breadcrumbs items={breadcrumbs} showHome homeHref={homeHref} />
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>User Information</CardTitle>
+            <CardTitle className="flex items-center gap-2"><User className="w-5 h-5" /> User Information</CardTitle>
             <CardDescription>Basic user details</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -231,7 +252,7 @@ export default function UserRoleAssignmentPage() {
                 className="text-sm font-medium"
                 style={{ color: 'var(--color-text-muted)' }}
               >
-                Email
+                <Mail className="w-3.5 h-3.5 inline mr-1" /> Email
               </p>
               <p className="text-sm" style={{ color: 'var(--color-text)' }}>{user.email}</p>
             </div>
@@ -240,7 +261,7 @@ export default function UserRoleAssignmentPage() {
                 className="text-sm font-medium"
                 style={{ color: 'var(--color-text-muted)' }}
               >
-                Full Name
+                <User className="w-3.5 h-3.5 inline mr-1" /> Full Name
               </p>
               <p className="text-sm" style={{ color: 'var(--color-text)' }}>{user.firstName} {user.lastName}</p>
             </div>
@@ -249,7 +270,7 @@ export default function UserRoleAssignmentPage() {
                 className="text-sm font-medium"
                 style={{ color: 'var(--color-text-muted)' }}
               >
-                Status
+                <BarChart3 className="w-3.5 h-3.5 inline mr-1" /> Status
               </p>
               <Badge variant={user.status === 'active' ? 'success' : 'default'}>
                 {user.status}
@@ -260,7 +281,7 @@ export default function UserRoleAssignmentPage() {
                 className="text-sm font-medium"
                 style={{ color: 'var(--color-text-muted)' }}
               >
-                Created At
+                <Calendar className="w-3.5 h-3.5 inline mr-1" /> Created At
               </p>
               <p className="text-sm" style={{ color: 'var(--color-text)' }}>
                 {new Date(user.createdAt).toLocaleDateString()}
@@ -330,9 +351,22 @@ export default function UserRoleAssignmentPage() {
         </Card>
       </div>
 
+      {/* Branch Access Control - only show for tenant users (not in /system path) */}
+      {userRoles.length > 0 && !location.pathname.startsWith('/system') && (
+        <div className="mt-6">
+          <BranchScopeManager
+            userRoleId={userRoles[0].id}
+            userId={userId!}
+            onUpdate={() => {
+              queryClient.invalidateQueries({ queryKey: ['user-roles', userId] });
+            }}
+          />
+        </div>
+      )}
+
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>Effective Permissions</CardTitle>
+          <CardTitle className="flex items-center gap-2"><Lock className="w-5 h-5" /> Effective Permissions</CardTitle>
           <CardDescription>
             All permissions granted to this user through assigned roles ({currentPermissions.length})
           </CardDescription>
@@ -340,7 +374,7 @@ export default function UserRoleAssignmentPage() {
         <CardContent>
           <div className="max-h-64 overflow-y-auto">
             {currentPermissions.length === 0 ? (
-              <p 
+              <p
                 className="text-sm text-center py-4"
                 style={{ color: 'var(--color-text-muted)' }}
               >
@@ -352,18 +386,18 @@ export default function UserRoleAssignmentPage() {
                   <div
                     key={perm.id}
                     className="text-xs p-2 rounded border"
-                    style={{ 
+                    style={{
                       backgroundColor: 'var(--color-surface-hover)',
                       borderColor: 'var(--color-border)'
                     }}
                   >
-                    <div 
+                    <div
                       className="font-medium"
                       style={{ color: 'var(--color-text)' }}
                     >
                       {perm.permissionCode}
                     </div>
-                    <div 
+                    <div
                       className="truncate"
                       style={{ color: 'var(--color-text-muted)' }}
                     >

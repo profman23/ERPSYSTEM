@@ -10,6 +10,7 @@ import {
   timestamp,
   jsonb,
   integer,
+  index,
 } from 'drizzle-orm/pg-core';
 
 export const auditLogs = pgTable('audit_logs', {
@@ -33,7 +34,12 @@ export const auditLogs = pgTable('audit_logs', {
   errorMessage: text('error_message'),
   metadata: jsonb('metadata').default({}),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-});
+}, (table) => ({
+  tenantCreatedAtIdx: index('audit_tenant_created_idx').on(table.tenantId, table.createdAt),
+  userIdx: index('audit_user_idx').on(table.userId),
+  resourceIdx: index('audit_resource_idx').on(table.resourceType, table.resourceId),
+  actionIdx: index('audit_action_idx').on(table.action),
+}));
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;

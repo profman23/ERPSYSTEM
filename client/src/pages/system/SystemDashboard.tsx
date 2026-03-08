@@ -1,79 +1,89 @@
-import { Building2, Users, GitBranch, Activity, Server, Loader2 } from 'lucide-react';
+import { Building2, Users, GitBranch, Loader2, LayoutDashboard, HeartPulse } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTenants, useAllBranchesNoFilter, useAllUsers, useAllBusinessLines } from '@/hooks/useHierarchy';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { useRouteBreadcrumbs } from '@/hooks/useRouteBreadcrumbs';
+import { useTranslation } from 'react-i18next';
 
 export default function SystemDashboard() {
+  const { t } = useTranslation();
   const { data: tenants, isLoading: loadingTenants } = useTenants();
   const { data: businessLines, isLoading: loadingBusinessLines } = useAllBusinessLines();
   const { data: branches, isLoading: loadingBranches } = useAllBranchesNoFilter();
   const { data: users, isLoading: loadingUsers } = useAllUsers();
+  const { items: breadcrumbs, homeHref } = useRouteBreadcrumbs();
 
   const stats = [
     {
-      title: 'Total Tenants',
+      key: 'tenants',
+      title: t('system.totalTenants'),
       value: tenants?.length?.toString() || '0',
       icon: Building2,
-      description: 'Active organizations',
-      colorVar: 'var(--sys-accent)',
+      description: t('system.activeOrganizations'),
+      colorVar: 'var(--color-accent)',
       loading: loadingTenants
     },
     {
-      title: 'Business Lines',
+      key: 'businessLines',
+      title: t('system.businessLines'),
       value: businessLines?.length?.toString() || '0',
       icon: GitBranch,
-      description: 'Across all tenants',
+      description: t('system.acrossAllTenants'),
       colorVar: 'var(--color-warning)',
       loading: loadingBusinessLines
     },
     {
-      title: 'Total Branches',
+      key: 'branches',
+      title: t('system.totalBranches'),
       value: branches?.length?.toString() || '0',
       icon: Building2,
-      description: 'Physical locations',
+      description: t('system.physicalLocations'),
       colorVar: 'var(--color-success)',
       loading: loadingBranches
     },
     {
-      title: 'Platform Users',
+      key: 'users',
+      title: t('system.platformUsers'),
       value: users?.length?.toString() || '0',
       icon: Users,
-      description: 'Registered users',
+      description: t('system.registeredUsers'),
       colorVar: 'var(--color-info)',
       loading: loadingUsers
     }
   ];
 
   const systemMetrics = [
-    { name: 'API Uptime', value: '99.99%', status: 'healthy' },
-    { name: 'Database', value: 'Connected', status: 'healthy' },
-    { name: 'Redis Cache', value: 'Degraded', status: 'warning' },
-    { name: 'WebSocket', value: 'Active', status: 'healthy' },
+    { name: t('system.apiUptime'), value: '99.99%', status: 'healthy' },
+    { name: t('system.database'), value: t('system.connected'), status: 'healthy' },
+    { name: t('system.redisCache'), value: t('system.degraded'), status: 'warning' },
+    { name: t('system.webSocket'), value: t('system.active'), status: 'healthy' },
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <h1 className="text-3xl font-bold" style={{ color: 'var(--sys-text)' }}>System Dashboard</h1>
-        <p className="mt-2" style={{ color: 'var(--sys-text-secondary)' }}>
-          Platform-wide overview and system health monitoring
-        </p>
+        <div className="flex items-center gap-3">
+          <LayoutDashboard className="w-8 h-8 text-[var(--color-accent)]" />
+          <h1 className="text-3xl font-bold text-[var(--color-text)]">{t('nav.systemDashboard')}</h1>
+        </div>
+        {breadcrumbs.length > 0 && (
+          <div className="mt-2">
+            <Breadcrumbs items={breadcrumbs} showHome homeHref={homeHref} />
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <Card 
-              key={stat.title} 
-              className="border transition-colors"
-              style={{ 
-                backgroundColor: 'var(--sys-surface)', 
-                borderColor: 'var(--sys-border)' 
-              }}
+            <Card
+              key={stat.key}
+              className="card-panel border transition-colors"
             >
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardDescription style={{ color: 'var(--sys-text-secondary)' }}>{stat.title}</CardDescription>
+                  <CardDescription className="text-[var(--color-text-secondary)]">{stat.title}</CardDescription>
                   <div
                     className="w-10 h-10 rounded-lg flex items-center justify-center"
                     style={{ backgroundColor: `color-mix(in srgb, ${stat.colorVar} 15%, transparent)` }}
@@ -83,14 +93,14 @@ export default function SystemDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold" style={{ color: 'var(--sys-text)' }}>
+                <div className="text-3xl font-bold text-[var(--color-text)]">
                   {stat.loading ? (
                     <Loader2 className="w-6 h-6 animate-spin" style={{ color: stat.colorVar }} />
                   ) : (
                     stat.value
                   )}
                 </div>
-                <p className="text-sm mt-1" style={{ color: 'var(--sys-text-muted)' }}>{stat.description}</p>
+                <p className="text-sm mt-1 text-[var(--color-text-muted)]">{stat.description}</p>
               </CardContent>
             </Card>
           );
@@ -98,41 +108,37 @@ export default function SystemDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card 
-          className="border"
-          style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}
-        >
+        <Card className="card-panel border">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2" style={{ color: 'var(--sys-text)' }}>
-              <Activity className="w-5 h-5" style={{ color: 'var(--sys-accent)' }} />
-              System Health
+            <CardTitle className="flex items-center gap-2 text-[var(--color-text)]">
+              <HeartPulse className="w-5 h-5 text-[var(--color-accent)]" />
+              {t('system.systemHealth')}
             </CardTitle>
-            <CardDescription style={{ color: 'var(--sys-text-secondary)' }}>
-              Real-time infrastructure status
+            <CardDescription className="text-[var(--color-text-secondary)]">
+              {t('system.realtimeStatus')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {systemMetrics.map((metric) => (
-                <div 
-                  key={metric.name} 
-                  className="flex items-center justify-between p-3 rounded-lg"
-                  style={{ backgroundColor: 'var(--sys-bg)' }}
+                <div
+                  key={metric.name}
+                  className="flex items-center justify-between p-3 rounded-lg bg-[var(--color-bg)]"
                 >
                   <div className="flex items-center gap-3">
-                    <div 
+                    <div
                       className="w-2 h-2 rounded-full"
-                      style={{ 
-                        backgroundColor: metric.status === 'healthy' ? 'var(--color-success)' : 
+                      style={{
+                        backgroundColor: metric.status === 'healthy' ? 'var(--color-success)' :
                           metric.status === 'warning' ? 'var(--color-warning)' : 'var(--color-danger)'
                       }}
                     />
-                    <span style={{ color: 'var(--sys-text-secondary)' }}>{metric.name}</span>
+                    <span className="text-[var(--color-text-secondary)]">{metric.name}</span>
                   </div>
-                  <span 
+                  <span
                     className="text-sm font-medium"
-                    style={{ 
-                      color: metric.status === 'healthy' ? 'var(--color-success)' : 
+                    style={{
+                      color: metric.status === 'healthy' ? 'var(--color-success)' :
                         metric.status === 'warning' ? 'var(--color-warning)' : 'var(--color-danger)'
                     }}
                   >
@@ -144,51 +150,47 @@ export default function SystemDashboard() {
           </CardContent>
         </Card>
 
-        <Card 
-          className="border"
-          style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}
-        >
+        <Card className="card-panel border">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2" style={{ color: 'var(--sys-text)' }}>
-              <Server className="w-5 h-5" style={{ color: 'var(--color-info)' }} />
-              Recent Tenants
+            <CardTitle className="flex items-center gap-2 text-[var(--color-text)]">
+              <Building2 className="w-5 h-5 text-[var(--color-info)]" />
+              {t('system.recentTenants')}
             </CardTitle>
-            <CardDescription style={{ color: 'var(--sys-text-secondary)' }}>
-              Latest organizations on the platform
+            <CardDescription className="text-[var(--color-text-secondary)]">
+              {t('system.latestOrganizations')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {loadingTenants ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--sys-text-muted)' }} />
+                <Loader2 className="w-6 h-6 animate-spin text-[var(--color-text-muted)]" />
               </div>
             ) : tenants && tenants.length > 0 ? (
               <div className="space-y-3">
                 {tenants.slice(0, 5).map((tenant) => (
-                  <div 
-                    key={tenant.id} 
-                    className="flex items-center justify-between p-3 rounded-lg"
-                    style={{ backgroundColor: 'var(--sys-bg)' }}
+                  <div
+                    key={tenant.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-[var(--color-bg)]"
                   >
                     <div className="flex items-center gap-3">
-                      <div 
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"
-                        style={{ backgroundColor: tenant.primaryColor || 'var(--sys-accent)', color: 'var(--color-text-on-accent)' }}
+                      <div
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-[var(--color-text-on-accent)]"
+                        style={{ backgroundColor: tenant.primaryColor || 'var(--color-accent)' }}
                       >
                         {tenant.name.charAt(0)}
                       </div>
                       <div>
-                        <p className="font-medium" style={{ color: 'var(--sys-text)' }}>{tenant.name}</p>
-                        <p className="text-xs" style={{ color: 'var(--sys-text-muted)' }}>{tenant.code}</p>
+                        <p className="font-medium text-[var(--color-text)]">{tenant.name}</p>
+                        <p className="text-xs text-[var(--color-text-muted)]">{tenant.code}</p>
                       </div>
                     </div>
-                    <span 
+                    <span
                       className="px-2 py-1 text-xs rounded"
                       style={{
-                        backgroundColor: tenant.status === 'active' 
-                          ? 'color-mix(in srgb, var(--color-success) 20%, transparent)' 
-                          : 'color-mix(in srgb, var(--color-text-muted) 20%, transparent)',
-                        color: tenant.status === 'active' ? 'var(--color-success)' : 'var(--color-text-muted)'
+                        backgroundColor: tenant.status === 'active'
+                          ? 'var(--badge-success-bg)'
+                          : 'var(--badge-default-bg)',
+                        color: tenant.status === 'active' ? 'var(--badge-success-text)' : 'var(--badge-default-text)'
                       }}
                     >
                       {tenant.status}
@@ -197,8 +199,8 @@ export default function SystemDashboard() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8" style={{ color: 'var(--sys-text-muted)' }}>
-                No tenants found
+              <div className="text-center py-8 text-[var(--color-text-muted)]">
+                {t('system.noTenantsFound')}
               </div>
             )}
           </CardContent>

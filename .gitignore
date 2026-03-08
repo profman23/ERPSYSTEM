@@ -12,3 +12,16 @@ coverage
 client/dist
 server/dist
 types/dist
+
+# Playwright
+e2e/.auth/
+test-results/
+playwright-report/
+
+# Environment
+.env.test
+.env.staging
+.env.production
+
+# Database backups
+*.dump

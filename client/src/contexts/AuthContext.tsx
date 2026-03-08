@@ -1,38 +1,42 @@
 /**
  * AuthContext - HARDENED Authentication Context
- * 
- * PHASE 3 HARDENED - Dec 2024
- * 
- * SECURITY GUARANTEES:
- * 1. Token validation on mount (not just existence check)
- * 2. Automatic token refresh before expiry
- * 3. Cross-tab session synchronization
- * 4. Scope change detection during active session
- * 5. Secure logout with token revocation
- * 6. Session version tracking for multi-tab consistency
- * 
- * Token Lifecycle:
- * - Access tokens: Short-lived, auto-refreshed
- * - Refresh tokens: Stored securely, revoked on logout
- * - User data: Validated against token payload
+ *
+ * Split into Data + Actions contexts to prevent cascading re-renders.
+ * Token refresh no longer re-renders components that only use actions (login, logout).
+ *
+ * Hooks:
+ * - useAuth()        → full context (backward compatible)
+ * - useAuthData()    → user, token, isAuthenticated, isLoading (re-renders on data change)
+ * - useAuthActions() → login, logout, refresh (stable references, never re-renders)
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import axios from 'axios';
 
 const getApiUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return `${import.meta.env.VITE_API_URL}/api/v1`;
+  }
   if (typeof window !== 'undefined') {
     const origin = window.location.origin;
     const baseWithoutPort = origin.replace(/:\d+$/, '');
-    return `${baseWithoutPort}:3000/api/v1`;
+    return `${baseWithoutPort}:5500/api/v1`;
   }
-  return 'http://localhost:3000/api/v1';
+  return 'http://localhost:5500/api/v1';
 };
 
 const API_URL = getApiUrl();
 
 const SESSION_VERSION_KEY = 'session_version';
 const AUTH_SYNC_KEY = 'auth_sync_event';
+
+interface UserBranch {
+  id: string;
+  name: string;
+  code: string;
+  city?: string | null;
+  country?: string | null;
+}
 
 interface User {
   id: string;
@@ -43,6 +47,8 @@ interface User {
   tenantId: string | null;
   businessLineId: string | null;
   branchId: string | null;
+  allowedBranchIds: string[];
+  branches: UserBranch[];
 }
 
 interface TokenPayload {
@@ -53,12 +59,17 @@ interface TokenPayload {
   tenantId?: string | null;
 }
 
-interface AuthContextType {
+// --- Split context types ---
+
+interface AuthDataContextType {
   user: User | null;
   accessToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   sessionVersion: number;
+}
+
+interface AuthActionsContextType {
   login: (tenantCode: string, email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
   refreshAccessToken: () => Promise<string | null>;
@@ -66,15 +77,44 @@ interface AuthContextType {
   forceSessionRefresh: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Combined type for backward compatibility
+type AuthContextType = AuthDataContextType & AuthActionsContextType;
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
+// --- Contexts ---
+const AuthDataContext = createContext<AuthDataContextType | undefined>(undefined);
+const AuthActionsContext = createContext<AuthActionsContextType | undefined>(undefined);
+
+// --- Hooks ---
+
+/** Full auth context (backward compatible) */
+export const useAuth = (): AuthContextType => {
+  const data = useContext(AuthDataContext);
+  const actions = useContext(AuthActionsContext);
+  if (!data || !actions) {
     throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return useMemo(() => ({ ...data, ...actions }), [data, actions]);
+};
+
+/** Data-only hook: re-renders only when user/token/loading changes */
+export const useAuthData = (): AuthDataContextType => {
+  const context = useContext(AuthDataContext);
+  if (!context) {
+    throw new Error('useAuthData must be used within an AuthProvider');
   }
   return context;
 };
+
+/** Actions-only hook: stable references, never causes re-renders */
+export const useAuthActions = (): AuthActionsContextType => {
+  const context = useContext(AuthActionsContext);
+  if (!context) {
+    throw new Error('useAuthActions must be used within an AuthProvider');
+  }
+  return context;
+};
+
+// --- Utilities ---
 
 function decodeToken(token: string): TokenPayload | null {
   try {
@@ -87,10 +127,8 @@ function decodeToken(token: string): TokenPayload | null {
 
 function isTokenValid(token: string | null): boolean {
   if (!token) return false;
-  
   const payload = decodeToken(token);
   if (!payload) return false;
-  
   const now = Date.now() / 1000;
   return payload.exp > now;
 }
@@ -100,11 +138,21 @@ function getTokenExpiryTime(token: string): number {
   return payload ? payload.exp * 1000 : 0;
 }
 
+// --- Provider ---
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sessionVersion, setSessionVersion] = useState(0);
+
+  // Refs for stable callback references (avoids re-creating callbacks on state change)
+  const userRef = useRef(user);
+  const accessTokenRef = useRef(accessToken);
+  const sessionVersionRef = useRef(sessionVersion);
+  userRef.current = user;
+  accessTokenRef.current = accessToken;
+  sessionVersionRef.current = sessionVersion;
 
   const getSessionVersion = useCallback((): number => {
     const stored = localStorage.getItem(SESSION_VERSION_KEY);
@@ -115,10 +163,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const newVersion = getSessionVersion() + 1;
     localStorage.setItem(SESSION_VERSION_KEY, newVersion.toString());
     setSessionVersion(newVersion);
-    
     localStorage.setItem(AUTH_SYNC_KEY, Date.now().toString());
     setTimeout(() => localStorage.removeItem(AUTH_SYNC_KEY), 100);
-    
     return newVersion;
   }, [getSessionVersion]);
 
@@ -126,6 +172,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
+    localStorage.removeItem('user-style-preferences');
+    sessionStorage.removeItem('vet_erp_active_branch');
+    sessionStorage.removeItem('vet_erp_branch_selected');
     setAccessToken(null);
     setUser(null);
   }, []);
@@ -133,7 +182,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = useCallback(async () => {
     try {
       const refreshToken = localStorage.getItem('refreshToken');
-      
       if (refreshToken) {
         await axios.post(`${API_URL}/auth/logout`, { refreshToken }).catch(() => {});
       }
@@ -146,16 +194,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshAccessToken = useCallback(async (): Promise<string | null> => {
     try {
       const refreshToken = localStorage.getItem('refreshToken');
-
       if (!refreshToken) {
         await logout();
         return null;
       }
 
-      const response = await axios.post(`${API_URL}/auth/refresh`, {
-        refreshToken,
-      });
-
+      const response = await axios.post(`${API_URL}/auth/refresh`, { refreshToken });
       const { accessToken: newAccessToken, user: updatedUser } = response.data;
 
       localStorage.setItem('accessToken', newAccessToken);
@@ -163,7 +207,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (updatedUser) {
         const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-        
         if (currentUser.accessScope !== updatedUser.accessScope) {
           localStorage.setItem('user', JSON.stringify(updatedUser));
           setUser(updatedUser);
@@ -196,13 +239,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const parsedUser = JSON.parse(storedUser);
       const tokenPayload = decodeToken(storedToken);
-      
       if (tokenPayload && tokenPayload.sub !== parsedUser.id) {
         console.error('Token/user mismatch detected');
         await logout();
         return false;
       }
-
       return true;
     } catch {
       clearAuthState();
@@ -215,6 +256,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     window.location.reload();
   }, [incrementSessionVersion]);
 
+  const login = useCallback(async (tenantCode: string, email: string, password: string): Promise<User> => {
+    try {
+      const response = await axios.post(`${API_URL}/auth/login`, {
+        tenantCode,
+        email,
+        password,
+      });
+
+      const { accessToken: newAccessToken, refreshToken, user: loginUser } = response.data;
+
+      localStorage.setItem('accessToken', newAccessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('user', JSON.stringify(loginUser));
+
+      // Hydrate user style preferences from server response
+      const stylePrefs = response.data.user?.preferences?.style;
+      if (stylePrefs && typeof stylePrefs === 'object') {
+        try { localStorage.setItem('user-style-preferences', JSON.stringify(stylePrefs)); } catch { /* ignore */ }
+      }
+
+      setAccessToken(newAccessToken);
+      setUser(loginUser);
+      incrementSessionVersion();
+
+      return loginUser;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Login failed. Please try again.';
+      throw new Error(errorMessage);
+    }
+  }, [incrementSessionVersion]);
+
+  // --- Effects ---
+
+  // Initialize auth on mount
   useEffect(() => {
     const initializeAuth = async () => {
       try {
@@ -249,26 +324,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializeAuth();
   }, [refreshAccessToken, getSessionVersion, clearAuthState]);
 
+  // Cross-tab synchronization
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'accessToken' && !e.newValue) {
         clearAuthState();
       }
-      
+
       if (e.key === 'user' && e.newValue) {
         try {
           const newUser = JSON.parse(e.newValue);
-          if (user && newUser.accessScope !== user.accessScope) {
+          if (userRef.current && newUser.accessScope !== userRef.current.accessScope) {
             setUser(newUser);
             window.location.reload();
           }
         } catch {
+          // ignore
         }
       }
 
       if (e.key === SESSION_VERSION_KEY && e.newValue) {
         const newVersion = parseInt(e.newValue, 10);
-        if (newVersion > sessionVersion) {
+        if (newVersion > sessionVersionRef.current) {
           window.location.reload();
         }
       }
@@ -280,8 +357,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [user, sessionVersion, clearAuthState]);
+  }, [clearAuthState]);
 
+  // Auto token refresh before expiry
   useEffect(() => {
     if (!accessToken) return;
 
@@ -301,43 +379,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => clearTimeout(timer);
   }, [accessToken, refreshAccessToken]);
 
-  const login = async (tenantCode: string, email: string, password: string): Promise<User> => {
-    try {
-      const response = await axios.post(`${API_URL}/auth/login`, {
-        tenantCode,
-        email,
-        password,
-      });
+  // --- Memoized context values ---
 
-      const { accessToken: newAccessToken, refreshToken, user: loginUser } = response.data;
-
-      localStorage.setItem('accessToken', newAccessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('user', JSON.stringify(loginUser));
-
-      setAccessToken(newAccessToken);
-      setUser(loginUser);
-      incrementSessionVersion();
-
-      return loginUser;
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.error || 'Login failed. Please try again.';
-      throw new Error(errorMessage);
-    }
-  };
-
-  const value: AuthContextType = {
+  const dataValue = useMemo<AuthDataContextType>(() => ({
     user,
     accessToken,
     isAuthenticated: !!user && !!accessToken && isTokenValid(accessToken),
     isLoading,
     sessionVersion,
+  }), [user, accessToken, isLoading, sessionVersion]);
+
+  const actionsValue = useMemo<AuthActionsContextType>(() => ({
     login,
     logout,
     refreshAccessToken,
     validateSession,
     forceSessionRefresh,
-  };
+  }), [login, logout, refreshAccessToken, validateSession, forceSessionRefresh]);
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthActionsContext.Provider value={actionsValue}>
+      <AuthDataContext.Provider value={dataValue}>
+        {children}
+      </AuthDataContext.Provider>
+    </AuthActionsContext.Provider>
+  );
 };

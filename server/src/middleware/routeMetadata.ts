@@ -53,7 +53,8 @@ function isPanelAccessAllowed(userScope: AccessScope, panel: PanelType): boolean
     case 'system':
       return userScope === 'system';
     case 'admin':
-      return userScope === 'system' || userScope === 'tenant';
+      // mixed scope = multi-branch user (SAP B1 style) — needs read access to admin APIs
+      return userScope === 'system' || userScope === 'tenant' || userScope === 'mixed';
     case 'app':
       return true; // All authenticated users can access app panel
     case 'public':
@@ -257,7 +258,7 @@ export const RoutePatterns = {
   adminPanel: (description?: string): RouteMetadata => ({
     panel: 'admin',
     requireAuth: true,
-    requiredScope: ['system', 'tenant'],
+    requiredScope: ['system', 'tenant', 'mixed'],
     description,
   }),
   

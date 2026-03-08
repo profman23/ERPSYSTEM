@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, boolean, text, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, boolean, text, jsonb, index } from 'drizzle-orm/pg-core';
 import { tenants } from './tenants';
 
 export const businessLineTypeEnum = [
@@ -34,7 +34,10 @@ export const businessLines = pgTable('business_lines', {
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  tenantIsActiveIdx: index('bl_tenant_is_active_idx').on(table.tenantId, table.isActive),
+  tenantCodeIdx: index('bl_tenant_code_idx').on(table.tenantId, table.code),
+}));
 
 export type BusinessLine = typeof businessLines.$inferSelect;
 export type NewBusinessLine = typeof businessLines.$inferInsert;

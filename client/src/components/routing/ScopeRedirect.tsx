@@ -11,8 +11,7 @@
  * 
  * Redirect Rules:
  * - 'system' scope → /system/dashboard
- * - 'tenant' scope → /admin/dashboard
- * - 'business_line', 'branch', 'mixed' → /app/dashboard
+ * - 'tenant', 'business_line', 'branch', 'mixed' → /app/dashboard
  * - Unauthenticated → /login
  */
 

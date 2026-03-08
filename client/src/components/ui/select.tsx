@@ -19,6 +19,10 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--input-border-focus)] focus-visible:ring-offset-0',
             'disabled:cursor-not-allowed disabled:opacity-50',
             'transition-all duration-200',
+            // Native select option styling classes
+            '[&>option]:bg-[var(--select-dropdown-bg)] [&>option]:text-[var(--select-item-text)]',
+            '[&>option:checked]:bg-[var(--select-item-selected-bg)]',
+            '[&>option:disabled]:text-[var(--color-text-muted)]',
             className
           )}
           style={{
@@ -31,24 +35,28 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           {...props}
         >
           {placeholder && (
-            <option value="" disabled>
+            <option value="" disabled style={{ color: 'var(--color-text-muted)' }}>
               {placeholder}
             </option>
           )}
           {options
             ? options.map((option) => (
-                <option 
-                  key={option.value} 
+                <option
+                  key={option.value}
                   value={option.value}
                   disabled={option.disabled}
+                  style={{
+                    backgroundColor: 'var(--select-dropdown-bg)',
+                    color: option.disabled ? 'var(--color-text-muted)' : 'var(--select-item-text)',
+                  }}
                 >
                   {option.label}
                 </option>
               ))
             : children}
         </select>
-        <ChevronDown 
-          className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none" 
+        <ChevronDown
+          className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none"
           style={{ color: 'var(--color-text-muted)' }}
         />
       </div>

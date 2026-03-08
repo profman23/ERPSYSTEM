@@ -4,6 +4,52 @@
  */
 
 // =====================================================
+// SAP B1 STYLE AUTHORIZATION LEVELS
+// =====================================================
+/**
+ * Authorization levels for screen access (SAP Business One style)
+ * - NONE (0): No access - screen is hidden and route is blocked
+ * - READ_ONLY (1): View only - can see data but cannot modify
+ * - FULL (2): Full access - can perform all operations
+ */
+export enum AuthorizationLevel {
+  NONE = 0,        // No Authorization - screen hidden, route blocked
+  READ_ONLY = 1,   // Read Only - view only, no create/update
+  FULL = 2,        // Full Authorization - all operations allowed
+}
+
+/**
+ * Screen authorization record (role -> screen -> level)
+ */
+export interface ScreenAuthorization {
+  screenCode: string;
+  level: AuthorizationLevel;
+}
+
+/**
+ * Role screen authorization record
+ */
+export interface RoleScreenAuthorization {
+  roleId: string;
+  screenCode: string;
+  authorizationLevel: AuthorizationLevel;
+}
+
+/**
+ * User's effective authorization for a screen
+ */
+export interface UserScreenAuthorization {
+  screenCode: string;
+  screenName: string;
+  screenNameAr?: string;
+  moduleCode: string;
+  moduleName: string;
+  moduleNameAr?: string;
+  authorizationLevel: AuthorizationLevel;
+  route?: string;
+}
+
+// =====================================================
 // AGI ACCESS LEVELS
 // =====================================================
 export enum AgiAccessLevel {
@@ -337,6 +383,7 @@ export interface PermissionCheckRequest {
   apiEndpoint?: string; // Check API endpoint access
   socketEvent?: string; // Check Socket.IO event access
   scope?: PermissionScope; // Required scope
+  branchId?: string; // Check branch-level access (optional)
 }
 
 export interface PermissionCheckResult {

@@ -49,7 +49,7 @@ export function UserTypeSelector({ open, onOpenChange }: UserTypeSelectorProps) 
   const handleContinue = () => {
     if (!selectedType) return;
     onOpenChange(false);
-    navigate(getPath(`users/create?type=${selectedType}`));
+    navigate(getPath(`administration/users/create?type=${selectedType}`));
   };
 
   const handleCancel = () => {

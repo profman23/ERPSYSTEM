@@ -16,6 +16,7 @@ export const dpfModules = pgTable('dpf_modules', {
   description: text('description'),
   descriptionAr: text('description_ar'),
   category: varchar('category', { length: 100 }), // e.g., 'CLINICAL', 'FINANCE', 'ADMIN'
+  moduleLevel: varchar('module_level', { length: 20 }).notNull().default('APP'), // 'SYSTEM', 'ADMIN', 'APP'
   icon: varchar('icon', { length: 100 }), // Icon identifier
   route: varchar('route', { length: 255 }), // Frontend route
   sortOrder: varchar('sort_order', { length: 50 }).default('0'), // Display order

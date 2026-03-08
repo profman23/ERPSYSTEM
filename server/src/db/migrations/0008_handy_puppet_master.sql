@@ -1,0 +1,21 @@
+CREATE INDEX IF NOT EXISTS "audit_tenant_created_idx" ON "audit_logs" USING btree ("tenant_id","created_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "audit_user_idx" ON "audit_logs" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "audit_resource_idx" ON "audit_logs" USING btree ("resource_type","resource_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "audit_action_idx" ON "audit_logs" USING btree ("action");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "branches_tenant_is_active_idx" ON "branches" USING btree ("tenant_id","is_active");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "branches_tenant_code_idx" ON "branches" USING btree ("tenant_id","code");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "branches_business_line_idx" ON "branches" USING btree ("business_line_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "branches_tenant_bl_idx" ON "branches" USING btree ("tenant_id","business_line_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "bl_tenant_is_active_idx" ON "business_lines" USING btree ("tenant_id","is_active");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "bl_tenant_code_idx" ON "business_lines" USING btree ("tenant_id","code");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "dpf_rsa_tenant_role_idx" ON "dpf_role_screen_authorizations" USING btree ("tenant_id","role_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "dpf_rsa_role_screen_idx" ON "dpf_role_screen_authorizations" USING btree ("role_id","screen_code");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "dpf_ucp_tenant_user_idx" ON "dpf_user_custom_permissions" USING btree ("tenant_id","user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "dpf_ucp_permission_idx" ON "dpf_user_custom_permissions" USING btree ("permission_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "dpf_ucp_user_active_idx" ON "dpf_user_custom_permissions" USING btree ("user_id","is_active");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "users_tenant_is_active_idx" ON "users" USING btree ("tenant_id","is_active");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "users_tenant_email_idx" ON "users" USING btree ("tenant_id","email");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "users_branch_idx" ON "users" USING btree ("branch_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "users_business_line_idx" ON "users" USING btree ("business_line_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "species_tenant_is_active_idx" ON "species" USING btree ("tenant_id","is_active");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "species_tenant_code_idx" ON "species" USING btree ("tenant_id","code");

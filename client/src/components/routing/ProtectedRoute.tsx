@@ -13,8 +13,7 @@
  * 
  * Access Rules:
  * - /system/* → Only 'system' scope users
- * - /admin/* → Only 'system' or 'tenant' scope users
- * - /app/* → All authenticated users (system, tenant, branch, etc.)
+ * - /app/*    → All authenticated users (system, tenant, branch, etc.)
  */
 
 import { useEffect, useState, useCallback } from 'react';

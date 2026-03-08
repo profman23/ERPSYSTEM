@@ -1,17 +1,17 @@
 /**
  * useScopePath Hook - HARDENED Scope-Aware Navigation Paths
- * 
- * PHASE 3 HARDENED - Dec 2024
- * 
- * This hook provides scope-aware path generation for multi-panel architecture.
- * Ensures SYSTEM users navigate within /system/*, TENANT users within /admin/*,
- * and BRANCH users within /app/*.
- * 
+ *
+ * 2-Panel Architecture: /system + /app
+ *
  * CRITICAL SECURITY: basePath is ALWAYS derived from user's accessScope,
  * NOT from the current URL. This prevents scope escalation via URL manipulation.
- * 
- * The hook also validates that the current URL matches the user's scope,
- * enabling detection of unauthorized panel access attempts.
+ *
+ * Panels:
+ * - /system/* → System admin (platform management)
+ * - /app/*    → Unified application (admin + clinical + operations)
+ *
+ * /app/administration/* → Tenant admin features (users, roles, business lines, branches, settings)
+ * /app/*               → Clinical & operational features (appointments, patients, tasks, reports)
  */
 
 import { useCallback, useMemo } from 'react';
@@ -20,7 +20,7 @@ import { useLocation } from 'react-router-dom';
 
 type AccessScope = 'system' | 'tenant' | 'business_line' | 'branch' | 'mixed';
 
-type PanelType = 'system' | 'admin' | 'app';
+type PanelType = 'system' | 'app';
 
 interface ScopePathResult {
   basePath: string;
@@ -45,7 +45,6 @@ export function getScopeBasePath(accessScope: string | undefined): string {
     case 'system':
       return '/system';
     case 'tenant':
-      return '/admin';
     case 'business_line':
     case 'branch':
     case 'mixed':
@@ -59,7 +58,6 @@ export function getExpectedPanel(accessScope: string | undefined): PanelType {
     case 'system':
       return 'system';
     case 'tenant':
-      return 'admin';
     case 'business_line':
     case 'branch':
     case 'mixed':
@@ -70,19 +68,18 @@ export function getExpectedPanel(accessScope: string | undefined): PanelType {
 
 export function getCurrentPanelFromPath(pathname: string): PanelType | null {
   if (pathname.startsWith('/system')) return 'system';
-  if (pathname.startsWith('/admin')) return 'admin';
+  // /admin/* is legacy — treat as /app panel for backward compat
+  if (pathname.startsWith('/admin')) return 'app';
   if (pathname.startsWith('/app')) return 'app';
   return null;
 }
 
 export function isPanelAccessAllowed(userScope: string | undefined, targetPanel: PanelType): boolean {
   const scope = userScope || 'branch';
-  
+
   switch (targetPanel) {
     case 'system':
       return scope === 'system';
-    case 'admin':
-      return scope === 'system' || scope === 'tenant';
     case 'app':
       return true;
     default:
@@ -125,25 +122,25 @@ export function useScopePath(): ScopePathResult {
     [basePath]
   );
 
-  const getUsersPath = useCallback(() => getPath('users'), [getPath]);
+  const getUsersPath = useCallback(() => getPath('administration/users'), [getPath]);
 
   const getUsersCreatePath = useCallback(
     (queryParams?: string): string => {
-      const path = getPath('users/create');
+      const path = getPath('administration/users/create');
       return queryParams ? `${path}?${queryParams}` : path;
     },
     [getPath]
   );
 
-  const getRolesPath = useCallback(() => getPath('roles'), [getPath]);
+  const getRolesPath = useCallback(() => getPath('administration/roles'), [getPath]);
 
   const getRolePermissionsPath = useCallback(
-    (roleId: string): string => getPath(`roles/${roleId}/permissions`),
+    (roleId: string): string => getPath(`administration/roles/${roleId}/permissions`),
     [getPath]
   );
 
   const getUserRolesPath = useCallback(
-    (userId: string): string => getPath(`users/${userId}/roles`),
+    (userId: string): string => getPath(`administration/users/${userId}/roles`),
     [getPath]
   );
 

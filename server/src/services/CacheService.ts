@@ -1,4 +1,16 @@
+/**
+ * Legacy CacheService - Adapter to AGI-Ready Tiered Cache
+ *
+ * This adapter preserves the original public API (get, set, del, invalidatePattern)
+ * while delegating to the AGI-Ready cache (L1 in-memory + L2 Redis).
+ * 13+ service files import from this module — the adapter avoids touching them all.
+ *
+ * For new code, prefer importing from '@/core/cache/cacheService' directly.
+ */
+
+import { cacheService as agiCache } from '../core/cache/cacheService';
 import { getRedisClient } from './redisClient';
+import logger from '../config/logger';
 
 export class CacheService {
   private static instance: CacheService;
@@ -12,62 +24,51 @@ export class CacheService {
     return CacheService.instance;
   }
 
+  /**
+   * Get a value from the tiered cache (L1 → L2)
+   */
   async get<T>(key: string): Promise<T | null> {
     try {
-      const redis = getRedisClient();
-      if (!redis) {
-        return null;
-      }
-
-      const value = await redis.get(key);
-      if (!value) {
-        return null;
-      }
-
-      return JSON.parse(value) as T;
+      return await agiCache.get<T>(key);
     } catch (error) {
-      console.error(`Cache get error for key ${key}:`, error);
+      logger.error(`Cache get error for key ${key}:`, error);
       return null;
     }
   }
 
-  async set(key: string, value: any, ttl?: number): Promise<boolean> {
+  /**
+   * Set a value in the tiered cache (L1 + L2)
+   * @param ttl - Time-to-live in SECONDS (converted to ms for AGI cache)
+   */
+  async set(key: string, value: unknown, ttl?: number): Promise<boolean> {
     try {
-      const redis = getRedisClient();
-      if (!redis) {
-        return false;
-      }
-
-      const serialized = JSON.stringify(value);
-
-      if (ttl) {
-        await redis.setex(key, ttl, serialized);
-      } else {
-        await redis.set(key, serialized);
-      }
-
+      await agiCache.set(key, value, {
+        ttl: ttl ? ttl * 1000 : undefined,
+      });
       return true;
     } catch (error) {
-      console.error(`Cache set error for key ${key}:`, error);
+      logger.error(`Cache set error for key ${key}:`, error);
       return false;
     }
   }
 
+  /**
+   * Delete a key from all cache layers
+   */
   async del(key: string): Promise<boolean> {
     try {
-      const redis = getRedisClient();
-      if (!redis) {
-        return false;
-      }
-
-      await redis.del(key);
+      await agiCache.delete(key);
       return true;
     } catch (error) {
-      console.error(`Cache delete error for key ${key}:`, error);
+      logger.error(`Cache delete error for key ${key}:`, error);
       return false;
     }
   }
 
+  /**
+   * Invalidate all keys matching a glob pattern using SCAN (non-blocking).
+   * Pattern invalidation cannot use tag-based approach, so we keep SCAN here.
+   */
   async invalidatePattern(pattern: string): Promise<number> {
     try {
       const redis = getRedisClient();
@@ -75,30 +76,34 @@ export class CacheService {
         return 0;
       }
 
-      const keys = await redis.keys(pattern);
-      if (keys.length === 0) {
-        return 0;
-      }
+      let cursor = '0';
+      let deletedCount = 0;
 
-      await redis.del(...keys);
-      return keys.length;
+      do {
+        const [nextCursor, keys] = await redis.scan(
+          cursor, 'MATCH', pattern, 'COUNT', 100
+        );
+        cursor = nextCursor;
+
+        if (keys.length > 0) {
+          await redis.del(...keys);
+          deletedCount += keys.length;
+        }
+      } while (cursor !== '0');
+
+      return deletedCount;
     } catch (error) {
-      console.error(`Cache invalidate pattern error for ${pattern}:`, error);
+      logger.error(`Cache invalidate pattern error for ${pattern}:`, error);
       return 0;
     }
   }
 
   async exists(key: string): Promise<boolean> {
     try {
-      const redis = getRedisClient();
-      if (!redis) {
-        return false;
-      }
-
-      const result = await redis.exists(key);
-      return result === 1;
+      const result = await agiCache.get(key);
+      return result !== null;
     } catch (error) {
-      console.error(`Cache exists error for key ${key}:`, error);
+      logger.error(`Cache exists error for key ${key}:`, error);
       return false;
     }
   }
@@ -109,25 +114,33 @@ export class CacheService {
       if (!redis) {
         return -2;
       }
-
       return await redis.ttl(key);
     } catch (error) {
-      console.error(`Cache TTL error for key ${key}:`, error);
+      logger.error(`Cache TTL error for key ${key}:`, error);
       return -2;
+    }
+  }
+
+  async getStats(): Promise<{ size: number; hitRatio: number; evictions: number } | null> {
+    try {
+      const stats = agiCache.getStats();
+      return {
+        size: stats.totalSize,
+        hitRatio: stats.hitRatio,
+        evictions: stats.evictions,
+      };
+    } catch (error) {
+      logger.error('Cache getStats error:', error);
+      return null;
     }
   }
 
   async flushAll(): Promise<boolean> {
     try {
-      const redis = getRedisClient();
-      if (!redis) {
-        return false;
-      }
-
-      await redis.flushall();
+      await agiCache.clear();
       return true;
     } catch (error) {
-      console.error('Cache flush all error:', error);
+      logger.error('Cache flush all error:', error);
       return false;
     }
   }

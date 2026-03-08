@@ -8,6 +8,9 @@
  */
 
 import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import compression from 'compression';
 import { helmetMiddleware, corsMiddleware } from './middleware/securityMiddleware';
 import { metricsMiddleware } from './middleware/metricsMiddleware';
 import { tenantContextCleanup } from './middleware/tenantLoader';
@@ -29,6 +32,16 @@ app.set('trust proxy', true);
 app.use(helmetMiddleware);
 app.use(corsMiddleware);
 
+// Gzip compression - ~90% bandwidth reduction on JSON responses
+app.use(compression({
+  threshold: 1024,
+  level: 6,
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) return false;
+    return compression.filter(req, res);
+  },
+}));
+
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -38,6 +51,11 @@ app.use(requestContextMiddleware);
 
 // Metrics
 app.use(metricsMiddleware);
+
+// Static file serving for uploads (images, documents)
+const __appFilename = fileURLToPath(import.meta.url);
+const __appDirname = path.dirname(__appFilename);
+app.use('/uploads', express.static(path.resolve(__appDirname, '../public/uploads')));
 
 // Health checks
 app.use('/health', healthRoutes);

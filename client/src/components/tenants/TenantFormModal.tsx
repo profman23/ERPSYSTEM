@@ -1,28 +1,51 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { SimpleSelect } from '@/components/ui/select-advanced';
 import { CountryTimezoneSelector } from './CountryTimezoneSelector';
 import { SubscriptionPlanSelector } from './SubscriptionPlanSelector';
+import { PhoneInput } from '@/components/ui/PhoneInput';
 import { Loader2, Building2 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 
-interface TenantFormData {
-  name: string;
-  countryCode: string;
-  timezone: string;
-  subscriptionPlan: string;
-  contactEmail: string;
-  contactPhone?: string;
-  address?: string;
-  primaryColor: string;
-  defaultLanguage: 'en' | 'ar';
-  status?: 'active' | 'inactive' | 'suspended';
-}
+// Zod Schema for Tenant Form
+const tenantFormSchema = z.object({
+  name: z
+    .string()
+    .min(2, 'Organization name must be at least 2 characters')
+    .max(100, 'Organization name must be less than 100 characters'),
+  countryCode: z.string().min(2, 'Please select a country'),
+  timezone: z.string().min(1, 'Timezone is required'),
+  subscriptionPlan: z.enum(['trial', 'standard', 'professional', 'enterprise']),
+  contactEmail: z
+    .string()
+    .min(1, 'Contact email is required')
+    .email('Please enter a valid email address'),
+  contactPhone: z
+    .string()
+    .regex(/^[\d\s+\-()]*$/, 'Please enter a valid phone number')
+    .max(20, 'Phone number must be less than 20 characters')
+    .optional()
+    .or(z.literal('')),
+  address: z
+    .string()
+    .max(500, 'Address must be less than 500 characters')
+    .optional()
+    .or(z.literal('')),
+  primaryColor: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, 'Please enter a valid hex color'),
+  defaultLanguage: z.enum(['en', 'ar']),
+  status: z.enum(['active', 'inactive', 'suspended']).optional(),
+});
+
+type TenantFormData = z.infer<typeof tenantFormSchema>;
 
 interface TenantFormModalProps {
   open: boolean;
@@ -45,7 +68,7 @@ interface TenantFormModalProps {
 
 async function createTenant(data: TenantFormData) {
   try {
-    const response = await apiClient.post('/api/v1/tenants/advanced', data);
+    const response = await apiClient.post('/tenants/advanced', data);
     return response.data || { success: true };
   } catch (error: any) {
     throw new Error(error.response?.data?.error || 'Failed to create tenant');
@@ -54,7 +77,7 @@ async function createTenant(data: TenantFormData) {
 
 async function updateTenant(id: string, data: Partial<TenantFormData>) {
   try {
-    const response = await apiClient.put(`/api/v1/tenants/advanced/${id}`, data);
+    const response = await apiClient.put(`/tenants/advanced/${id}`, data);
     return response.data || { success: true };
   } catch (error: any) {
     throw new Error(error.response?.data?.error || 'Failed to update tenant');
@@ -88,6 +111,7 @@ export function TenantFormModal({
     watch,
     formState: { errors },
   } = useForm<TenantFormData>({
+    resolver: zodResolver(tenantFormSchema),
     defaultValues: {
       name: '',
       countryCode: 'EG',
@@ -215,10 +239,7 @@ export function TenantFormModal({
               </Label>
               <Input
                 id="name"
-                {...register('name', { 
-                  required: 'Organization name is required',
-                  minLength: { value: 2, message: 'Name must be at least 2 characters' },
-                })}
+                {...register('name')}
                 placeholder="Enter organization name"
                 style={{ 
                   backgroundColor: 'var(--input-bg)', 
@@ -240,13 +261,7 @@ export function TenantFormModal({
               <Input
                 id="contactEmail"
                 type="email"
-                {...register('contactEmail', { 
-                  required: 'Contact email is required',
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Invalid email address',
-                  },
-                })}
+                {...register('contactEmail')}
                 placeholder="contact@example.com"
                 style={{ 
                   backgroundColor: 'var(--input-bg)', 
@@ -279,15 +294,11 @@ export function TenantFormModal({
               <Label htmlFor="contactPhone" style={{ color: 'var(--sys-text)' }}>
                 Contact Phone
               </Label>
-              <Input
-                id="contactPhone"
-                {...register('contactPhone')}
-                placeholder="+20 123 456 7890"
-                style={{ 
-                  backgroundColor: 'var(--input-bg)', 
-                  borderColor: 'var(--input-border)',
-                  color: 'var(--input-text)'
-                }}
+              <PhoneInput
+                countryCode={countryCode}
+                value={watch('contactPhone') || ''}
+                onChange={(val) => setValue('contactPhone', val)}
+                placeholder="123 456 7890"
               />
             </div>
 
@@ -295,8 +306,9 @@ export function TenantFormModal({
               <Label htmlFor="defaultLanguage" style={{ color: 'var(--sys-text)' }}>
                 Default Language
               </Label>
-              <Select
-                {...register('defaultLanguage')}
+              <SimpleSelect
+                value={watch('defaultLanguage') || 'en'}
+                onValueChange={(value) => setValue('defaultLanguage', value as 'en' | 'ar')}
                 options={[
                   { value: 'en', label: 'English' },
                   { value: 'ar', label: 'العربية (Arabic)' },
@@ -347,8 +359,9 @@ export function TenantFormModal({
               <Label htmlFor="status" style={{ color: 'var(--sys-text)' }}>
                 Status
               </Label>
-              <Select
-                {...register('status')}
+              <SimpleSelect
+                value={watch('status') || 'active'}
+                onValueChange={(value) => setValue('status', value as 'active' | 'inactive' | 'suspended')}
                 options={[
                   { value: 'active', label: 'Active' },
                   { value: 'inactive', label: 'Inactive' },

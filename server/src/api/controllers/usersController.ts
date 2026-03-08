@@ -4,6 +4,8 @@ import { users } from '../../db/schemas/users';
 import { tenants } from '../../db/schemas/tenants';
 import { businessLines } from '../../db/schemas/businessLines';
 import { branches } from '../../db/schemas/branches';
+import { dpfUserRoles } from '../../db/schemas/dpfUserRoles';
+import { dpfRoles } from '../../db/schemas/dpfRoles';
 import { eq, and, or, like, sql, SQL } from 'drizzle-orm';
 import { getPaginationParams, calculateOffset, createPaginatedResponse, getSortOrder } from '../../utils/pagination';
 import { applyBranchScopeFilter } from '../../utils/scopeFilters';
@@ -65,6 +67,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
       );
     }
 
+    // List query: minimal fields, no heavy JSONB (allowedBranchIds, preferences)
     const baseQuery = db
       .select({
         id: users.id,
@@ -82,18 +85,24 @@ export const getAllUsers = async (req: Request, res: Response) => {
         tenantId: users.tenantId,
         businessLineId: users.businessLineId,
         branchId: users.branchId,
-        allowedBranchIds: users.allowedBranchIds,
         lastLoginAt: users.lastLoginAt,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
         tenantName: tenants.name,
+        tenantCode: tenants.code,
         businessLineName: businessLines.name,
         branchName: branches.name,
+        // DPF Role information
+        dpfRoleId: dpfRoles.id,
+        dpfRoleName: dpfRoles.roleName,
+        dpfRoleCode: dpfRoles.roleCode,
       })
       .from(users)
       .leftJoin(tenants, eq(users.tenantId, tenants.id))
       .leftJoin(businessLines, eq(users.businessLineId, businessLines.id))
-      .leftJoin(branches, eq(users.branchId, branches.id));
+      .leftJoin(branches, eq(users.branchId, branches.id))
+      .leftJoin(dpfUserRoles, eq(users.id, dpfUserRoles.userId))
+      .leftJoin(dpfRoles, eq(dpfUserRoles.roleId, dpfRoles.id));
 
     let query = baseQuery;
     if (filters.length > 0) {

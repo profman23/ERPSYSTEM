@@ -9,13 +9,19 @@
  */
 
 import { db } from '../db';
-import { tenants, NewTenant, MIDDLE_EAST_COUNTRIES, SUBSCRIPTION_PLANS, SubscriptionPlanType } from '../db/schemas';
+import { tenants, businessLines, NewTenant, MIDDLE_EAST_COUNTRIES, SUBSCRIPTION_PLANS, SubscriptionPlanType } from '../db/schemas';
 import { eq } from 'drizzle-orm';
 import { contextLogger } from '../core/context/contextLogger';
 import { tenantCodeGenerator } from './TenantCodeGenerator';
 import { subscriptionService } from './SubscriptionService';
 import { dpfTemplateService } from './DPFTemplateService';
 import { queueService } from '../core/queue/queueService';
+import { seedChartOfAccounts } from '../db/seed/seedChartOfAccounts';
+import { seedTaxCodes } from '../db/seed/seedTaxCodes';
+import { seedItemGroups } from '../db/seed/seedItemGroups';
+import { seedUnitOfMeasures } from '../db/seed/seedUnitOfMeasures';
+import { BranchService } from './BranchService';
+import { PostingPeriodService } from './PostingPeriodService';
 
 export interface CreateTenantInput {
   name: string;
@@ -26,6 +32,7 @@ export interface CreateTenantInput {
   address?: string;
   primaryColor?: string;
   defaultLanguage?: 'en' | 'ar';
+  aiAssistantEnabled?: boolean;
 }
 
 export interface UpdateTenantInput {
@@ -38,6 +45,12 @@ export interface UpdateTenantInput {
   primaryColor?: string;
   defaultLanguage?: 'en' | 'ar';
   status?: 'active' | 'inactive' | 'suspended';
+  aiAssistantEnabled?: boolean;
+  allowedBranches?: number;
+  allowedBusinessLines?: number;
+  allowedUsers?: number;
+  storageLimitGB?: number;
+  apiRateLimit?: number;
 }
 
 export interface TenantCreationResult {
@@ -73,10 +86,13 @@ export class TenantSetupService {
     const startTime = Date.now();
 
     try {
+      // Generate unique code atomically (creates reservation in DB)
       const code = await tenantCodeGenerator.generateUniqueCode();
 
       const country = MIDDLE_EAST_COUNTRIES.find(c => c.code === input.countryCode);
       if (!country) {
+        // Cancel the reservation if validation fails
+        await tenantCodeGenerator.cancelCodeReservation(code);
         return { success: false, error: 'Invalid country code' };
       }
 
@@ -86,16 +102,16 @@ export class TenantSetupService {
         ? subscriptionService.calculateTrialExpiryDate(planLimits.trialDays)
         : null;
 
-      const tenantData: NewTenant = {
-        code,
+      // Finalize the reservation by updating the reserved record with actual tenant data
+      const finalizeResult = await tenantCodeGenerator.finalizeCodeReservation(code, {
         name: input.name,
         subscriptionPlan: input.subscriptionPlan,
         countryCode: input.countryCode,
         country: country.name,
         timezone: country.timezone,
         contactEmail: input.contactEmail,
-        contactPhone: input.contactPhone || null,
-        address: input.address || null,
+        contactPhone: input.contactPhone || undefined,
+        address: input.address || undefined,
         primaryColor: input.primaryColor || '#2563EB',
         defaultLanguage: input.defaultLanguage || 'en',
         allowedUsers: planLimits.maxUsers,
@@ -106,11 +122,141 @@ export class TenantSetupService {
         subscriptionStartAt: new Date(),
         trialExpiresAt,
         status: 'active',
-      };
+        aiAssistantEnabled: input.aiAssistantEnabled ?? false,
+      });
 
-      const [newTenant] = await db.insert(tenants).values(tenantData).returning();
+      if (!finalizeResult.success || !finalizeResult.tenantId) {
+        return { success: false, error: finalizeResult.error || 'Failed to finalize tenant creation' };
+      }
+
+      // Fetch the complete tenant record
+      const newTenant = await db.query.tenants.findFirst({
+        where: eq(tenants.id, finalizeResult.tenantId),
+      });
+
+      if (!newTenant) {
+        return { success: false, error: 'Failed to retrieve created tenant' };
+      }
 
       const dpfResult = await dpfTemplateService.copyTemplateToTenant(newTenant.id);
+
+      // Auto-create default business line for the tenant
+      const blCode = `BL-${Date.now().toString(36).toUpperCase()}`;
+      const [defaultBusinessLine] = await db.insert(businessLines).values({
+        tenantId: newTenant.id,
+        code: blCode,
+        name: `${input.name} - Main`,
+        businessLineType: 'general',
+        isActive: true,
+      }).returning();
+      contextLogger.info('Default business line created', { tenantId: newTenant.id, blCode });
+
+      // Seed default Chart of Accounts (non-blocking: failure doesn't prevent tenant creation)
+      try {
+        const coaResult = await seedChartOfAccounts(newTenant.id);
+        if (!coaResult.skipped) {
+          contextLogger.info('Default COA seeded', {
+            tenantId: newTenant.id,
+            accountsCreated: coaResult.accountsCreated,
+          });
+        }
+      } catch (coaError) {
+        contextLogger.warn('Failed to seed default COA', {
+          tenantId: newTenant.id,
+          error: coaError instanceof Error ? coaError.message : 'Unknown error',
+        });
+      }
+
+      // Seed default Tax Codes (non-blocking: failure doesn't prevent tenant creation)
+      try {
+        const taxResult = await seedTaxCodes(newTenant.id);
+        if (!taxResult.skipped) {
+          contextLogger.info('Default tax codes seeded', {
+            tenantId: newTenant.id,
+            taxCodesCreated: taxResult.taxCodesCreated,
+          });
+        }
+      } catch (taxError) {
+        contextLogger.warn('Failed to seed default tax codes', {
+          tenantId: newTenant.id,
+          error: taxError instanceof Error ? taxError.message : 'Unknown error',
+        });
+      }
+
+      // Seed default Item Groups (non-blocking: failure doesn't prevent tenant creation)
+      // Placed AFTER COA + Tax Codes so item groups can resolve GL accounts and tax codes
+      try {
+        const igResult = await seedItemGroups(newTenant.id);
+        if (!igResult.skipped) {
+          contextLogger.info('Default item groups seeded', {
+            tenantId: newTenant.id,
+            itemGroupsCreated: igResult.itemGroupsCreated,
+          });
+        }
+      } catch (igError) {
+        contextLogger.warn('Failed to seed default item groups', {
+          tenantId: newTenant.id,
+          error: igError instanceof Error ? igError.message : 'Unknown error',
+        });
+      }
+
+      // Seed default Unit of Measures (non-blocking: failure doesn't prevent tenant creation)
+      try {
+        const uomResult = await seedUnitOfMeasures(newTenant.id);
+        if (!uomResult.skipped) {
+          contextLogger.info('Default unit of measures seeded', {
+            tenantId: newTenant.id,
+            unitOfMeasuresCreated: uomResult.unitOfMeasuresCreated,
+          });
+        }
+      } catch (uomError) {
+        contextLogger.warn('Failed to seed default unit of measures', {
+          tenantId: newTenant.id,
+          error: uomError instanceof Error ? uomError.message : 'Unknown error',
+        });
+      }
+
+      // Seed default Posting Periods / Fiscal Year (non-blocking)
+      try {
+        const ppResult = await PostingPeriodService.seedForTenant(newTenant.id);
+        if (!ppResult.skipped) {
+          contextLogger.info('Default posting periods seeded', {
+            tenantId: newTenant.id,
+            year: ppResult.year,
+            periodsCreated: ppResult.periodsCreated,
+          });
+        }
+      } catch (ppError) {
+        contextLogger.warn('Failed to seed default posting periods', {
+          tenantId: newTenant.id,
+          error: ppError instanceof Error ? ppError.message : 'Unknown error',
+        });
+      }
+
+      // Auto-create default branch (+ MAIN warehouse with GL accounts via BranchService)
+      // Placed AFTER COA seeding so warehouse can find default accounts
+      try {
+        const branch = await BranchService.create(newTenant.id, {
+          businessLineId: defaultBusinessLine.id,
+          name: `${input.name} - Main Branch`,
+          country: input.countryCode,
+          city: 'Main',
+          address: input.address || 'Main Branch',
+          buildingNumber: '1',
+          vatRegistrationNumber: 'PENDING',
+          commercialRegistrationNumber: 'PENDING',
+        });
+        contextLogger.info('Default branch created', {
+          tenantId: newTenant.id,
+          branchId: branch.id,
+          branchCode: branch.code,
+        });
+      } catch (branchError) {
+        contextLogger.warn('Failed to create default branch', {
+          tenantId: newTenant.id,
+          error: branchError instanceof Error ? branchError.message : 'Unknown error',
+        });
+      }
 
       const queuedTasks: string[] = [];
 
@@ -118,7 +264,7 @@ export class TenantSetupService {
         action: 'tenant.created',
         resourceType: 'tenant',
         resourceId: newTenant.id,
-        newData: tenantData as unknown as Record<string, unknown>,
+        newData: newTenant as unknown as Record<string, unknown>,
         tenantId: newTenant.id,
       });
       if (auditResult.enqueued && auditResult.jobId) {
@@ -192,6 +338,15 @@ export class TenantSetupService {
       if (input.primaryColor !== undefined) updateData.primaryColor = input.primaryColor;
       if (input.defaultLanguage !== undefined) updateData.defaultLanguage = input.defaultLanguage;
       if (input.status !== undefined) updateData.status = input.status;
+      if (input.aiAssistantEnabled !== undefined) updateData.aiAssistantEnabled = input.aiAssistantEnabled;
+
+      // Quota overrides (direct edits by system admin)
+      // Applied BEFORE subscription plan block so plan change defaults take precedence
+      if (input.allowedBranches !== undefined) updateData.allowedBranches = input.allowedBranches;
+      if (input.allowedBusinessLines !== undefined) updateData.allowedBusinessLines = input.allowedBusinessLines;
+      if (input.allowedUsers !== undefined) updateData.allowedUsers = input.allowedUsers;
+      if (input.storageLimitGB !== undefined) updateData.storageLimitGB = input.storageLimitGB;
+      if (input.apiRateLimit !== undefined) updateData.apiRateLimit = input.apiRateLimit;
 
       if (input.countryCode !== undefined) {
         const country = MIDDLE_EAST_COUNTRIES.find(c => c.code === input.countryCode);

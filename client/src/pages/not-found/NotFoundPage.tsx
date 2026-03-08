@@ -1,29 +1,13 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Home, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Home, ArrowLeft, AlertCircle, SearchX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 
 export default function NotFoundPage() {
-  const [isRTL, setIsRTL] = useState(false);
-
-  useEffect(() => {
-    const checkRTL = () => {
-      const dir = document.documentElement.getAttribute('dir') || 'ltr';
-      const lang = document.documentElement.lang || 'en';
-      setIsRTL(dir === 'rtl' || lang === 'ar');
-    };
-
-    checkRTL();
-
-    const observer = new MutationObserver(checkRTL);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['dir', 'lang'],
-    });
-
-    return () => observer.disconnect();
-  }, []);
+  const { isRTL } = useLanguage();
+  const { t } = useTranslation();
 
   return (
     <div 
@@ -43,16 +27,14 @@ export default function NotFoundPage() {
             </div>
 
             <div>
-              <h1 className="text-6xl font-bold mb-2" style={{ color: 'var(--color-text)' }}>
-                404
+              <h1 className="text-6xl font-bold mb-2 flex items-center justify-center gap-3" style={{ color: 'var(--color-text)' }}>
+                <SearchX className="w-16 h-16 text-[var(--color-text-muted)]" /> 404
               </h1>
               <h2 className="text-2xl font-semibold mb-3" style={{ color: 'var(--color-text)' }}>
-                {isRTL ? 'الصفحة غير موجودة' : 'Page Not Found'}
+                {t('errors.pageNotFound')}
               </h2>
               <p className="text-base max-w-md mx-auto" style={{ color: 'var(--color-text-secondary)' }}>
-                {isRTL 
-                  ? 'عذرًا، الصفحة التي تبحث عنها غير موجودة أو تم نقلها.'
-                  : "Sorry, the page you are looking for doesn't exist or has been moved."}
+                {t('errors.pageNotFoundDesc')}
               </p>
             </div>
 
@@ -63,22 +45,20 @@ export default function NotFoundPage() {
                   style={{ backgroundColor: 'var(--color-accent)', color: 'var(--color-text-on-accent)' }}
                 >
                   <Home className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                  {isRTL ? 'الذهاب إلى لوحة التحكم' : 'Go to Dashboard'}
+                  {t('errors.goToDashboard')}
                 </Button>
               </Link>
               <Link to="/">
                 <Button variant="outline" className="w-full sm:w-auto">
                   <ArrowLeft className={`w-4 h-4 ${isRTL ? 'ml-2 rotate-180' : 'mr-2'}`} />
-                  {isRTL ? 'العودة' : 'Go Back'}
+                  {t('errors.goBack')}
                 </Button>
               </Link>
             </div>
 
             <div className="pt-6" style={{ borderTopWidth: '1px', borderTopStyle: 'solid', borderTopColor: 'var(--color-border)' }}>
               <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                {isRTL 
-                  ? 'إذا كنت تعتقد أن هذا خطأ، يرجى الاتصال بالدعم.'
-                  : 'If you think this is an error, please contact support.'}
+                {t('errors.contactSupport')}
               </p>
             </div>
           </div>

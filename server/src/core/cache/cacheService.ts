@@ -13,6 +13,7 @@
  * - AGI-ready knowledge cache layer
  */
 
+import { LRUCache } from 'lru-cache';
 import { getRedisClient } from '../../services/redisClient';
 import { RequestContext } from '../context';
 import { contextLogger } from '../context';
@@ -31,8 +32,8 @@ import {
 } from './types';
 
 class AGIReadyCacheService {
-  private l1Cache: Map<string, CacheEntry<unknown>> = new Map();
-  private l3Cache: Map<string, L3KnowledgeEntry> = new Map();
+  private l1Cache: LRUCache<string, CacheEntry<unknown>>;
+  private l3Cache: LRUCache<string, L3KnowledgeEntry>;
   private config: CacheConfig;
   private stats: CacheStats = {
     l1Hits: 0,
@@ -56,6 +57,18 @@ class AGIReadyCacheService {
 
   constructor(config: Partial<CacheConfig> = {}) {
     this.config = { ...DEFAULT_CACHE_CONFIG, ...config };
+
+    // L1: LRU with TTL-based expiry and bounded size (O(1) eviction)
+    this.l1Cache = new LRUCache<string, CacheEntry<unknown>>({
+      max: this.config.l1MaxSize,
+      dispose: () => { this.stats.evictions++; },
+    });
+
+    // L3: LRU with bounded size for AGI knowledge cache
+    this.l3Cache = new LRUCache<string, L3KnowledgeEntry>({
+      max: 1000,
+    });
+
     this.startCleanupInterval();
     this.startLoadMonitor();
   }
@@ -140,19 +153,27 @@ class AGIReadyCacheService {
     }
 
     let invalidated = 0;
+    const l1KeysToDelete: string[] = [];
+    const l3KeysToDelete: string[] = [];
 
-    for (const [key, entry] of this.l1Cache.entries()) {
+    this.l1Cache.forEach((entry, key) => {
       if (entry.tags && Array.isArray(entry.tags) && entry.tags.some(tag => tags.includes(tag))) {
-        this.l1Cache.delete(key);
-        invalidated++;
+        l1KeysToDelete.push(key);
       }
+    });
+    for (const key of l1KeysToDelete) {
+      this.l1Cache.delete(key);
+      invalidated++;
     }
 
-    for (const [key, entry] of this.l3Cache.entries()) {
+    this.l3Cache.forEach((entry, key) => {
       if (entry.tags && Array.isArray(entry.tags) && entry.tags.some(tag => tags.includes(tag))) {
-        this.l3Cache.delete(key);
-        invalidated++;
+        l3KeysToDelete.push(key);
       }
+    });
+    for (const key of l3KeysToDelete) {
+      this.l3Cache.delete(key);
+      invalidated++;
     }
 
     const redis = getRedisClient();
@@ -183,12 +204,16 @@ class AGIReadyCacheService {
 
   async invalidateByTenant(tenantId: string): Promise<number> {
     let invalidated = 0;
+    const keysToDelete: string[] = [];
 
-    for (const [key, entry] of this.l1Cache.entries()) {
+    this.l1Cache.forEach((entry, key) => {
       if (entry.tenantId === tenantId) {
-        this.l1Cache.delete(key);
-        invalidated++;
+        keysToDelete.push(key);
       }
+    });
+    for (const key of keysToDelete) {
+      this.l1Cache.delete(key);
+      invalidated++;
     }
 
     const redis = getRedisClient();
@@ -253,9 +278,9 @@ class AGIReadyCacheService {
     if (this.l1Cache.size === 0) return 0;
     let totalTtl = 0;
     const now = Date.now();
-    for (const entry of this.l1Cache.values()) {
+    this.l1Cache.forEach((entry) => {
       totalTtl += Math.max(0, entry.expiresAt - now);
-    }
+    });
     return Math.round(totalTtl / this.l1Cache.size);
   }
 
@@ -322,10 +347,14 @@ class AGIReadyCacheService {
   }
 
   invalidateL3ByTenant(tenantId: string): void {
-    for (const [key, entry] of this.l3Cache.entries()) {
+    const keysToDelete: string[] = [];
+    this.l3Cache.forEach((entry, key) => {
       if (entry.tenantId === tenantId) {
-        this.l3Cache.delete(key);
+        keysToDelete.push(key);
       }
+    });
+    for (const key of keysToDelete) {
+      this.l3Cache.delete(key);
     }
   }
 
@@ -459,10 +488,7 @@ class AGIReadyCacheService {
   }
 
   private setToL1<T>(key: string, value: T, options: CacheOptions): void {
-    if (this.l1Cache.size >= this.config.l1MaxSize) {
-      this.evictL1LRU();
-    }
-
+    // LRUCache auto-evicts when max size is reached (O(1))
     const now = Date.now();
     const ttl = options.ttl || this.config.l1DefaultTtl;
 
@@ -481,28 +507,6 @@ class AGIReadyCacheService {
     };
 
     this.l1Cache.set(key, entry);
-  }
-
-  private evictL1LRU(): void {
-    let lruKey: string | null = null;
-    let lruScore = Infinity;
-
-    for (const [key, entry] of this.l1Cache.entries()) {
-      const priorityWeight = PRIORITY_WEIGHTS[entry.priority];
-      const recencyScore = entry.lastAccessedAt / 1000;
-      const frequencyScore = Math.log(entry.hitCount + 1) * 10;
-      const score = (recencyScore + frequencyScore) * priorityWeight;
-
-      if (score < lruScore) {
-        lruScore = score;
-        lruKey = key;
-      }
-    }
-
-    if (lruKey) {
-      this.l1Cache.delete(lruKey);
-      this.stats.evictions++;
-    }
   }
 
   private async getFromL2<T>(key: string): Promise<T | null> {
@@ -567,19 +571,27 @@ class AGIReadyCacheService {
     setInterval(() => {
       const now = Date.now();
       let cleaned = 0;
-      
-      for (const [key, entry] of this.l1Cache.entries()) {
+      const l1Expired: string[] = [];
+      const l3Expired: string[] = [];
+
+      this.l1Cache.forEach((entry, key) => {
         if (now > entry.expiresAt && (!entry.staleAt || now > entry.staleAt)) {
-          this.l1Cache.delete(key);
-          cleaned++;
+          l1Expired.push(key);
         }
+      });
+      for (const key of l1Expired) {
+        this.l1Cache.delete(key);
+        cleaned++;
       }
 
-      for (const [key, entry] of this.l3Cache.entries()) {
+      this.l3Cache.forEach((entry, key) => {
         if (now > entry.validUntil) {
-          this.l3Cache.delete(key);
-          cleaned++;
+          l3Expired.push(key);
         }
+      });
+      for (const key of l3Expired) {
+        this.l3Cache.delete(key);
+        cleaned++;
       }
 
       if (cleaned > 0) {

@@ -1,0 +1,1 @@
+ALTER TABLE "tenants" ADD COLUMN "ai_assistant_enabled" boolean DEFAULT false NOT NULL;

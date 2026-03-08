@@ -7,12 +7,12 @@
  */
 
 import { Router } from 'express';
-import { 
-  createTenant, 
-  getAllTenants, 
-  getTenantById, 
-  updateTenant, 
-  deleteTenant 
+import {
+  createTenant,
+  getAllTenants,
+  getTenantById,
+  updateTenant,
+  // deleteTenant removed - No Delete Policy
 } from '../controllers/tenantController';
 import {
   createTenantAdvanced,
@@ -27,6 +27,7 @@ import {
 } from '../controllers/systemTenantController';
 import { authMiddleware } from '../../middleware/authMiddleware';
 import { routeMetadata, RoutePatterns, enforceRouteMetadata } from '../../middleware/routeMetadata';
+import { requirePermission } from '../../rbac/permissionMiddleware';
 
 const router = Router();
 
@@ -71,6 +72,7 @@ router.post(
   routeMetadata(RoutePatterns.systemOnly('Create tenant with advanced setup')),
   authMiddleware,
   enforceRouteMetadata(),
+  requirePermission('tenants.create'),
   createTenantAdvanced
 );
 
@@ -79,15 +81,17 @@ router.put(
   routeMetadata(RoutePatterns.systemOnly('Update tenant with advanced options')),
   authMiddleware,
   enforceRouteMetadata(),
+  requirePermission('tenants.update'),
   updateTenantAdvanced
 );
 
-// All tenant management routes require system scope
+// All tenant management routes require system scope + DPF permission check
 router.post(
   '/',
   routeMetadata(RoutePatterns.systemOnly('Create tenant')),
   authMiddleware,
   enforceRouteMetadata(),
+  requirePermission('tenants.create'),
   createTenant
 );
 
@@ -96,6 +100,7 @@ router.get(
   routeMetadata(RoutePatterns.systemOnly('Get all tenants')),
   authMiddleware,
   enforceRouteMetadata(),
+  requirePermission('tenants.view'),
   getAllTenants
 );
 
@@ -105,6 +110,7 @@ router.get(
   routeMetadata(RoutePatterns.systemOnly('Get tenant by ID')),
   authMiddleware,
   enforceRouteMetadata(),
+  requirePermission('tenants.view'),
   getTenantById
 );
 
@@ -113,15 +119,12 @@ router.put(
   routeMetadata(RoutePatterns.systemOnly('Update tenant')),
   authMiddleware,
   enforceRouteMetadata(),
+  requirePermission('tenants.update'),
   updateTenant
 );
 
-router.delete(
-  '/:id',
-  routeMetadata(RoutePatterns.systemOnly('Delete tenant')),
-  authMiddleware,
-  enforceRouteMetadata(),
-  deleteTenant
-);
+// DELETE route removed - No Delete Policy
+// Tenants can only be deactivated/suspended, not permanently deleted
+// Use PUT /:id with { isActive: false } or system.tenants.suspend action
 
 export default router;

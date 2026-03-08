@@ -1,0 +1,405 @@
+{
+  "info": {
+    "name": "Branch Scope APIs - DPF System",
+    "description": "Complete API collection for testing branch-level access control",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "YOUR_AUTH_TOKEN_HERE",
+      "type": "string"
+    },
+    {
+      "key": "tenantId",
+      "value": "YOUR_TENANT_ID",
+      "type": "string"
+    },
+    {
+      "key": "userRoleId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "branch1Id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "branch2Id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"branch-test@example.com\",\n  \"password\": \"your-password\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Get Data (Setup)",
+      "item": [
+        {
+          "name": "Get All Branches",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tenant/branches",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tenant", "branches"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tenant/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tenant", "users"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tenant/dpf/user-roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tenant", "dpf", "user-roles"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Branch Scope APIs",
+      "item": [
+        {
+          "name": "Assign Branches to User Role",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success field\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Branches assigned successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "    pm.expect(jsonData.data.length).to.be.greaterThan(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userRoleId\": \"{{userRoleId}}\",\n  \"branchIds\": [\n    \"{{branch1Id}}\",\n    \"{{branch2Id}}\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tenant/dpf/user-role-branches",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tenant", "dpf", "user-role-branches"]
+            },
+            "description": "Assign multiple branches to a user role. This replaces any existing branch assignments."
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Role Branches",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Returns array of branches\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tenant/dpf/user-role-branches/{{userRoleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tenant", "dpf", "user-role-branches", "{{userRoleId}}"]
+            },
+            "description": "Get all branches assigned to a specific user role"
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Specific Branch",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Branch removed successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tenant/dpf/user-role-branches/{{userRoleId}}/branch/{{branch1Id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tenant", "dpf", "user-role-branches", "{{userRoleId}}", "branch", "{{branch1Id}}"]
+            },
+            "description": "Remove a specific branch assignment from user role"
+          },
+          "response": []
+        },
+        {
+          "name": "Remove All Branches",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"All branches removed successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tenant/dpf/user-role-branches/{{userRoleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tenant", "dpf", "user-role-branches", "{{userRoleId}}"]
+            },
+            "description": "Remove all branch assignments for a user role"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Users by Branch",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Returns array of users\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tenant/dpf/branches/{{branch1Id}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tenant", "dpf", "branches", "{{branch1Id}}", "users"]
+            },
+            "description": "Get all users who have access to a specific branch"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Test Scenarios",
+      "item": [
+        {
+          "name": "Scenario 1: Assign 2 Branches",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"User has access to 2 branches\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.length).to.eql(2);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userRoleId\": \"{{userRoleId}}\",\n  \"branchIds\": [\n    \"{{branch1Id}}\",\n    \"{{branch2Id}}\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tenant/dpf/user-role-branches",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tenant", "dpf", "user-role-branches"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Scenario 2: Update to 1 Branch",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"User has access to 1 branch only\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.length).to.eql(1);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userRoleId\": \"{{userRoleId}}\",\n  \"branchIds\": [\n    \"{{branch1Id}}\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tenant/dpf/user-role-branches",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tenant", "dpf", "user-role-branches"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Scenario 3: Remove All Branches",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"All branches removed\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tenant/dpf/user-role-branches/{{userRoleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tenant", "dpf", "user-role-branches", "{{userRoleId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

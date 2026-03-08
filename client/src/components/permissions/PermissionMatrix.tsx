@@ -3,12 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/toast';
 import { PermissionTree } from './PermissionTree';
 import { Loader2 } from 'lucide-react';
-import type { PermissionMatrixModule, DPFPermission, AssignPermissionsInput } from '../../../../types/dpf';
+import type { PermissionMatrixModule, DPFPermission, AssignPermissionsInput } from '@types/dpf';
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/api/v1';
 
 interface PermissionMatrixProps {
   roleId: string;
@@ -17,7 +17,7 @@ interface PermissionMatrixProps {
 }
 
 export function PermissionMatrix({ roleId, roleName, accessToken }: PermissionMatrixProps) {
-  const { toast } = useToast();
+  const { showToast } = useToast();
   const queryClient = useQueryClient();
   const [selectedPermissions, setSelectedPermissions] = useState<Set<string>>(new Set());
   const [hasChanges, setHasChanges] = useState(false);
@@ -26,7 +26,7 @@ export function PermissionMatrix({ roleId, roleName, accessToken }: PermissionMa
     queryKey: ['permission-matrix'],
     queryFn: async () => {
       const response = await axios.get<{ data: PermissionMatrixModule[] }>(
-        `${API_BASE}/tenant/permissions/matrix`,
+        `${API_BASE}/tenant/dpf/permissions/matrix`,
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
       return response.data.data;
@@ -37,7 +37,7 @@ export function PermissionMatrix({ roleId, roleName, accessToken }: PermissionMa
     queryKey: ['role-permissions', roleId],
     queryFn: async () => {
       const response = await axios.get<{ data: DPFPermission[] }>(
-        `${API_BASE}/tenant/roles/${roleId}/permissions`,
+        `${API_BASE}/tenant/dpf/permissions/roles/${roleId}/permissions`,
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
       return response.data.data;
@@ -60,7 +60,7 @@ export function PermissionMatrix({ roleId, roleName, accessToken }: PermissionMa
         permissionIds,
       };
       const response = await axios.post(
-        `${API_BASE}/tenant/roles/${roleId}/permissions`,
+        `${API_BASE}/tenant/dpf/permissions/roles/${roleId}/permissions`,
         payload,
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
@@ -70,18 +70,10 @@ export function PermissionMatrix({ roleId, roleName, accessToken }: PermissionMa
       queryClient.invalidateQueries({ queryKey: ['role-permissions', roleId] });
       queryClient.invalidateQueries({ queryKey: ['permissions'] });
       setHasChanges(false);
-      toast({
-        title: 'Success',
-        description: 'Permissions updated successfully',
-        variant: 'default',
-      });
+      showToast('success', 'Permissions updated successfully');
     },
     onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description: error.response?.data?.error || 'Failed to update permissions',
-        variant: 'destructive',
-      });
+      showToast('error', error.response?.data?.error || 'Failed to update permissions');
     },
   });
 

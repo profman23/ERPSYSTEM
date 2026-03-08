@@ -1,9 +1,15 @@
+import { useTranslation } from 'react-i18next';
 import { Calendar, Plus, Search, Filter } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { useRouteBreadcrumbs } from '@/hooks/useRouteBreadcrumbs';
+import { StyledIcon } from '@/components/ui/StyledIcon';
 
 export default function AppAppointmentsPage() {
+  const { t } = useTranslation();
+  const { items: breadcrumbs, homeHref } = useRouteBreadcrumbs();
   const appointments = [
     { id: 1, patient: 'Max', species: 'Dog', owner: 'John Smith', time: '09:00 AM', type: 'Checkup', status: 'confirmed' },
     { id: 2, patient: 'Luna', species: 'Cat', owner: 'Sarah Johnson', time: '10:30 AM', type: 'Vaccination', status: 'confirmed' },
@@ -13,22 +19,32 @@ export default function AppAppointmentsPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--app-text)' }}>Appointments</h1>
-          <p className="mt-1" style={{ color: 'var(--app-text-secondary)' }}>Manage your scheduled appointments</p>
+    <div className="space-y-4">
+      <div>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <StyledIcon icon={Calendar} emoji="📅" className="w-8 h-8 text-[var(--color-accent)]" />
+              <h1 className="text-2xl font-bold" style={{ color: 'var(--app-text)' }}>Appointments</h1>
+            </div>
+            <p className="mt-1" style={{ color: 'var(--app-text-secondary)' }}>Manage your scheduled appointments</p>
+          </div>
+          <Button
+            className="text-white"
+            style={{ background: 'linear-gradient(135deg, var(--app-accent), var(--app-accent-hover))' }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Appointment
+          </Button>
         </div>
-        <Button 
-          className="text-white"
-          style={{ background: 'linear-gradient(135deg, var(--app-accent), var(--app-accent-hover))' }}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          New Appointment
-        </Button>
+        {breadcrumbs.length > 0 && (
+          <div className="mt-2">
+            <Breadcrumbs items={breadcrumbs} showHome homeHref={homeHref} />
+          </div>
+        )}
       </div>
 
-      <Card 
+      <Card
         className="border-0 shadow-sm"
         style={{ backgroundColor: 'var(--app-surface)', borderColor: 'var(--app-border)' }}
       >
@@ -36,11 +52,11 @@ export default function AppAppointmentsPage() {
           <div className="flex gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--app-text-muted)' }} />
-              <Input placeholder="Search appointments..." className="pl-10" />
+              <Input placeholder={t('common.searchPlaceholder')} className="pl-10" />
             </div>
             <Button variant="outline">
               <Filter className="w-4 h-4 mr-2" />
-              Filter
+              {t('common.filter')}
             </Button>
           </div>
         </CardContent>
@@ -52,7 +68,7 @@ export default function AppAppointmentsPage() {
       >
         <CardHeader>
           <CardTitle className="flex items-center gap-2" style={{ color: 'var(--app-text)' }}>
-            <Calendar className="w-5 h-5" style={{ color: 'var(--app-accent)' }} />
+            <StyledIcon icon={Calendar} emoji="📅" className="w-5 h-5" style={{ color: 'var(--app-accent)' }} />
             Today's Appointments
           </CardTitle>
           <CardDescription style={{ color: 'var(--app-text-secondary)' }}>{appointments.length} appointments scheduled</CardDescription>

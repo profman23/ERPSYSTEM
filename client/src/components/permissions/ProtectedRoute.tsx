@@ -5,7 +5,7 @@
 
 import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { usePermissions } from '../../hooks/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface ProtectedRouteProps {
   children: ReactNode;

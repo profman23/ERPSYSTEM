@@ -230,6 +230,7 @@ export class TenantCodeGenerator {
     apiRateLimit?: number;
     subscriptionStartAt?: Date;
     trialExpiresAt?: Date | null;
+    aiAssistantEnabled?: boolean;
   }): Promise<{ success: boolean; tenantId?: string; error?: string }> {
     try {
       const result = await db.update(tenants)
@@ -252,6 +253,7 @@ export class TenantCodeGenerator {
           apiRateLimit: tenantData.apiRateLimit || 1000,
           subscriptionStartAt: tenantData.subscriptionStartAt || new Date(),
           trialExpiresAt: tenantData.trialExpiresAt || null,
+          aiAssistantEnabled: tenantData.aiAssistantEnabled ?? false,
           updatedAt: new Date(),
         })
         .where(eq(tenants.code, code))

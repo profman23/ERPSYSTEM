@@ -1,14 +1,63 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Building2, Globe, MapPin, Mail, Phone, Loader2, Briefcase, GitBranch, CreditCard } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslation } from 'react-i18next';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Building2, MapPin, Mail, Loader2, Briefcase, GitBranch, CreditCard, Globe, Clock, Palette, Hash, Phone } from 'lucide-react';
+import { StyledIcon } from '@/components/ui/StyledIcon';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { useRouteBreadcrumbs } from '@/hooks/useRouteBreadcrumbs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select } from '@/components/ui/select';
+import { SimpleSelect } from '@/components/ui/select-advanced';
+import { PhoneInput, CountryCodeSelect } from '@/components/ui/PhoneInput';
 import { useCreateTenant } from '@/hooks/useHierarchy';
 import { useScopePath } from '@/hooks/useScopePath';
+import { useScreenPermission } from '@/hooks/useScreenPermission';
+import { extractApiError } from '@/lib/apiError';
+import { useToast } from '@/components/ui/toast';
+
+const createTenantSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Organization name is required')
+    .min(2, 'Organization name must be at least 2 characters'),
+  code: z
+    .string()
+    .min(1, 'Organization code is required')
+    .regex(/^[A-Z0-9-]+$/i, 'Code must contain only letters, numbers, and hyphens'),
+  country: z.string().optional().or(z.literal('')),
+  timezone: z.string().default('UTC'),
+  subscriptionPlan: z.enum(['trial', 'standard', 'professional', 'enterprise']).default('trial'),
+  allowedBusinessLines: z
+    .string()
+    .refine((val) => {
+      const num = parseInt(val);
+      return !isNaN(num) && num >= 1;
+    }, 'Must be at least 1'),
+  allowedBranches: z
+    .string()
+    .refine((val) => {
+      const num = parseInt(val);
+      return !isNaN(num) && num >= 1;
+    }, 'Must be at least 1'),
+  contactEmail: z
+    .string()
+    .email('Invalid email format')
+    .optional()
+    .or(z.literal('')),
+  contactPhone: z.string().optional().or(z.literal('')),
+  address: z.string().max(500, 'Address must be less than 500 characters').optional().or(z.literal('')),
+  primaryColor: z
+    .string()
+    .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color format')
+    .default('#2563EB'),
+});
+
+type CreateTenantFormData = z.infer<typeof createTenantSchema>;
 
 const subscriptionPlans = [
   { value: 'trial', label: 'Trial (14 days)' },
@@ -28,578 +77,367 @@ const timezones = [
   { value: 'Asia/Shanghai', label: 'Asia/Shanghai (CST)' },
 ];
 
+const defaultValues: CreateTenantFormData = {
+  name: '',
+  code: '',
+  country: '',
+  timezone: 'UTC',
+  subscriptionPlan: 'trial',
+  allowedBusinessLines: '5',
+  allowedBranches: '10',
+  contactEmail: '',
+  contactPhone: '',
+  address: '',
+  primaryColor: '#2563EB',
+};
+
+const SCREEN_CODE = 'TENANTS';
+
 export default function CreateTenantPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const createTenant = useCreateTenant();
-  const { isSystemScope } = useScopePath();
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    code: '',
-    country: '',
-    timezone: 'UTC',
-    subscriptionPlan: 'trial',
-    allowedBusinessLines: '5',
-    allowedBranches: '10',
-    contactEmail: '',
-    contactPhone: '',
-    address: '',
-    primaryColor: '#2563EB',
+  const { isSystemScope, getPath } = useScopePath();
+  const { canModify, isLoading: permissionsLoading } = useScreenPermission(SCREEN_CODE);
+  const { showToast } = useToast();
+  const [submitError, setSubmitError] = useState<string>('');
+  const [phoneCountryCode, setPhoneCountryCode] = useState('EG');
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<CreateTenantFormData>({
+    resolver: zodResolver(createTenantSchema),
+    defaultValues,
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const formData = watch();
+  const { items: breadcrumbs, homeHref } = useRouteBreadcrumbs();
+  const listPath = isSystemScope ? '/system/tenants' : '/tenants';
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const validate = () => {
-    const newErrors: Record<string, string> = {};
-    if (!formData.name.trim()) newErrors.name = 'Organization name is required';
-    if (!formData.code.trim()) newErrors.code = 'Organization code is required';
-    if (formData.code && !/^[A-Z0-9-]+$/i.test(formData.code)) {
-      newErrors.code = 'Code must contain only letters, numbers, and hyphens';
-    }
-    if (formData.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) {
-      newErrors.contactEmail = 'Invalid email format';
-    }
-    const businessLines = parseInt(formData.allowedBusinessLines);
-    if (isNaN(businessLines) || businessLines < 1) {
-      newErrors.allowedBusinessLines = 'Must be at least 1';
-    }
-    const branches = parseInt(formData.allowedBranches);
-    if (isNaN(branches) || branches < 1) {
-      newErrors.allowedBranches = 'Must be at least 1';
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
+  const onSubmit = async (data: CreateTenantFormData) => {
+    setSubmitError('');
 
     try {
       await createTenant.mutateAsync({
-        name: formData.name,
-        code: formData.code.toUpperCase(),
-        country: formData.country || undefined,
-        timezone: formData.timezone,
-        subscriptionPlan: formData.subscriptionPlan as 'trial' | 'standard' | 'enterprise',
-        allowedBusinessLines: parseInt(formData.allowedBusinessLines),
-        allowedBranches: parseInt(formData.allowedBranches),
-        contactEmail: formData.contactEmail || undefined,
-        contactPhone: formData.contactPhone || undefined,
-        address: formData.address || undefined,
-        primaryColor: formData.primaryColor,
+        name: data.name,
+        code: data.code.toUpperCase(),
+        country: data.country || undefined,
+        timezone: data.timezone,
+        subscriptionPlan: data.subscriptionPlan as 'trial' | 'standard' | 'enterprise',
+        allowedBusinessLines: parseInt(data.allowedBusinessLines),
+        allowedBranches: parseInt(data.allowedBranches),
+        contactEmail: data.contactEmail || undefined,
+        contactPhone: data.contactPhone || undefined,
+        address: data.address || undefined,
+        primaryColor: data.primaryColor,
       });
-      navigate(isSystemScope ? '/system/tenants' : '/tenants');
-    } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to create tenant';
-      setErrors({ submit: message });
+      showToast('success', 'Tenant Created');
+      navigate(listPath);
+    } catch (error) {
+      const apiError = extractApiError(error);
+      setSubmitError(apiError.message);
     }
   };
 
-  if (isSystemScope) {
+  if (permissionsLoading) {
     return (
-      <div className="space-y-6 max-w-4xl">
-        <div>
-          <Link
-            to="/system/tenants"
-            className="inline-flex items-center gap-2 text-sm mb-4 transition-colors"
-            style={{ color: 'var(--color-text-secondary)' }}
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Tenants
-          </Link>
-          <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
-            Create New Tenant
-          </h1>
-          <p className="mt-2" style={{ color: 'var(--color-text-secondary)' }}>
-            Add a new organization to the platform
-          </p>
-        </div>
-
-        <div 
-          className="rounded-xl border p-6"
-          style={{ 
-            backgroundColor: 'var(--color-surface)', 
-            borderColor: 'var(--color-border)' 
-          }}
-        >
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Organization Information</h2>
-            <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Enter the basic organization details</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {errors.submit && (
-              <div 
-                className="p-4 rounded-lg border"
-                style={{ 
-                  backgroundColor: 'var(--alert-danger-bg)', 
-                  borderColor: 'var(--alert-danger-border)',
-                  color: 'var(--alert-danger-text)'
-                }}
-              >
-                {errors.submit}
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label style={{ color: 'var(--color-text)' }}>Organization Name *</Label>
-                <div className="relative">
-                  <Building2 
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" 
-                    style={{ color: 'var(--color-text-muted)' }}
-                  />
-                  <Input
-                    id="name"
-                    name="name"
-                    placeholder="Enter organization name"
-                    className="pl-10"
-                    value={formData.name}
-                    onChange={handleChange}
-                  />
-                </div>
-                {errors.name && <p className="text-sm" style={{ color: 'var(--color-danger)' }}>{errors.name}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label style={{ color: 'var(--color-text)' }}>Organization Code *</Label>
-                <Input
-                  id="code"
-                  name="code"
-                  placeholder="e.g., CLINIC001"
-                  value={formData.code}
-                  onChange={handleChange}
-                  className="uppercase"
-                />
-                {errors.code && <p className="text-sm" style={{ color: 'var(--color-danger)' }}>{errors.code}</p>}
-              </div>
-            </div>
-
-            <div 
-              className="p-4 rounded-lg border"
-              style={{ backgroundColor: 'var(--color-surface-hover)', borderColor: 'var(--color-border)' }}
-            >
-              <div className="flex items-center gap-2 mb-4">
-                <CreditCard className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
-                <h3 className="font-medium" style={{ color: 'var(--color-text)' }}>Subscription & Limits</h3>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label style={{ color: 'var(--color-text)' }}>Subscription Plan</Label>
-                  <Select
-                    id="subscriptionPlan"
-                    name="subscriptionPlan"
-                    value={formData.subscriptionPlan}
-                    onChange={handleChange}
-                    options={subscriptionPlans}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label style={{ color: 'var(--color-text)' }}>Allowed Business Lines</Label>
-                  <div className="relative">
-                    <Briefcase 
-                      className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" 
-                      style={{ color: 'var(--color-text-muted)' }}
-                    />
-                    <Input
-                      id="allowedBusinessLines"
-                      name="allowedBusinessLines"
-                      type="number"
-                      min="1"
-                      max="100"
-                      placeholder="5"
-                      className="pl-10"
-                      value={formData.allowedBusinessLines}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  {errors.allowedBusinessLines && <p className="text-sm" style={{ color: 'var(--color-danger)' }}>{errors.allowedBusinessLines}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label style={{ color: 'var(--color-text)' }}>Allowed Branches</Label>
-                  <div className="relative">
-                    <GitBranch 
-                      className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" 
-                      style={{ color: 'var(--color-text-muted)' }}
-                    />
-                    <Input
-                      id="allowedBranches"
-                      name="allowedBranches"
-                      type="number"
-                      min="1"
-                      max="500"
-                      placeholder="10"
-                      className="pl-10"
-                      value={formData.allowedBranches}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  {errors.allowedBranches && <p className="text-sm" style={{ color: 'var(--color-danger)' }}>{errors.allowedBranches}</p>}
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label style={{ color: 'var(--color-text)' }}>Country</Label>
-                <div className="relative">
-                  <Globe 
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" 
-                    style={{ color: 'var(--color-text-muted)' }}
-                  />
-                  <Input
-                    id="country"
-                    name="country"
-                    placeholder="e.g., United States"
-                    className="pl-10"
-                    value={formData.country}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label style={{ color: 'var(--color-text)' }}>Timezone</Label>
-                <Select
-                  id="timezone"
-                  name="timezone"
-                  value={formData.timezone}
-                  onChange={handleChange}
-                  options={timezones}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label style={{ color: 'var(--color-text)' }}>Brand Color</Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="color"
-                    id="primaryColor"
-                    name="primaryColor"
-                    value={formData.primaryColor}
-                    onChange={handleChange}
-                    className="w-12 h-10 p-1 cursor-pointer"
-                  />
-                  <Input
-                    value={formData.primaryColor}
-                    onChange={handleChange}
-                    name="primaryColor"
-                    placeholder="#2563EB"
-                    className="flex-1"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label style={{ color: 'var(--color-text)' }}>Contact Email</Label>
-                <div className="relative">
-                  <Mail 
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" 
-                    style={{ color: 'var(--color-text-muted)' }}
-                  />
-                  <Input
-                    id="contactEmail"
-                    name="contactEmail"
-                    type="email"
-                    placeholder="admin@organization.com"
-                    className="pl-10"
-                    value={formData.contactEmail}
-                    onChange={handleChange}
-                  />
-                </div>
-                {errors.contactEmail && <p className="text-sm" style={{ color: 'var(--color-danger)' }}>{errors.contactEmail}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label style={{ color: 'var(--color-text)' }}>Contact Phone</Label>
-                <div className="relative">
-                  <Phone 
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" 
-                    style={{ color: 'var(--color-text-muted)' }}
-                  />
-                  <Input
-                    id="contactPhone"
-                    name="contactPhone"
-                    placeholder="+1-555-123-4567"
-                    className="pl-10"
-                    value={formData.contactPhone}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label style={{ color: 'var(--color-text)' }}>Address</Label>
-              <div className="relative">
-                <MapPin 
-                  className="absolute left-3 top-3 w-4 h-4" 
-                  style={{ color: 'var(--color-text-muted)' }}
-                />
-                <Textarea
-                  id="address"
-                  name="address"
-                  placeholder="Enter full address"
-                  className="pl-10 min-h-[80px]"
-                  value={formData.address}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-4 pt-4">
-              <Button
-                type="submit"
-                disabled={createTenant.isPending}
-              >
-                {createTenant.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Create Tenant
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate('/system/tenants')}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--color-text-muted)' }} />
       </div>
     );
   }
 
+  if (!canModify) {
+    return <Navigate to={getPath('administration/tenants')} replace />;
+  }
+
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-4">
+      {/* Header */}
       <div>
-        <Link
-          to="/tenants"
-          className="inline-flex items-center gap-2 text-sm mb-4 transition-colors hover:opacity-70"
-          style={{ color: 'var(--color-text-secondary)' }}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Tenants
-        </Link>
-        <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
-          Create New Tenant
-        </h1>
-        <p className="mt-2" style={{ color: 'var(--color-text-secondary)' }}>
-          Add a new organization to the system
-        </p>
+        <div className="flex items-center gap-3">
+          <StyledIcon icon={Building2} emoji="🏢" className="w-8 h-8" style={{ color: 'var(--color-accent)' }} />
+          <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
+            {t('tenants.createNewTenant')}
+          </h1>
+        </div>
+        {breadcrumbs.length > 0 && (
+          <div className="mt-2">
+            <Breadcrumbs items={breadcrumbs} showHome homeHref={homeHref} />
+          </div>
+        )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Organization Information</CardTitle>
-          <CardDescription>Enter the basic organization details</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {errors.submit && (
-              <div 
+      {/* Form Card */}
+      <div
+        className="rounded-lg border max-w-2xl"
+        style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+      >
+        {/* Error Banner */}
+        {submitError && (
+          <div
+            className="px-5 py-3 text-sm border-b"
+            style={{
+              backgroundColor: 'var(--alert-danger-bg)',
+              borderColor: 'var(--alert-danger-border)',
+              color: 'var(--alert-danger-text)',
+            }}
+          >
+            {submitError}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="px-5 py-5 space-y-4">
+            {/* Name + Code */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1.5">
+                  <StyledIcon icon={Building2} emoji="🏢" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
+                  Organization Name *
+                </Label>
+                <Input
+                  {...register('name')}
+                  placeholder="Enter organization name"
+                  className="h-9"
+                />
+                {errors.name && <p className="text-xs" style={{ color: 'var(--color-text-danger)' }}>{errors.name.message}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1.5">
+                  <StyledIcon icon={Hash} emoji="#️⃣" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
+                  Organization Code *
+                </Label>
+                <Input
+                  {...register('code')}
+                  placeholder="e.g., CLINIC001"
+                  className="h-9 uppercase"
+                />
+                {errors.code && <p className="text-xs" style={{ color: 'var(--color-text-danger)' }}>{errors.code.message}</p>}
+              </div>
+            </div>
+
+            {/* Subscription & Limits — system scope only */}
+            {isSystemScope && (
+              <div
                 className="p-4 rounded-lg border"
-                style={{ 
-                  backgroundColor: 'var(--alert-danger-bg)', 
-                  borderColor: 'var(--alert-danger-border)',
-                  color: 'var(--alert-danger-text)'
-                }}
+                style={{ backgroundColor: 'var(--color-surface-hover)', borderColor: 'var(--color-border)' }}
               >
-                {errors.submit}
+                <h3 className="font-medium mb-4 flex items-center gap-2 text-sm" style={{ color: 'var(--color-text)' }}>
+                  <CreditCard className="w-4 h-4" /> Subscription & Limits
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs flex items-center gap-1.5">
+                      <StyledIcon icon={CreditCard} emoji="💳" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
+                      Subscription Plan
+                    </Label>
+                    <SimpleSelect
+                      value={formData.subscriptionPlan}
+                      onValueChange={(value) => setValue('subscriptionPlan', value as CreateTenantFormData['subscriptionPlan'])}
+                      options={subscriptionPlans}
+                      placeholder="Select plan"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs flex items-center gap-1.5">
+                      <StyledIcon icon={Briefcase} emoji="💼" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
+                      Allowed Business Lines
+                    </Label>
+                    <Input
+                      {...register('allowedBusinessLines')}
+                      type="number"
+                      min="1"
+                      max="100"
+                      placeholder="5"
+                      className="h-9"
+                    />
+                    {errors.allowedBusinessLines && <p className="text-xs" style={{ color: 'var(--color-text-danger)' }}>{errors.allowedBusinessLines.message}</p>}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs flex items-center gap-1.5">
+                      <StyledIcon icon={GitBranch} emoji="🌿" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
+                      Allowed Branches
+                    </Label>
+                    <Input
+                      {...register('allowedBranches')}
+                      type="number"
+                      min="1"
+                      max="500"
+                      placeholder="10"
+                      className="h-9"
+                    />
+                    {errors.allowedBranches && <p className="text-xs" style={{ color: 'var(--color-text-danger)' }}>{errors.allowedBranches.message}</p>}
+                  </div>
+                </div>
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="name">Organization Name *</Label>
-                <div className="relative">
-                  <Building2 
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" 
-                    style={{ color: 'var(--color-text-muted)' }} 
-                  />
-                  <Input
-                    id="name"
-                    name="name"
-                    placeholder="Enter organization name"
-                    className="pl-10"
-                    value={formData.name}
-                    onChange={handleChange}
+            {/* Non-system: Subscription Plan inline */}
+            {!isSystemScope && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs flex items-center gap-1.5">
+                    <StyledIcon icon={CreditCard} emoji="💳" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
+                    Subscription Plan
+                  </Label>
+                  <SimpleSelect
+                    value={formData.subscriptionPlan}
+                    onValueChange={(value) => setValue('subscriptionPlan', value as CreateTenantFormData['subscriptionPlan'])}
+                    options={subscriptionPlans}
+                    placeholder="Select plan"
                   />
                 </div>
-                {errors.name && <p className="text-sm" style={{ color: 'var(--color-danger)' }}>{errors.name}</p>}
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="code">Organization Code *</Label>
-                <Input
-                  id="code"
-                  name="code"
-                  placeholder="e.g., CLINIC001"
-                  value={formData.code}
-                  onChange={handleChange}
-                  className="uppercase"
+                <div className="space-y-1.5">
+                  <Label className="text-xs flex items-center gap-1.5">
+                    <StyledIcon icon={Palette} emoji="🎨" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
+                    Brand Color
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={formData.primaryColor}
+                      onChange={(e) => setValue('primaryColor', e.target.value)}
+                      className="w-12 h-9 p-1 cursor-pointer"
+                    />
+                    <Input
+                      {...register('primaryColor')}
+                      placeholder="#2563EB"
+                      className="h-9 flex-1"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Country + Timezone */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1.5">
+                  <StyledIcon icon={Globe} emoji="🌍" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
+                  Country
+                </Label>
+                <CountryCodeSelect
+                  value={watch('country') || ''}
+                  onChange={(code) => {
+                    setValue('country', code);
+                    setPhoneCountryCode(code);
+                  }}
                 />
-                {errors.code && <p className="text-sm" style={{ color: 'var(--color-danger)' }}>{errors.code}</p>}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="country">Country</Label>
-                <div className="relative">
-                  <Globe 
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" 
-                    style={{ color: 'var(--color-text-muted)' }} 
-                  />
-                  <Input
-                    id="country"
-                    name="country"
-                    placeholder="e.g., United States"
-                    className="pl-10"
-                    value={formData.country}
-                    onChange={handleChange}
-                  />
-                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="timezone">Timezone</Label>
-                <Select
-                  id="timezone"
-                  name="timezone"
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1.5">
+                  <StyledIcon icon={Clock} emoji="🕐" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
+                  Timezone
+                </Label>
+                <SimpleSelect
                   value={formData.timezone}
-                  onChange={handleChange}
+                  onValueChange={(value) => setValue('timezone', value)}
                   options={timezones}
+                  placeholder="Select timezone"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="subscriptionPlan">Subscription Plan</Label>
-                <Select
-                  id="subscriptionPlan"
-                  name="subscriptionPlan"
-                  value={formData.subscriptionPlan}
-                  onChange={handleChange}
-                  options={subscriptionPlans}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="primaryColor">Brand Color</Label>
-                <div className="flex gap-2">
+            {/* Brand Color — system scope (non-system already shown above) */}
+            {isSystemScope && (
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1.5">
+                  <StyledIcon icon={Palette} emoji="🎨" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
+                  Brand Color
+                </Label>
+                <div className="flex gap-2 max-w-xs">
                   <Input
                     type="color"
-                    id="primaryColor"
-                    name="primaryColor"
                     value={formData.primaryColor}
-                    onChange={handleChange}
-                    className="w-12 h-10 p-1 cursor-pointer"
+                    onChange={(e) => setValue('primaryColor', e.target.value)}
+                    className="w-12 h-9 p-1 cursor-pointer"
                   />
                   <Input
-                    value={formData.primaryColor}
-                    onChange={handleChange}
-                    name="primaryColor"
+                    {...register('primaryColor')}
                     placeholder="#2563EB"
-                    className="flex-1"
+                    className="h-9 flex-1"
                   />
                 </div>
               </div>
-            </div>
+            )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="contactEmail">Contact Email</Label>
-                <div className="relative">
-                  <Mail 
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" 
-                    style={{ color: 'var(--color-text-muted)' }} 
-                  />
-                  <Input
-                    id="contactEmail"
-                    name="contactEmail"
-                    type="email"
-                    placeholder="admin@organization.com"
-                    className="pl-10"
-                    value={formData.contactEmail}
-                    onChange={handleChange}
-                  />
-                </div>
-                {errors.contactEmail && <p className="text-sm" style={{ color: 'var(--color-danger)' }}>{errors.contactEmail}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="contactPhone">Contact Phone</Label>
-                <div className="relative">
-                  <Phone 
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" 
-                    style={{ color: 'var(--color-text-muted)' }} 
-                  />
-                  <Input
-                    id="contactPhone"
-                    name="contactPhone"
-                    placeholder="+1-555-123-4567"
-                    className="pl-10"
-                    value={formData.contactPhone}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <div className="relative">
-                <MapPin 
-                  className="absolute left-3 top-3 w-4 h-4" 
-                  style={{ color: 'var(--color-text-muted)' }} 
+            {/* Contact Email + Phone */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1.5">
+                  <StyledIcon icon={Mail} emoji="📧" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
+                  Contact Email
+                </Label>
+                <Input
+                  {...register('contactEmail')}
+                  type="email"
+                  placeholder="admin@organization.com"
+                  className="h-9"
                 />
-                <Textarea
-                  id="address"
-                  name="address"
-                  placeholder="Enter full address"
-                  className="pl-10 min-h-[80px]"
-                  value={formData.address}
-                  onChange={handleChange}
+                {errors.contactEmail && <p className="text-xs" style={{ color: 'var(--color-text-danger)' }}>{errors.contactEmail.message}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1.5">
+                  <StyledIcon icon={Phone} emoji="📱" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
+                  Contact Phone
+                </Label>
+                <PhoneInput
+                  countryCode={phoneCountryCode}
+                  value={watch('contactPhone') || ''}
+                  onChange={(val) => setValue('contactPhone', val)}
+                  placeholder="123 456 7890"
                 />
               </div>
             </div>
 
-            <div className="flex gap-4 pt-4">
-              <Button
-                type="submit"
-                disabled={createTenant.isPending}
-              >
-                {createTenant.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Create Tenant
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate('/tenants')}
-              >
-                Cancel
-              </Button>
+            {/* Address */}
+            <div className="space-y-1.5">
+              <Label className="text-xs flex items-center gap-1.5">
+                <StyledIcon icon={MapPin} emoji="📍" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
+                Address
+              </Label>
+              <Textarea
+                {...register('address')}
+                placeholder="Enter full address"
+                className="min-h-[80px]"
+              />
             </div>
-          </form>
-        </CardContent>
-      </Card>
+          </div>
+
+          {/* Footer */}
+          <div
+            className="px-5 py-3 flex items-center justify-end gap-3 border-t"
+            style={{ borderColor: 'var(--color-border)' }}
+          >
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => navigate(listPath)}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              type="submit"
+              disabled={createTenant.isPending}
+            >
+              {createTenant.isPending && <Loader2 className="w-4 h-4 me-2 animate-spin" />}
+              {t('tenants.createTenant')}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

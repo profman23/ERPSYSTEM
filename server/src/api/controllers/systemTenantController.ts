@@ -29,6 +29,7 @@ export const createTenantAdvanced = async (req: Request, res: Response, next: Ne
       address: validatedData.address,
       primaryColor: validatedData.primaryColor,
       defaultLanguage: validatedData.defaultLanguage,
+      aiAssistantEnabled: validatedData.aiAssistantEnabled,
     });
 
     if (!result.success) {
@@ -81,6 +82,12 @@ export const updateTenantAdvanced = async (req: Request, res: Response, next: Ne
       primaryColor: validatedData.primaryColor,
       defaultLanguage: validatedData.defaultLanguage,
       status: validatedData.status,
+      aiAssistantEnabled: validatedData.aiAssistantEnabled,
+      allowedBranches: validatedData.allowedBranches,
+      allowedBusinessLines: validatedData.allowedBusinessLines,
+      allowedUsers: validatedData.allowedUsers,
+      storageLimitGB: validatedData.storageLimitGB,
+      apiRateLimit: validatedData.apiRateLimit,
     });
 
     if (!result.success) {

@@ -1,576 +1,837 @@
-import { useState, useMemo, useEffect } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { ArrowLeft, Loader2, AlertCircle, Shield, Building2, Users } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+/**
+ * CreateUserPage — Create & Edit User Form (APP Panel)
+ *
+ * Create mode: /app/administration/users/create
+ * Edit mode:   /app/administration/users/:userId/edit
+ *
+ * Supports 3 user types:
+ * - regular (default for APP panel) — needs Branch + Role
+ * - tenant_admin (system users only via ?type=tenant_admin)
+ * - system (system users only via ?type=system)
+ */
+
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useNavigate, useSearchParams, useParams, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { Loader2, User, Mail, Phone, Lock, Shield, Building2, MapPin, Check, Star, Calendar, Tag } from 'lucide-react';
+import { StyledIcon } from '@/components/ui/StyledIcon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { useCreateUser, useTenants, useBusinessLines, useBranches } from '@/hooks/useHierarchy';
+import { SimpleSelect } from '@/components/ui/select-advanced';
+import { PhoneInput, CountryCodeSelect } from '@/components/ui/PhoneInput';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { useRouteBreadcrumbs } from '@/hooks/useRouteBreadcrumbs';
+import { useCreateUser, useTenants, useAllBranches, useUser } from '@/hooks/useHierarchy';
+import { useRoles } from '@/hooks/useRoles';
+import { useAssignRole, useUserRoles } from '@/hooks/useUserRoles';
 import { useAuth } from '@/contexts/AuthContext';
 import { useScopePath } from '@/hooks/useScopePath';
+import { useScreenPermission } from '@/hooks/useScreenPermission';
 import { apiClient } from '@/lib/api';
+import { extractApiError } from '@/lib/apiError';
+import { useToast } from '@/components/ui/toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 type UserType = 'system' | 'tenant_admin' | 'regular';
 
-const scopeOptions = [
-  { value: 'branch', label: 'Branch - Access to single branch' },
-  { value: 'business_line', label: 'Business Line - Access to all branches in business line' },
-  { value: 'tenant', label: 'Tenant - Access to entire organization' },
-];
+// System role options defined inside component to support i18n
 
-const roleOptions = [
-  { value: 'staff', label: 'Staff' },
-  { value: 'manager', label: 'Manager' },
-  { value: 'admin', label: 'Admin' },
-  { value: 'veterinarian', label: 'Veterinarian' },
-  { value: 'technician', label: 'Technician' },
-  { value: 'receptionist', label: 'Receptionist' },
-];
-
-const systemRoleOptions = [
-  { value: 'SYSTEM_ADMIN', label: 'System Administrator - Full platform access' },
-  { value: 'SUPPORT_STAFF', label: 'Support Staff - Customer support access' },
-  { value: 'BILLING_STAFF', label: 'Billing Staff - Billing management access' },
-];
-
-function getUserTypeInfo(type: UserType) {
-  switch (type) {
-    case 'system':
-      return {
-        icon: Shield,
-        title: 'Create System User',
-        description: 'Platform-level user with system-wide access',
-        bgColor: 'var(--badge-info-bg)',
-        textColor: 'var(--color-info)',
-        borderColor: 'var(--badge-info-border)',
-      };
-    case 'tenant_admin':
-      return {
-        icon: Building2,
-        title: 'Create Tenant Admin',
-        description: 'Organization administrator with full tenant access',
-        bgColor: 'var(--badge-info-bg)',
-        textColor: 'var(--color-info)',
-        borderColor: 'var(--badge-info-border)',
-      };
-    default:
-      return {
-        icon: Users,
-        title: 'Create User',
-        description: 'Add a new user to the system',
-        bgColor: 'var(--badge-success-bg)',
-        textColor: 'var(--color-success)',
-        borderColor: 'var(--badge-success-border)',
-      };
-  }
+interface FormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  password: string;
+  confirmPassword: string;
+  roleId: string;
+  roleCode: string;
+  tenantId: string;
+  branchId: string;
+  selectedBranchIds: string[];
+  defaultBranchId: string;
 }
+
+const initialFormData: FormData = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  password: '',
+  confirmPassword: '',
+  roleId: '',
+  roleCode: 'SYSTEM_ADMIN',
+  tenantId: '',
+  branchId: '',
+  selectedBranchIds: [],
+  defaultBranchId: '',
+};
+
+const SCREEN_CODE = 'USERS';
 
 export default function CreateUserPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
+  const { userId } = useParams<{ userId: string }>();
   const { user: currentUser } = useAuth();
+  const { t } = useTranslation();
   const { getPath } = useScopePath();
+  const { canModify, isLoading: permissionsLoading } = useScreenPermission(SCREEN_CODE);
+  const { showToast } = useToast();
+  const systemRoleOptions = [
+    { value: 'SYSTEM_ADMIN', label: t('users.systemAdminRole') },
+    { value: 'SUPPORT_STAFF', label: t('users.supportStaffRole') },
+    { value: 'BILLING_STAFF', label: t('users.billingStaffRole') },
+  ];
   const createUser = useCreateUser();
+  const assignRole = useAssignRole();
+  const { items: breadcrumbs, homeHref } = useRouteBreadcrumbs();
 
+  const isEditMode = !!userId;
+
+  // Determine user type
   const userTypeParam = searchParams.get('type') as UserType | null;
   const branchIdFromParams = searchParams.get('branchId');
-  
-  const userType: UserType = currentUser?.accessScope === 'system' && userTypeParam 
-    ? userTypeParam 
-    : 'regular';
-  
-  const typeInfo = getUserTypeInfo(userType);
-  const TypeIcon = typeInfo.icon;
+  const isSystemUser = currentUser?.accessScope === 'system';
 
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    phone: '',
-    code: '',
-    role: 'staff',
-    roleCode: 'SYSTEM_ADMIN',
-    accessScope: 'branch',
+  const userType: UserType = isSystemUser && userTypeParam
+    ? userTypeParam
+    : 'regular';
+
+  // Form state
+  const [formData, setFormData] = useState<FormData>({
+    ...initialFormData,
     tenantId: currentUser?.tenantId || '',
-    businessLineId: '',
     branchId: branchIdFromParams || '',
   });
-  
-  const [error, setError] = useState<string | null>(null);
-  const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const { data: tenants } = useTenants();
-  const { data: businessLines } = useBusinessLines(formData.tenantId || undefined);
-  const { data: branches } = useBranches(formData.businessLineId || undefined);
+  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+  const [phoneCountryCode, setPhoneCountryCode] = useState('EG');
+  const [formLoaded, setFormLoaded] = useState(false);
 
+  // Submit state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Data hooks
+  const { data: tenants } = useTenants(isSystemUser);
+  const effectiveTenantId = isSystemUser ? formData.tenantId : currentUser?.tenantId;
+  const { data: allBranches } = useAllBranches(effectiveTenantId || undefined);
+  const { data: existingUser, isLoading: isLoadingUser } = useUser(userId);
+  const { data: userRoles } = useUserRoles(isEditMode ? userId : undefined);
+
+  // Fetch REAL roles from API
+  const { data: rolesData, isLoading: isLoadingRoles } = useRoles({
+    limit: 100,
+    isActive: true,
+    enabled: userType === 'regular',
+  });
+
+  // Derived data
   const nonSystemTenants = useMemo(() => {
     if (!tenants) return [];
     return tenants.filter(t => t.code !== 'SYSTEM');
   }, [tenants]);
-
-  useEffect(() => {
-    if (userType === 'regular' && !formData.tenantId && tenants && tenants.length > 0) {
-      const defaultTenant = nonSystemTenants[0] || tenants[0];
-      if (defaultTenant) {
-        setFormData(prev => ({ ...prev, tenantId: defaultTenant.id }));
-      }
-    }
-  }, [tenants, userType, nonSystemTenants]);
-
-  useEffect(() => {
-    if (userType === 'regular') {
-      setFormData(prev => ({ ...prev, businessLineId: '', branchId: '' }));
-    }
-  }, [formData.tenantId, userType]);
-
-  useEffect(() => {
-    if (userType === 'regular') {
-      setFormData(prev => ({ ...prev, branchId: '' }));
-    }
-  }, [formData.businessLineId, userType]);
 
   const tenantOptions = useMemo(() => {
     const list = userType === 'tenant_admin' ? nonSystemTenants : (tenants || []);
     return list.map(t => ({ value: t.id, label: `${t.name} (${t.code})` }));
   }, [tenants, nonSystemTenants, userType]);
 
-  const businessLineOptions = useMemo(() => {
-    if (!businessLines) return [];
-    return businessLines.map(bl => ({ value: bl.id, label: `${bl.name} (${bl.code})` }));
-  }, [businessLines]);
+  // Role options from API
+  const roleOptions = useMemo(() => {
+    if (!rolesData?.data) return [];
+    return rolesData.data.map(r => ({ value: r.id, label: r.roleName }));
+  }, [rolesData]);
 
-  const branchOptions = useMemo(() => {
-    if (!branches) return [];
-    return branches.map(b => ({ value: b.id, label: `${b.name} (${b.code})` }));
-  }, [branches]);
+  // Branch list for selector
+  const branchList = useMemo(() => {
+    if (!allBranches) return [];
+    return allBranches;
+  }, [allBranches]);
 
-  const handleChange = (field: string, value: string) => {
+  // Pre-fill form in edit mode
+  useEffect(() => {
+    if (isEditMode && existingUser && !formLoaded) {
+      // Get current roleId from user's role assignments
+      const currentRoleId = userRoles && userRoles.length > 0
+        ? (userRoles[0].roleId || userRoles[0].id || '')
+        : '';
+
+      // Build multi-branch state from existing user data
+      const defaultBranch = existingUser.branchId || '';
+      const extraBranches: string[] = (existingUser as any).allowedBranchIds || [];
+      const allBranchIds = defaultBranch
+        ? [defaultBranch, ...extraBranches.filter(id => id !== defaultBranch)]
+        : [...extraBranches];
+
+      setFormData({
+        firstName: existingUser.firstName || '',
+        lastName: existingUser.lastName || '',
+        email: existingUser.email || '',
+        phone: existingUser.phone || '',
+        password: '',
+        confirmPassword: '',
+        roleId: currentRoleId,
+        roleCode: 'SYSTEM_ADMIN',
+        tenantId: existingUser.tenantId || '',
+        branchId: defaultBranch,
+        selectedBranchIds: allBranchIds,
+        defaultBranchId: defaultBranch,
+      });
+      setFormLoaded(true);
+    }
+  }, [isEditMode, existingUser, userRoles, formLoaded]);
+
+  // Auto-set defaults when data loads (create mode only)
+  useEffect(() => {
+    if (!isEditMode && userType === 'regular' && isSystemUser && !formData.tenantId && nonSystemTenants.length > 0) {
+      setFormData(prev => ({ ...prev, tenantId: nonSystemTenants[0].id }));
+    }
+  }, [nonSystemTenants, userType, isSystemUser, formData.tenantId, isEditMode]);
+
+  useEffect(() => {
+    if (!isEditMode && userType === 'tenant_admin' && nonSystemTenants.length > 0 && !formData.tenantId) {
+      setFormData(prev => ({ ...prev, tenantId: nonSystemTenants[0].id }));
+    }
+  }, [nonSystemTenants, userType, formData.tenantId, isEditMode]);
+
+  // Reset branches when tenant changes (system users switching tenants)
+  useEffect(() => {
+    if (isSystemUser && !isEditMode) {
+      setFormData(prev => ({ ...prev, branchId: '', selectedBranchIds: [], defaultBranchId: '' }));
+    }
+  }, [formData.tenantId, isSystemUser, isEditMode]);
+
+  // Field updater
+  const updateField = useCallback((field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    if (field === 'password' || field === 'confirmPassword') {
-      setPasswordError(null);
-    }
-  };
+    setErrors(prev => {
+      if (prev[field]) {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      }
+      return prev;
+    });
+  }, []);
 
-  const validateForm = () => {
-    if (!formData.firstName.trim()) {
-      setError('First name is required');
-      return false;
-    }
-    if (!formData.lastName.trim()) {
-      setError('Last name is required');
-      return false;
-    }
+  // Validate
+  const validate = useCallback((): boolean => {
+    const newErrors: Partial<Record<keyof FormData, string>> = {};
+
+    if (!formData.firstName.trim()) newErrors.firstName = t('users.validationRequired');
+    if (!formData.lastName.trim()) newErrors.lastName = t('users.validationRequired');
     if (!formData.email.trim()) {
-      setError('Email is required');
-      return false;
+      newErrors.email = t('users.validationRequired');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = t('users.validationEmailInvalid');
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      setError('Please enter a valid email address');
-      return false;
-    }
-    if (!formData.password) {
-      setError('Password is required');
-      return false;
-    }
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters');
-      return false;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      setPasswordError('Passwords do not match');
-      return false;
+
+    // Password required only in create mode
+    if (!isEditMode) {
+      if (!formData.password || formData.password.length < 8) {
+        newErrors.password = t('users.validationMinChars');
+      }
+      if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = t('users.validationPasswordMismatch');
+      }
+    } else {
+      if (formData.password && formData.password.length < 8) {
+        newErrors.password = t('users.validationMinChars');
+      }
+      if (formData.password && formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = t('users.validationPasswordMismatch');
+      }
     }
 
     if (userType === 'tenant_admin' && !formData.tenantId) {
-      setError('Please select a tenant');
-      return false;
+      newErrors.tenantId = t('users.validationRequired');
+    }
+    if (userType === 'regular' && formData.selectedBranchIds.length === 0) {
+      newErrors.branchId = t('users.validationSelectBranch');
+    }
+    if (userType === 'regular' && formData.selectedBranchIds.length > 0 && !formData.defaultBranchId) {
+      newErrors.branchId = t('users.validationSelectDefault');
+    }
+    if (userType === 'regular' && !isEditMode && !formData.roleId) {
+      newErrors.roleId = t('users.validationSelectRole');
     }
 
-    if (userType === 'regular' && !formData.branchId) {
-      setError('Please select a branch');
-      return false;
-    }
-    
-    return true;
-  };
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [formData, userType, isEditMode]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setPasswordError(null);
+  // Submit
+  const handleSubmit = useCallback(async () => {
+    if (!validate()) return;
 
-    if (!validateForm()) return;
-
+    setSubmitError(null);
     setIsSubmitting(true);
 
     try {
-      if (userType === 'system') {
-        await apiClient.post('/api/v1/hierarchy/system-users', {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
+      if (isEditMode) {
+        const payload: Record<string, unknown> = {
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          phone: formData.phone || undefined,
+        };
+        if (formData.password) {
+          payload.password = formData.password;
+        }
+        await apiClient.put(`/tenant/users/${userId}`, payload);
+
+        // Assign role if selected in edit mode
+        if (formData.roleId) {
+          try {
+            await assignRole.mutateAsync({ userId, roleId: formData.roleId });
+          } catch (roleErr) {
+            console.error('[CreateUserPage] Role assignment failed (edit):', roleErr);
+            showToast('warning', t('users.roleAssignmentFailed'));
+          }
+        }
+
+        queryClient.invalidateQueries({ queryKey: ['users'] });
+        queryClient.invalidateQueries({ queryKey: ['allUsers'] });
+        queryClient.invalidateQueries({ queryKey: ['user', userId] });
+      } else if (userType === 'system') {
+        await apiClient.post('/hierarchy/system-users', {
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          email: formData.email.trim(),
           password: formData.password,
           phone: formData.phone || undefined,
           roleCode: formData.roleCode,
         });
+        queryClient.invalidateQueries({ queryKey: ['users'] });
+        queryClient.invalidateQueries({ queryKey: ['allUsers'] });
       } else if (userType === 'tenant_admin') {
-        await apiClient.post('/api/v1/hierarchy/tenant-admins', {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
+        await apiClient.post('/hierarchy/tenant-admins', {
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          email: formData.email.trim(),
           password: formData.password,
           phone: formData.phone || undefined,
           tenantId: formData.tenantId,
         });
+        queryClient.invalidateQueries({ queryKey: ['users'] });
+        queryClient.invalidateQueries({ queryKey: ['allUsers'] });
       } else {
+        // Compute accessScope based on branch count
+        const branchCount = formData.selectedBranchIds.length;
+        const computedScope = branchCount > 1 ? 'mixed' : 'branch';
+        const allowedBranchIds = formData.selectedBranchIds.filter(id => id !== formData.defaultBranchId);
+
+        // Create user with atomic role assignment
         await createUser.mutateAsync({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          email: formData.email.trim(),
           password: formData.password,
           phone: formData.phone || undefined,
-          code: formData.code || undefined,
-          role: formData.role,
-          accessScope: formData.accessScope,
-          branchId: formData.branchId,
+          accessScope: computedScope,
+          branchId: formData.defaultBranchId,
+          allowedBranchIds,
+          roleId: formData.roleId || undefined,
         });
       }
-      navigate(getPath('users'));
-    } catch (err: any) {
-      setError(err?.response?.data?.error || err?.message || 'Failed to create user');
+      showToast('success', isEditMode ? t('users.userUpdated') : t('users.userCreated'));
+      navigate(getPath('administration/users'));
+    } catch (err) {
+      const apiError = extractApiError(err);
+
+      // Map backend field errors to form field errors
+      if (Object.keys(apiError.fieldErrors).length > 0) {
+        setErrors(apiError.fieldErrors as Partial<Record<keyof FormData, string>>);
+      }
+
+      setSubmitError(apiError.message);
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [userType, formData, validate, navigate, getPath, isEditMode, userId, queryClient, createUser, assignRole]);
 
-  const backPath = getPath('users');
+  const backPath = getPath('administration/users');
+
+  const pageTitle = isEditMode
+    ? t('users.editUser')
+    : userType === 'system'
+      ? t('users.createUser')
+      : userType === 'tenant_admin'
+        ? t('users.createUser')
+        : t('users.createUser');
+
+  // Permission guard
+  if (permissionsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--color-text-muted)' }} />
+      </div>
+    );
+  }
+
+  if (!canModify) {
+    return <Navigate to={getPath('administration/users')} replace />;
+  }
+
+  // Show loading for edit mode while fetching user
+  if (isEditMode && isLoadingUser) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--color-text-muted)' }} />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link to={backPath}>
-          <Button variant="ghost" className="p-2">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-        </Link>
-        <div className="flex items-center gap-4">
-          <div 
-            className="p-3 rounded-lg"
-            style={{ backgroundColor: typeInfo.bgColor, color: typeInfo.textColor }}
-          >
-            <TypeIcon className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
-              {typeInfo.title}
-            </h1>
-            <p className="mt-1" style={{ color: 'var(--color-text-secondary)' }}>
-              {typeInfo.description}
-            </p>
-          </div>
+    <div className="space-y-4">
+      {/* Header */}
+      <div>
+        <div className="flex items-center gap-3">
+          <StyledIcon icon={User} emoji="👤" className="w-8 h-8" style={{ color: 'var(--color-accent)' }} />
+          <h1 className="text-3xl font-bold text-[var(--color-text)]">
+            {pageTitle}
+          </h1>
         </div>
+        {breadcrumbs.length > 0 && (
+          <div className="mt-2">
+            <Breadcrumbs items={breadcrumbs} showHome homeHref={homeHref} />
+          </div>
+        )}
       </div>
 
-      {userType !== 'regular' && (
-        <div 
-          className="p-4 rounded-lg border"
-          style={{ borderColor: typeInfo.borderColor, backgroundColor: typeInfo.bgColor, color: typeInfo.textColor }}
-        >
-          <div className="flex items-start gap-3">
-            <Shield className="w-5 h-5 mt-0.5" />
-            <div>
-              <h4 className="font-medium">
-                {userType === 'system' ? 'System User Information' : 'Tenant Admin Information'}
-              </h4>
-              <p className="text-sm mt-1 opacity-90">
-                {userType === 'system' 
-                  ? 'System users have platform-wide access and are not assigned to any tenant or branch. They can manage all tenants and system configurations.'
-                  : 'Tenant admins have full access to their assigned tenant. They are automatically granted the TENANT_ADMIN role with all permissions within their organization.'
-                }
-              </p>
+      {/* Form Card */}
+      <div
+        className="rounded-lg border max-w-2xl"
+        style={{
+          backgroundColor: 'var(--color-surface)',
+          borderColor: 'var(--color-border)',
+        }}
+      >
+        {/* Error banner */}
+        {submitError && (
+          <div
+            className="px-5 py-3 text-sm border-b"
+            style={{
+              backgroundColor: 'var(--badge-danger-bg)',
+              borderColor: 'var(--badge-danger-border)',
+              color: 'var(--color-text-danger)',
+            }}
+          >
+            {submitError}
+          </div>
+        )}
+
+        {/* Fields */}
+        <div className="px-5 py-5 space-y-4">
+          {/* Row: First Name + Last Name */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs flex items-center gap-1.5">
+                <StyledIcon icon={User} emoji="👤" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />{t('users.firstName')}
+              </Label>
+              <Input
+                value={formData.firstName}
+                onChange={(e) => updateField('firstName', e.target.value)}
+                placeholder={t('users.firstNamePlaceholder')}
+                error={!!errors.firstName}
+                className="h-9"
+              />
+              {errors.firstName && (
+                <p className="text-xs" style={{ color: 'var(--color-text-danger)' }}>{errors.firstName}</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs flex items-center gap-1.5">
+                <StyledIcon icon={User} emoji="👤" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />{t('users.lastName')}
+              </Label>
+              <Input
+                value={formData.lastName}
+                onChange={(e) => updateField('lastName', e.target.value)}
+                placeholder={t('users.lastNamePlaceholder')}
+                error={!!errors.lastName}
+                className="h-9"
+              />
+              {errors.lastName && (
+                <p className="text-xs" style={{ color: 'var(--color-text-danger)' }}>{errors.lastName}</p>
+              )}
             </div>
           </div>
-        </div>
-      )}
 
-      <form onSubmit={handleSubmit}>
-        <Card>
-          <CardHeader>
-            <CardTitle>User Information</CardTitle>
-            <CardDescription>Enter the basic details for the new user</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {error && (
-              <div 
-                className="p-3 rounded-lg border flex items-center gap-2"
-                style={{ 
-                  backgroundColor: 'var(--alert-danger-bg)', 
-                  borderColor: 'var(--alert-danger-border)',
-                  color: 'var(--alert-danger-text)'
+          {/* Email */}
+          <div className="space-y-1.5">
+            <Label className="text-xs flex items-center gap-1.5">
+              <StyledIcon icon={Mail} emoji="📧" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />{t('users.emailAddress')}
+            </Label>
+            <Input
+              type="email"
+              name="new-user-email"
+              autoComplete="one-time-code"
+              value={formData.email}
+              onChange={(e) => updateField('email', e.target.value)}
+              placeholder={t('users.emailPlaceholder')}
+              error={!!errors.email}
+              className="h-9"
+              disabled={isEditMode}
+            />
+            {errors.email && (
+              <p className="text-xs" style={{ color: 'var(--color-text-danger)' }}>{errors.email}</p>
+            )}
+          </div>
+
+          {/* Phone */}
+          <div className="space-y-1.5">
+            <Label className="text-xs flex items-center gap-1.5">
+              <StyledIcon icon={Phone} emoji="📱" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />{t('users.phoneNumber')}
+            </Label>
+            <div className="flex gap-2">
+              <CountryCodeSelect
+                value={phoneCountryCode}
+                onChange={setPhoneCountryCode}
+                className="w-[140px] flex-shrink-0"
+              />
+              <PhoneInput
+                countryCode={phoneCountryCode}
+                value={formData.phone}
+                onChange={(val) => updateField('phone', val)}
+                placeholder="123 456 7890"
+                className="flex-1"
+              />
+            </div>
+          </div>
+
+          {/* Row: Password + Confirm Password */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs flex items-center gap-1.5">
+                <StyledIcon icon={Lock} emoji="🔒" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
+                {t('users.password')} {isEditMode && <span className="text-[var(--color-text-muted)] font-normal text-xs">({t('users.leaveEmptyToKeep')})</span>}
+              </Label>
+              <Input
+                type="password"
+                name="new-user-password"
+                autoComplete="new-password"
+                value={formData.password}
+                onChange={(e) => updateField('password', e.target.value)}
+                placeholder={isEditMode ? t('users.leaveEmptyPlaceholder') : t('users.passwordPlaceholder')}
+                error={!!errors.password}
+                className="h-9"
+              />
+              {errors.password && (
+                <p className="text-xs" style={{ color: 'var(--color-text-danger)' }}>{errors.password}</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs flex items-center gap-1.5">
+                <StyledIcon icon={Lock} emoji="🔒" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />{t('users.confirmPassword')}
+              </Label>
+              <Input
+                type="password"
+                name="new-user-confirm"
+                autoComplete="new-password"
+                value={formData.confirmPassword}
+                onChange={(e) => updateField('confirmPassword', e.target.value)}
+                placeholder={t('users.repeatPasswordPlaceholder')}
+                error={!!errors.confirmPassword}
+                className="h-9"
+              />
+              {errors.confirmPassword && (
+                <p className="text-xs" style={{ color: 'var(--color-text-danger)' }}>{errors.confirmPassword}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Role — for regular users (fetched from API) */}
+          {userType === 'regular' && (
+            <div className="space-y-1.5">
+              <Label className="text-xs flex items-center gap-1.5">
+                <StyledIcon icon={Shield} emoji="🛡️" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />{t('users.role')}
+              </Label>
+              {isLoadingRoles ? (
+                <div
+                  className="flex items-center gap-2 h-9 px-3 rounded-md border text-sm"
+                  style={{
+                    backgroundColor: 'var(--input-bg)',
+                    borderColor: 'var(--input-border)',
+                    color: 'var(--color-text-muted)',
+                  }}
+                >
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {t('users.loadingRoles')}
+                </div>
+              ) : roleOptions.length === 0 ? (
+                <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                  {t('users.noRolesAvailable')}
+                </p>
+              ) : (
+                <SimpleSelect
+                  value={formData.roleId}
+                  onValueChange={(value) => updateField('roleId', value)}
+                  options={roleOptions}
+                  placeholder={t('users.selectRole')}
+                  error={!!errors.roleId}
+                />
+              )}
+              {errors.roleId && (
+                <p className="text-xs" style={{ color: 'var(--color-text-danger)' }}>{errors.roleId}</p>
+              )}
+            </div>
+          )}
+
+          {/* System Role — only for system users */}
+          {userType === 'system' && (
+            <div className="space-y-1.5">
+              <Label className="text-xs flex items-center gap-1.5">
+                <StyledIcon icon={Shield} emoji="🛡️" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />{t('users.systemRole')}
+              </Label>
+              <SimpleSelect
+                value={formData.roleCode}
+                onValueChange={(value) => updateField('roleCode', value)}
+                options={systemRoleOptions}
+                placeholder={t('users.selectSystemRole')}
+                disabled={isEditMode}
+              />
+            </div>
+          )}
+
+          {/* Tenant selector — for tenant_admin, or system user creating regular */}
+          {(userType === 'tenant_admin' || (userType === 'regular' && isSystemUser)) && (
+            <div className="space-y-1.5">
+              <Label className="text-xs flex items-center gap-1.5">
+                <StyledIcon icon={Building2} emoji="🏢" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />{t('users.tenant')}
+              </Label>
+              <SimpleSelect
+                value={formData.tenantId}
+                onValueChange={(value) => updateField('tenantId', value)}
+                options={tenantOptions}
+                placeholder={t('users.selectTenant')}
+                error={!!errors.tenantId}
+                disabled={isEditMode}
+              />
+              {errors.tenantId && (
+                <p className="text-xs" style={{ color: 'var(--color-text-danger)' }}>{errors.tenantId}</p>
+              )}
+            </div>
+          )}
+
+          {/* Branch selector — multi-select with default star for regular users */}
+          {userType === 'regular' && (
+            <div className="space-y-1.5">
+              <Label className="text-xs flex items-center gap-1.5">
+                <StyledIcon icon={MapPin} emoji="📍" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
+                {t('users.branches')}
+                {formData.selectedBranchIds.length > 0 && (
+                  <span className="text-xs font-normal" style={{ color: 'var(--color-text-muted)' }}>
+                    ({t('users.branchesSelected', { count: formData.selectedBranchIds.length })})
+                  </span>
+                )}
+              </Label>
+              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                {t('users.branchSelectHelp')}
+              </p>
+              {branchList.length === 0 ? (
+                <p className="text-sm py-2" style={{ color: 'var(--color-text-muted)' }}>
+                  {isSystemUser && !formData.tenantId ? t('users.selectTenantFirst') : t('users.noBranchesAvailable')}
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {branchList.map((branch) => {
+                    const isSelected = formData.selectedBranchIds.includes(branch.id);
+                    const isDefault = formData.defaultBranchId === branch.id;
+
+                    const toggleBranch = () => {
+                      setFormData(prev => {
+                        const ids = prev.selectedBranchIds.includes(branch.id)
+                          ? prev.selectedBranchIds.filter(id => id !== branch.id)
+                          : [...prev.selectedBranchIds, branch.id];
+
+                        // Auto-set default to first selected if current default is removed
+                        let newDefault = prev.defaultBranchId;
+                        if (!ids.includes(newDefault)) {
+                          newDefault = ids[0] || '';
+                        }
+                        // Auto-set default if this is the first branch selected
+                        if (ids.length === 1) {
+                          newDefault = ids[0];
+                        }
+
+                        return {
+                          ...prev,
+                          selectedBranchIds: ids,
+                          defaultBranchId: newDefault,
+                          branchId: newDefault,
+                        };
+                      });
+                      setErrors(prev => {
+                        if (prev.branchId) {
+                          const next = { ...prev };
+                          delete next.branchId;
+                          return next;
+                        }
+                        return prev;
+                      });
+                    };
+
+                    const setAsDefault = (e: React.MouseEvent) => {
+                      e.stopPropagation();
+                      if (!isSelected) return;
+                      setFormData(prev => ({
+                        ...prev,
+                        defaultBranchId: branch.id,
+                        branchId: branch.id,
+                      }));
+                    };
+
+                    return (
+                      <button
+                        key={branch.id}
+                        type="button"
+                        onClick={toggleBranch}
+                        className={`
+                          flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-all cursor-pointer
+                          ${isSelected
+                            ? 'ring-2 ring-[var(--color-accent)]'
+                            : 'hover:bg-[var(--color-surface-hover)]'
+                          }
+                        `}
+                        style={{
+                          backgroundColor: isSelected
+                            ? 'color-mix(in srgb, var(--color-accent) 8%, var(--color-surface))'
+                            : 'var(--color-surface)',
+                          borderColor: isSelected ? 'var(--color-accent)' : 'var(--color-border)',
+                        }}
+                      >
+                        {/* Checkbox */}
+                        <div
+                          className="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0"
+                          style={{
+                            borderColor: isSelected ? 'var(--color-accent)' : 'var(--color-border)',
+                            backgroundColor: isSelected ? 'var(--color-accent)' : 'transparent',
+                          }}
+                        >
+                          {isSelected && <Check className="w-3 h-3 text-white" />}
+                        </div>
+
+                        {/* Branch info */}
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium truncate flex items-center gap-1.5" style={{ color: 'var(--color-text)' }}>
+                            {branch.name}
+                            {isDefault && (
+                              <span
+                                className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                                style={{
+                                  backgroundColor: 'color-mix(in srgb, var(--color-warning) 15%, transparent)',
+                                  color: 'var(--color-warning)',
+                                }}
+                              >
+                                {t('users.defaultBadge')}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs truncate" style={{ color: 'var(--color-text-muted)' }}>
+                            {branch.code}
+                          </div>
+                        </div>
+
+                        {/* Star button for default */}
+                        {isSelected && (
+                          <button
+                            type="button"
+                            onClick={setAsDefault}
+                            className="flex-shrink-0 p-1 rounded-full transition-colors hover:bg-[var(--color-surface-hover)]"
+                            title={isDefault ? t('users.defaultBranchTitle') : t('users.setAsDefault')}
+                          >
+                            <Star
+                              className="w-4 h-4"
+                              style={{
+                                color: isDefault ? 'var(--color-warning)' : 'var(--color-text-muted)',
+                                fill: isDefault ? 'var(--color-warning)' : 'none',
+                              }}
+                            />
+                          </button>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {errors.branchId && (
+                <p className="text-xs" style={{ color: 'var(--color-text-danger)' }}>{errors.branchId}</p>
+              )}
+            </div>
+          )}
+
+          {/* Available for Online Appointments — placeholder */}
+          {userType === 'regular' && (
+            <div className="space-y-1.5">
+              <label className="flex items-center gap-3 cursor-not-allowed opacity-60">
+                <div
+                  className="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0"
+                  style={{ borderColor: 'var(--color-border)', backgroundColor: 'transparent' }}
+                />
+                <span className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+                  <StyledIcon icon={Calendar} emoji="📅" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
+                  {t('users.availableOnlineAppointments')}
+                  <span
+                    className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                    style={{ backgroundColor: 'var(--badge-info-bg)', color: 'var(--badge-info-text)' }}
+                  >
+                    {t('users.soon')}
+                  </span>
+                </span>
+              </label>
+            </div>
+          )}
+
+          {/* Visit Types — placeholder */}
+          {userType === 'regular' && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <StyledIcon icon={Tag} emoji="🏷️" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
+                {t('users.visitTypes')}
+                <span
+                  className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                  style={{ backgroundColor: 'var(--badge-info-bg)', color: 'var(--badge-info-text)' }}
+                >
+                  {t('users.soon')}
+                </span>
+              </Label>
+              <div
+                className="flex items-center gap-2 h-9 px-3 rounded-md border text-sm opacity-60 cursor-not-allowed"
+                style={{
+                  backgroundColor: 'var(--input-bg)',
+                  borderColor: 'var(--input-border)',
+                  color: 'var(--color-text-muted)',
                 }}
               >
-                <AlertCircle className="w-4 h-4" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name *</Label>
-                <Input
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={(e) => handleChange('firstName', e.target.value)}
-                  placeholder="Enter first name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name *</Label>
-                <Input
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={(e) => handleChange('lastName', e.target.value)}
-                  placeholder="Enter last name"
-                />
+                {t('users.visitTypesSoon')}
               </div>
             </div>
+          )}
+        </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleChange('email', e.target.value)}
-                  placeholder="user@example.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleChange('phone', e.target.value)}
-                  placeholder="+1 234 567 8900"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="password">Password *</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => handleChange('password', e.target.value)}
-                  placeholder="Minimum 8 characters"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={(e) => handleChange('confirmPassword', e.target.value)}
-                  placeholder="Repeat password"
-                  style={passwordError ? { borderColor: 'var(--color-danger)' } : undefined}
-                />
-                {passwordError && (
-                  <p className="text-sm" style={{ color: 'var(--color-danger)' }}>{passwordError}</p>
-                )}
-              </div>
-            </div>
-
-            {userType === 'regular' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="code">User Code</Label>
-                  <Input
-                    id="code"
-                    value={formData.code}
-                    onChange={(e) => handleChange('code', e.target.value)}
-                    placeholder="Optional identifier"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Select
-                    value={formData.role}
-                    onChange={(e) => handleChange('role', e.target.value)}
-                  >
-                    {roleOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </Select>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {userType === 'system' && (
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="w-5 h-5" />
-                System Role
-              </CardTitle>
-              <CardDescription>Select the system-level role for this user</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="roleCode">System Role *</Label>
-                <Select
-                  value={formData.roleCode}
-                  onChange={(e) => handleChange('roleCode', e.target.value)}
-                >
-                  {systemRoleOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </Select>
-              </div>
-              <div 
-                className="p-3 rounded-lg border"
-                style={{ backgroundColor: 'var(--color-surface-hover)', borderColor: 'var(--color-border)' }}
-              >
-                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                  System users are automatically assigned to the SYSTEM tenant and have platform-wide access based on their role.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {userType === 'tenant_admin' && (
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="w-5 h-5" />
-                Tenant Assignment
-              </CardTitle>
-              <CardDescription>Select the tenant this admin will manage</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Tenant *</Label>
-                <Select
-                  value={formData.tenantId}
-                  onChange={(e) => handleChange('tenantId', e.target.value)}
-                >
-                  <option value="">Select Tenant</option>
-                  {tenantOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </Select>
-              </div>
-              <div 
-                className="p-3 rounded-lg border"
-                style={{ backgroundColor: 'var(--badge-info-bg)', borderColor: 'var(--badge-info-border)' }}
-              >
-                <div className="flex items-center gap-2 mb-2" style={{ color: 'var(--color-info)' }}>
-                  <Shield className="w-4 h-4" />
-                  <span className="font-medium">TENANT_ADMIN Role</span>
-                  <Badge style={{ backgroundColor: 'var(--color-info)', color: 'var(--color-text-on-accent)' }}>
-                    Auto-Assigned
-                  </Badge>
-                </div>
-                <p className="text-sm" style={{ color: 'var(--color-text-info)' }}>
-                  This user will be automatically assigned the TENANT_ADMIN role with full permissions within their tenant. They can manage all business lines, branches, and users within their organization.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {userType === 'regular' && (
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Access & Permissions</CardTitle>
-              <CardDescription>Configure user access scope and organization assignment</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="accessScope">Access Scope</Label>
-                <Select
-                  value={formData.accessScope}
-                  onChange={(e) => handleChange('accessScope', e.target.value)}
-                >
-                  {scopeOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {currentUser?.accessScope === 'system' && (
-                  <div className="space-y-2">
-                    <Label>Tenant *</Label>
-                    <Select
-                      value={formData.tenantId}
-                      onChange={(e) => handleChange('tenantId', e.target.value)}
-                    >
-                      <option value="">Select Tenant</option>
-                      {tenantOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </Select>
-                  </div>
-                )}
-                <div className="space-y-2">
-                  <Label>Business Line *</Label>
-                  <Select
-                    value={formData.businessLineId}
-                    onChange={(e) => handleChange('businessLineId', e.target.value)}
-                    disabled={!formData.tenantId}
-                  >
-                    <option value="">Select Business Line</option>
-                    {businessLineOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Branch *</Label>
-                  <Select
-                    value={formData.branchId}
-                    onChange={(e) => handleChange('branchId', e.target.value)}
-                    disabled={!formData.businessLineId}
-                  >
-                    <option value="">Select Branch</option>
-                    {branchOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="flex justify-end gap-3 mt-6">
-          <Link to={backPath}>
-            <Button type="button" variant="outline">
-              Cancel
-            </Button>
-          </Link>
+        {/* Footer */}
+        <div
+          className="px-5 py-3 flex items-center justify-end gap-3 border-t"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
           <Button
-            type="submit"
-            disabled={isSubmitting || createUser.isPending}
+            type="button"
+            variant="ghost"
+            onClick={() => navigate(backPath)}
           >
-            {(isSubmitting || createUser.isPending) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Create {userType === 'system' ? 'System User' : userType === 'tenant_admin' ? 'Tenant Admin' : 'User'}
+            {t('common.cancel')}
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting || createUser.isPending}
+            loading={isSubmitting || createUser.isPending}
+          >
+            {isEditMode ? t('common.save') : t('common.save')}
           </Button>
         </div>
-      </form>
+      </div>
     </div>
   );
 }

@@ -12,7 +12,7 @@ import AiChatPopup from './AiChatPopup';
 import { useVoiceAssistant } from '@/hooks/useVoiceAssistant';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import { apiClient } from '@/lib/api';
-import type { AgiMessage, AgiApproval, AiButtonState, AgiChatResponse, AgiAction, AgiFormFillState } from '../../../../types/agi';
+import type { AgiMessage, AgiApproval, AiButtonState, AgiChatResponse, AgiAction, AgiFormFillState } from '@types/agi';
 
 interface AiAssistantChatProps {
   locale?: 'en' | 'ar';

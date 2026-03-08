@@ -12,12 +12,18 @@ export interface DPFModule {
   tenantId: string;
   moduleCode: string;
   moduleName: string;
-  moduleNameAr?: string;
-  description?: string;
-  descriptionAr?: string;
-  icon?: string;
-  displayOrder: number;
+  moduleNameAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  category?: string | null;
+  moduleLevel: string;
+  icon?: string | null;
+  route?: string | null;
+  sortOrder?: string | null;
   isActive: string;
+  isSystemModule: string;
+  requiredAgiLevel?: string | null;
+  metadata?: unknown;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,13 +34,14 @@ export interface DPFScreen {
   moduleId: string;
   screenCode: string;
   screenName: string;
-  screenNameAr?: string;
-  routePath?: string;
-  componentPath?: string;
-  description?: string;
-  descriptionAr?: string;
-  displayOrder: number;
+  screenNameAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  route?: string | null;
+  componentPath?: string | null;
   isActive: string;
+  requiredAgiLevel?: string | null;
+  metadata?: unknown;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,14 +50,24 @@ export interface DPFAction {
   id: string;
   tenantId: string;
   moduleId: string;
-  screenId?: string;
+  screenId?: string | null;
   actionCode: string;
   actionName: string;
-  actionNameAr?: string;
-  actionType: 'CREATE' | 'READ' | 'UPDATE' | 'DELETE' | 'EXPORT' | 'IMPORT' | 'APPROVE' | 'CUSTOM';
-  description?: string;
-  descriptionAr?: string;
+  actionNameAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  actionType: string;
+  actionCategory: string;
+  httpMethod?: string | null;
+  apiEndpoint?: string | null;
+  socketEvent?: string | null;
+  requiredScope?: string | null;
+  requiredAgiLevel?: string | null;
+  isDestructive: string;
   isActive: string;
+  voiceCommandsEn?: unknown;
+  voiceCommandsAr?: unknown;
+  metadata?: unknown;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -60,14 +77,15 @@ export interface DPFPermission {
   tenantId: string;
   permissionCode: string;
   permissionName: string;
-  permissionNameAr?: string;
-  description?: string;
-  descriptionAr?: string;
+  permissionNameAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
   moduleId: string;
-  screenId?: string;
-  actionId?: string;
-  permissionType: 'MODULE' | 'SCREEN' | 'ACTION' | 'API' | 'SOCKET';
-  requiredScope?: string;
+  screenId?: string | null;
+  actionId?: string | null;
+  permissionType: 'MODULE' | 'SCREEN' | 'ACTION' | 'API' | 'SOCKET' | string;
+  permissionLevel: 'SYSTEM' | 'ADMIN' | 'APP' | string;
+  requiredScope?: string | null;
   isActive: string;
   createdAt: Date;
   updatedAt: Date;
@@ -78,12 +96,14 @@ export interface DPFRole {
   tenantId: string;
   roleCode: string;
   roleName: string;
-  roleNameAr?: string;
-  description?: string;
-  descriptionAr?: string;
+  roleNameAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
   isProtected: string;
   isDefault: string;
   isActive: string;
+  isSystemRole?: string | null;
+  roleType?: string | null;  // 'SYSTEM' | 'TENANT' | 'CUSTOM'
   createdAt: Date;
   updatedAt: Date;
 }
@@ -122,6 +142,8 @@ export interface CreateRoleInput {
   description?: string;
   descriptionAr?: string;
   isDefault?: boolean;
+  isSystemRole?: boolean;  // For SAP B1 style system-level roles
+  screenAuthorizations?: Record<string, number>;  // screenCode -> level (0/1/2)
 }
 
 export interface UpdateRoleInput {
@@ -183,8 +205,8 @@ export interface AssignRoleToUserInput {
 export interface UserWithRole {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  firstName: string | null;
+  lastName: string | null;
   role?: DPFRole;
   assignedAt?: Date;
   expiresAt?: Date;

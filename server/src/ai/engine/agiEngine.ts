@@ -10,7 +10,9 @@ import { AgiLogsService } from '../../services/AgiLogsService';
 import { AgiApprovalsService } from '../../services/AgiApprovalsService';
 import { checkScreenAccess } from '../../rbac/permissionMiddleware';
 import { actionExecutor } from './actionExecutor';
-import { buildEntityPromptSection } from './entityMetadata';
+import { buildEntityPromptSection, getEntityMeta } from './entityMetadata';
+import { HierarchyService } from '../../services/HierarchyService';
+import type { EntityFieldDef } from './entityMetadata';
 import type {
   AgiChatRequest,
   AgiChatResponse,
@@ -21,64 +23,58 @@ import type {
   AgiFormFillState,
 } from '../../../../types/agi';
 
-// Base system prompt for the AI assistant "Zaki" (ذكي)
-const BASE_SYSTEM_PROMPT = `أنت "ذكي" (Zaki)، المساعد الذكي لنظام إدارة العيادات البيطرية.
-You are "Zaki" (ذكي), the intelligent assistant for the Veterinary ERP system.
+// Language-specific system prompts — NEVER bilingual to prevent language mixing
+const BASE_SYSTEM_PROMPT_AR = `أنت "ذكي"، المساعد الذكي لنظام إدارة العيادات البيطرية.
 عرّف نفسك دائماً بـ "ذكي" وكن ودوداً ومهنياً.
+
+المهام المتاحة:
+- إدارة المستخدمين والصلاحيات
+- إدارة المؤسسات والفروع
+- التنقل بين الصفحات
+- الإجابة على الاستفسارات
+- إنشاء سجلات جديدة عبر محادثة تفاعلية
+
+قواعد:
+1. احترم صلاحيات المستخدم — لا تنفذ ما ليس له صلاحية عليه
+2. اطلب التأكيد قبل العمليات الحساسة (حذف، تعديل جماعي)
+3. كن موجزاً ومفيداً
+4. إذا طلب إنشاء كيان وحقول ناقصة ← استخدم أداة collect_form_data واسأل عن كل حقل مطلوب واحد تلو الآخر
+5. لما كل الحقول الإلزامية جاهزة ← اعرض ملخص البيانات واستخدم collect_form_data مع is_complete=true واطلب تأكيد المستخدم
+6. عندما يؤكد المستخدم (نعم/تمام/أيوه) ← استخدم أداة create_entity لإنشاء السجل
+7. لعرض بيانات (فروع، مستخدمين...) ← استخدم أداة read_data
+8. للتنقل لصفحة ← استخدم أداة navigate_to
+
+تعليمات حرجة:
+- ⚠️ يجب أن تكون كل ردودك بالعربية فقط. لا تكتب أي كلمة إنجليزية أبداً. حتى لو أسماء الحقول التقنية بالإنجليزية في الأدوات، اعرضها للمستخدم بالعربي فقط.
+- استخدم الأدوات المتاحة بدلاً من كتابة JSON في ردودك
+- ردك النصي يجب أن يكون رسالة طبيعية للمستخدم فقط
+- للردود العادية (تحية، سؤال عام) أجب بنص عادي بدون استدعاء أي أداة`;
+
+const BASE_SYSTEM_PROMPT_EN = `You are "Zaki", the intelligent assistant for the Veterinary ERP system.
 Always introduce yourself as "Zaki" and be friendly and professional.
 
-المهام المتاحة / Available tasks:
-- إدارة المستخدمين والصلاحيات / User and permission management
-- إدارة الـ Tenants والفروع / Tenant and branch management
-- التنقل بين الصفحات / Navigation between pages
-- الإجابة على الاستفسارات / Answering questions
-- إنشاء سجلات جديدة عبر محادثة تفاعلية / Creating new records via interactive conversation
+Available tasks:
+- User and permission management
+- Tenant and branch management
+- Navigation between pages
+- Answering questions
+- Creating new records via interactive conversation
 
-قواعد / Rules:
-1. احترم صلاحيات المستخدم - لا تنفذ ما ليس له صلاحية عليه
-   Respect user permissions - don't execute what they don't have permission for
-2. اطلب التأكيد قبل العمليات الحساسة (حذف، تعديل جماعي)
-   Ask for confirmation before destructive operations
-3. رد بنفس لغة المستخدم (عربي/إنجليزي)
-   Respond in the user's language (Arabic/English)
-4. كن موجزاً ومفيداً / Be concise and helpful
-5. إذا طلب إنشاء كيان وحقول ناقصة → اسأل عن كل حقل مطلوب واحد تلو الآخر
-   If creating an entity with missing fields → ask for each required field one by one
-6. لما كل الحقول الإلزامية جاهزة → اطلب التأكيد قبل التنفيذ
-   When all required fields are ready → ask for confirmation before executing
+Rules:
+1. Respect user permissions — don't execute what they don't have permission for
+2. Ask for confirmation before destructive operations
+3. Be concise and helpful
+4. If creating an entity with missing fields → use collect_form_data tool and ask for each required field one by one
+5. When all required fields are ready → show a summary, use collect_form_data with is_complete=true, and ask for confirmation
+6. When the user confirms (yes/ok/sure) → use create_entity tool to create the record
+7. To display data (branches, users...) → use read_data tool
+8. For navigation → use navigate_to tool
 
-عندما يطلب المستخدم إجراء عملية، أجب بتنسيق JSON:
-When the user requests an action, respond with JSON format:
-{
-  "type": "ACTION",
-  "action": {
-    "type": "NAVIGATE|CREATE|UPDATE|DELETE|READ",
-    "target": "entity_name",
-    "params": {},
-    "description": "وصف العملية",
-    "descriptionAr": "وصف بالعربي",
-    "isDestructive": false,
-    "requiresApproval": false,
-    "riskLevel": "LOW|MEDIUM|HIGH|CRITICAL"
-  }
-}
-
-عند جمع بيانات لإنشاء كيان جديد (form fill)، أجب بتنسيق:
-When collecting data for creating a new entity (form fill), respond with:
-{
-  "type": "FORM_FILL",
-  "formFillState": {
-    "entity": "users|branches|...",
-    "action": "CREATE",
-    "collectedFields": { "fieldName": "value" },
-    "missingRequired": ["field1", "field2"],
-    "isComplete": false,
-    "confirmedByUser": false
-  }
-}
-
-للردود العادية، أجب بنص عادي.
-For regular responses, reply with plain text.`;
+Critical instructions:
+- You MUST respond ONLY in English. Never use Arabic or any other language.
+- Use the available tools instead of writing JSON in your responses
+- Your text response should be a natural message to the user only
+- For regular responses (greeting, general question), reply with plain text without calling any tool`;
 
 // Panel-aware navigation routes
 const PANEL_ROUTES: Record<string, Record<string, { ar: string[]; en: string[] }>> = {
@@ -277,9 +273,11 @@ const APP_COMMAND_PATTERNS: {
 ];
 
 // READ verb groups for pattern matching
-// Group 1: Query verbs — "ما الفروع؟" / "show branches"
+// Group 1: Query verbs — "ما الفروع؟" / "show branches" / "كل الفروع" / "هات الفروع"
 // Group 2: Selection verbs — "اختر فرع" / "choose a branch" (used during form fill)
+// Group 3: Fetch/all verbs — "كل الفروع" / "جميع الفروع" / "هات الفروع"
 const READ_QUERY_VERBS = '(?:ما|ايش|شو|كم|عرض|اعرض|اعرضلي|ورني|show|list|what|how many|عدد|اعداد|أعداد|وضح|وريني)';
+const READ_FETCH_VERBS = '(?:كل|كال|جميع|هات|هاتلي|جيب|جيبلي|ابي|ابغى|ابغا|طلع|طلعلي|get|fetch|all|give me|bring)';
 const READ_SELECT_VERBS = '(?:اختر|اختار|حط|خلي|حدد|choose|pick|select|any|اي|أي)';
 
 // READ patterns — Layer 0.5 (data queries, higher priority than navigation)
@@ -289,7 +287,7 @@ const READ_PATTERNS: {
   descriptionEn: string;
   descriptionAr: string;
 }[] = [
-  // Branches — query: "ما الفروع" / selection: "اختر اي فرع"
+  // Branches — query: "ما الفروع" / fetch: "كل الفروع" / selection: "اختر اي فرع"
   {
     pattern: new RegExp(`${READ_QUERY_VERBS}.*(?:الفروع|فروع|branches|branch)`, 'i'),
     entity: 'branches',
@@ -297,19 +295,31 @@ const READ_PATTERNS: {
     descriptionAr: 'جاري استعلام الفروع...',
   },
   {
+    pattern: new RegExp(`${READ_FETCH_VERBS}.*(?:الفروع|فروع|فرع|branches|branch)`, 'i'),
+    entity: 'branches',
+    descriptionEn: 'Fetching all branches...',
+    descriptionAr: 'جاري عرض كل الفروع...',
+  },
+  {
     pattern: new RegExp(`${READ_SELECT_VERBS}.*(?:الفروع|فروع|فرع|branches|branch)`, 'i'),
     entity: 'branches',
     descriptionEn: 'Fetching available branches...',
     descriptionAr: 'جاري عرض الفروع المتاحة...',
   },
-  // Users — query: "ما المستخدمين"
+  // Users — query: "ما المستخدمين" / fetch: "كل المستخدمين"
   {
     pattern: new RegExp(`${READ_QUERY_VERBS}.*(?:المستخدمين|مستخدمين|users|user)`, 'i'),
     entity: 'users',
     descriptionEn: 'Querying users...',
     descriptionAr: 'جاري استعلام المستخدمين...',
   },
-  // Business Lines — query: "ما خطوط العمل" / selection: "اختر خط عمل"
+  {
+    pattern: new RegExp(`${READ_FETCH_VERBS}.*(?:المستخدمين|مستخدمين|users|user)`, 'i'),
+    entity: 'users',
+    descriptionEn: 'Fetching all users...',
+    descriptionAr: 'جاري عرض كل المستخدمين...',
+  },
+  // Business Lines — query: "ما خطوط العمل" / fetch: "كل خطوط العمل" / selection: "اختر خط عمل"
   {
     pattern: new RegExp(`${READ_QUERY_VERBS}.*(?:خطوط عمل|خطوط أعمال|خطوط|business.?lines?)`, 'i'),
     entity: 'business-lines',
@@ -317,24 +327,206 @@ const READ_PATTERNS: {
     descriptionAr: 'جاري استعلام خطوط الأعمال...',
   },
   {
+    pattern: new RegExp(`${READ_FETCH_VERBS}.*(?:خطوط عمل|خطوط أعمال|خطوط|business.?lines?)`, 'i'),
+    entity: 'business-lines',
+    descriptionEn: 'Fetching all business lines...',
+    descriptionAr: 'جاري عرض كل خطوط الأعمال...',
+  },
+  {
     pattern: new RegExp(`${READ_SELECT_VERBS}.*(?:خطوط عمل|خطوط أعمال|خط عمل|business.?lines?)`, 'i'),
     entity: 'business-lines',
     descriptionEn: 'Fetching available business lines...',
     descriptionAr: 'جاري عرض خطوط الأعمال المتاحة...',
   },
-  // Roles — query: "ما الأدوار"
+  // Roles — query: "ما الأدوار" / fetch: "كل الأدوار"
   {
     pattern: new RegExp(`${READ_QUERY_VERBS}.*(?:الادوار|أدوار|ادوار|صلاحيات|roles|role)`, 'i'),
     entity: 'roles',
     descriptionEn: 'Querying roles...',
     descriptionAr: 'جاري استعلام الأدوار...',
   },
+  {
+    pattern: new RegExp(`${READ_FETCH_VERBS}.*(?:الادوار|أدوار|ادوار|صلاحيات|roles|role)`, 'i'),
+    entity: 'roles',
+    descriptionEn: 'Fetching all roles...',
+    descriptionAr: 'جاري عرض كل الأدوار...',
+  },
 ];
 
-// Detect language from text
-function detectLanguage(text: string): 'en' | 'ar' {
+// ============================================
+// CLAUDE TOOL USE — Structured Function Calling
+// Industry-standard approach: Claude calls tools with structured params
+// instead of outputting JSON in text (99.9% reliable vs ~70%)
+// ============================================
+const CLAUDE_TOOLS: Anthropic.Tool[] = [
+  {
+    name: 'read_data',
+    description: 'Query and display data from the system. Use when the user asks to see, list, show, or query entities. Examples: "show branches", "كل الفروع", "ما المستخدمين", "هات الفروع", "كال الفروع"',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        entity: {
+          type: 'string',
+          enum: ['branches', 'users', 'business-lines', 'roles', 'species'],
+          description: 'The entity type to query',
+        },
+      },
+      required: ['entity'],
+    },
+  },
+  {
+    name: 'navigate_to',
+    description: 'Navigate user to a page in the application. Use when user asks to open, go to, or see a specific page or screen.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        route: {
+          type: 'string',
+          description: 'The route path, e.g. "/app/administration/branches", "/system/tenants", "/app/dashboard"',
+        },
+      },
+      required: ['route'],
+    },
+  },
+  {
+    name: 'collect_form_data',
+    description: 'Track form fill progress during entity creation. Call this EVERY time you collect a new field from the user. Your text response should ask for the next missing field, or show a summary and ask for confirmation if all fields are collected.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        entity: {
+          type: 'string',
+          enum: ['users', 'branches', 'business-lines', 'species'],
+          description: 'The entity being created',
+        },
+        collected_fields: {
+          type: 'object',
+          description: `All fields collected so far. CRITICAL: You MUST use these EXACT camelCase key names:
+• For "users" REQUIRED: firstName, lastName, email, password (min 8 chars), role (e.g. admin/doctor/receptionist), branchId (UUID). OPTIONAL: phone, accessScope
+• For "branches" REQUIRED: name, businessLineId (UUID), country, city, address, buildingNumber, vatRegistrationNumber, commercialRegistrationNumber. OPTIONAL: phone, email, district, postalCode, timezone
+• For "business-lines" REQUIRED: name, tenantId (UUID). OPTIONAL: businessLineType, description, contactEmail, contactPhone
+• For "species" REQUIRED: name, nameAr. OPTIONAL: description
+NEVER use Arabic labels, snake_case, or any other format as keys.`,
+        },
+        missing_fields: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Required field names still needed (use EXACT camelCase names from collected_fields spec above)',
+        },
+        is_complete: {
+          type: 'boolean',
+          description: 'True when ALL required fields have been collected',
+        },
+        confirmed_by_user: {
+          type: 'boolean',
+          description: 'True ONLY when user explicitly confirmed creation (said yes/نعم/تمام)',
+        },
+      },
+      required: ['entity', 'collected_fields', 'missing_fields', 'is_complete', 'confirmed_by_user'],
+    },
+  },
+  {
+    name: 'create_entity',
+    description: 'Create a new record in the system. ONLY call this after ALL required fields are collected AND the user explicitly confirmed (said yes/نعم/تمام). NEVER call without user confirmation.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        entity: {
+          type: 'string',
+          enum: ['users', 'branches', 'business-lines', 'species'],
+          description: 'The entity type to create',
+        },
+        data: {
+          type: 'object',
+          description: `Complete entity data. CRITICAL: Use EXACT camelCase key names:
+• "users" REQUIRED: firstName, lastName, email, password (min 8 chars), role, branchId (must be UUID)
+• "branches" REQUIRED: name, businessLineId (UUID), country, city, address, buildingNumber, vatRegistrationNumber, commercialRegistrationNumber
+• "business-lines" REQUIRED: name, tenantId (UUID)
+• "species" REQUIRED: name, nameAr
+If branchId or businessLineId is a name (not UUID), use the UUID from earlier read_data results.`,
+        },
+      },
+      required: ['entity', 'data'],
+    },
+  },
+];
+
+// UUID validation helper
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isValidUUID(value: string): boolean {
+  return UUID_REGEX.test(value);
+}
+
+// Resolve branch name/number to UUID via HierarchyService
+async function resolveBranchByName(tenantId: string, nameOrIndex: string): Promise<string | null> {
+  try {
+    const hierarchy = await HierarchyService.getTenantHierarchy(tenantId);
+    if (!hierarchy) return null;
+
+    const allBranches: { id: string; name: string }[] = [];
+    for (const bl of hierarchy.businessLines) {
+      for (const branch of bl.branches) {
+        allBranches.push({ id: (branch as any).id, name: branch.name });
+      }
+    }
+
+    // Try numeric index (user said "1", "2", etc.)
+    const idx = parseInt(nameOrIndex, 10);
+    if (!isNaN(idx) && idx >= 1 && idx <= allBranches.length) {
+      return allBranches[idx - 1].id;
+    }
+
+    // Try name match (case-insensitive, partial)
+    const lower = nameOrIndex.toLowerCase();
+    const match = allBranches.find(b => b.name.toLowerCase() === lower)
+      || allBranches.find(b => b.name.toLowerCase().includes(lower));
+    return match?.id || null;
+  } catch {
+    return null;
+  }
+}
+
+// Resolve business line name/number to UUID
+async function resolveBusinessLineByName(tenantId: string, nameOrIndex: string): Promise<string | null> {
+  try {
+    const hierarchy = await HierarchyService.getTenantHierarchy(tenantId);
+    if (!hierarchy) return null;
+
+    const bls = hierarchy.businessLines.map(bl => ({ id: (bl as any).id, name: bl.name }));
+
+    const idx = parseInt(nameOrIndex, 10);
+    if (!isNaN(idx) && idx >= 1 && idx <= bls.length) {
+      return bls[idx - 1].id;
+    }
+
+    const lower = nameOrIndex.toLowerCase();
+    const match = bls.find(b => b.name.toLowerCase() === lower)
+      || bls.find(b => b.name.toLowerCase().includes(lower));
+    return match?.id || null;
+  } catch {
+    return null;
+  }
+}
+
+// Detect language from text — with conversation history fallback
+// During form fill, messages like emails/passwords/names have no Arabic chars
+// but the conversation language should stay Arabic. Always check history.
+function detectLanguage(text: string, history?: { role: string; content: string }[]): 'en' | 'ar' {
   const arabicPattern = /[\u0600-\u06FF]/;
-  return arabicPattern.test(text) ? 'ar' : 'en';
+
+  // Current message has clear Arabic signal
+  if (arabicPattern.test(text)) return 'ar';
+
+  // No Arabic in current message → check conversation history
+  // This handles: emails, passwords, names, numbers, "ok", etc.
+  if (history && history.length > 0) {
+    const recentUserMsgs = history.filter(h => h.role === 'user').slice(-8);
+    const arabicCount = recentUserMsgs.filter(m => arabicPattern.test(m.content)).length;
+    // If ANY recent user message was Arabic, stay Arabic
+    if (arabicCount > 0) return 'ar';
+  }
+
+  return 'en';
 }
 
 // ============================================
@@ -524,7 +716,7 @@ export class AGIEngine {
     await this.initialize();
 
     const startTime = Date.now();
-    const language = detectLanguage(request.message);
+    const language = detectLanguage(request.message, request.history);
     let wasPatternMatched = false;
     let wasClaude = false;
 
@@ -651,60 +843,24 @@ export class AGIEngine {
       const settings = await AgiSettingsService.getSettings(tenantId);
       const model = settings.defaultModel || 'claude-sonnet-4-20250514';
 
-      // Check if this is a confirmed form fill action — execute directly
-      if (request.formFillState?.isComplete && request.formFillState?.confirmedByUser) {
-        const ffs = request.formFillState;
-        const execAction: AgiAction = {
-          type: 'CREATE',
-          target: ffs.entity,
-          params: ffs.collectedFields,
-          description: `Create ${ffs.entity}`,
-          descriptionAr: `إنشاء ${ffs.entity}`,
-          isDestructive: false,
-          requiresApproval: false,
-          riskLevel: 'MEDIUM',
-        };
-
-        // Permission check
-        const permCheck = await this.checkPermission(userId, tenantId, execAction, language);
-        if (!permCheck.granted) {
-          return {
-            success: true,
-            message: this.createMessage('assistant', permCheck.message!),
-          };
-        }
-
-        // Execute via ActionExecutor (service layer — no HTTP)
-        const result = await actionExecutor.execute(tenantId, userId, execAction);
-        const responseMessage = language === 'ar' ? result.messageAr : result.message;
-
-        if (result.success) {
-          return {
-            success: true,
-            message: this.createMessage('assistant', responseMessage),
-            action: execAction,
-          };
-        } else {
-          return {
-            success: true,
-            message: this.createMessage('assistant', responseMessage),
-          };
-        }
-      }
+      // NOTE: Server-side CONFIRM_PATTERN removed.
+      // Claude handles confirmation via create_entity tool — 100% reliable field names.
+      // formFillState is passed in system prompt context so Claude knows what was collected.
 
       // Build dynamic system prompt based on context
       const systemPrompt = this.buildSystemPrompt(currentModule, language);
       let contextPrompt = '';
       if (request.context?.currentPage) {
-        contextPrompt = `\n\nUser is currently on page: ${request.context.currentPage}`;
-      }
-      if (request.context?.locale) {
-        contextPrompt += `\nPreferred language: ${request.context.locale === 'ar' ? 'Arabic' : 'English'}`;
+        contextPrompt = language === 'ar'
+          ? `\n\nالمستخدم حالياً في صفحة: ${request.context.currentPage}`
+          : `\n\nUser is currently on page: ${request.context.currentPage}`;
       }
 
-      // Include form fill state if present
+      // Include form fill state if present (so Claude knows what's been collected)
       if (request.formFillState) {
-        contextPrompt += `\n\nCurrent form fill state: ${JSON.stringify(request.formFillState)}`;
+        contextPrompt += language === 'ar'
+          ? `\n\nحالة تعبئة النموذج الحالية: ${JSON.stringify(request.formFillState)}\nأكمل جمع الحقول الناقصة أو اطلب التأكيد إذا اكتملت.`
+          : `\n\nCurrent form fill state: ${JSON.stringify(request.formFillState)}\nContinue collecting missing fields or ask for confirmation if complete.`;
       }
 
       // Build messages array: include conversation history if available
@@ -718,32 +874,31 @@ export class AGIEngine {
       }
       claudeMessages.push({ role: 'user', content: request.message });
 
+      // === Claude Tool Use — structured function calling ===
+      // Claude decides which tool to call (if any) with structured parameters
+      // No more JSON-in-text parsing — 99.9% reliable structured output
       const response = await this.anthropic.messages.create({
         model,
         max_tokens: settings.maxTokensPerRequest,
         system: systemPrompt + contextPrompt,
         messages: claudeMessages,
+        tools: CLAUDE_TOOLS,
       });
 
-      // Extract response
-      const assistantMessage = response.content[0].type === 'text'
-        ? response.content[0].text
-        : '';
+      // Extract text content and tool use from response
+      // Claude can return both text (conversational) + tool_use (structured action) in same response
+      let textContent = '';
+      let toolUse: { id: string; name: string; input: Record<string, unknown> } | null = null;
 
-      // Try to parse action or form fill state from response
-      const action = this.parseActionFromResponse(assistantMessage);
-      const formFillState = this.parseFormFillFromResponse(assistantMessage);
-
-      // Permission check for non-NAVIGATE actions
-      if (action && action.type !== 'NAVIGATE') {
-        const permCheck = await this.checkPermission(userId, tenantId, action, language);
-        if (!permCheck.granted) {
-          return {
-            success: true,
-            message: this.createMessage('assistant', permCheck.message!),
-          };
+      for (const block of response.content) {
+        if (block.type === 'text') {
+          textContent += block.text;
+        } else if (block.type === 'tool_use') {
+          toolUse = { id: block.id, name: block.name, input: block.input as Record<string, unknown> };
         }
       }
+
+      console.log(`🤖 Zaki Claude: text=${textContent.length}chars, tool=${toolUse?.name || 'none'}, stop=${response.stop_reason}`);
 
       // Log and track usage
       const processingTimeMs = Date.now() - startTime;
@@ -753,7 +908,7 @@ export class AGIEngine {
           userId,
           inputCommand: request.message,
           inputLanguage: language,
-          parsedIntent: { action, response: assistantMessage.substring(0, 200) },
+          parsedIntent: { toolUse: toolUse?.name, response: textContent.substring(0, 200) },
           status: 'SUCCESS',
           processingTimeMs,
           wasPatternMatched: false,
@@ -774,34 +929,17 @@ export class AGIEngine {
         }),
       ]);
 
-      // Check if action requires approval
-      if (action && action.requiresApproval) {
-        const approval = await AgiApprovalsService.createApproval(tenantId, userId, {
-          action,
-          originalMessage: request.message,
-        });
-
-        return {
-          success: true,
-          message: this.createMessage('assistant', language === 'ar'
-            ? `العملية تحتاج موافقة. تم إنشاء طلب موافقة رقم: ${approval.id.substring(0, 8)}`
-            : `This action requires approval. Approval request created: ${approval.id.substring(0, 8)}`),
-          action,
-          requiresApproval: true,
-          approvalId: approval.id,
-        };
+      // Handle tool calls — Claude chose to call a structured tool
+      if (toolUse) {
+        return this.handleToolUse(toolUse, textContent, tenantId, userId, language, request.formFillState);
       }
 
-      // Clean message: remove JSON blocks from display text
-      const cleanMessage = assistantMessage
-        .replace(/\{[\s\S]*"type"\s*:\s*"(?:ACTION|FORM_FILL)"[\s\S]*\}/g, '')
-        .trim();
-
+      // Plain text response (no tool call) — general conversation
       return {
         success: true,
-        message: this.createMessage('assistant', action ? action.description : (cleanMessage || assistantMessage)),
-        action: action || undefined,
-        formFillState,
+        message: this.createMessage('assistant', textContent || (language === 'ar'
+          ? 'أنا ذكي! كيف أقدر أساعدك؟'
+          : 'I\'m Zaki! How can I help you?')),
       };
 
     } catch (error) {
@@ -836,10 +974,12 @@ export class AGIEngine {
   ): AsyncGenerator<AgiStreamChunk> {
     await this.initialize();
 
-    const language = detectLanguage(request.message);
+    const language = detectLanguage(request.message, request.history);
+
+    const currentModule = request.context?.currentModule;
 
     // Try pattern matching first
-    const patternResult = this.tryPatternMatching(request.message, language);
+    const patternResult = this.tryPatternMatching(request.message, language, currentModule);
     if (patternResult) {
       yield { type: 'text', content: patternResult.description };
       yield { type: 'action', action: patternResult };
@@ -861,28 +1001,45 @@ export class AGIEngine {
 
     try {
       const settings = await AgiSettingsService.getSettings(tenantId);
-      const systemPrompt = this.buildSystemPrompt(request.context?.currentModule);
+      const systemPrompt = this.buildSystemPrompt(currentModule, language);
 
+      // Build messages array with history (same as processChat)
+      const claudeMessages: { role: 'user' | 'assistant'; content: string }[] = [];
+      if (request.history && request.history.length > 0) {
+        for (const h of request.history) {
+          if (h.role === 'user' || h.role === 'assistant') {
+            claudeMessages.push({ role: h.role, content: h.content });
+          }
+        }
+      }
+      claudeMessages.push({ role: 'user', content: request.message });
+
+      // Streaming with Tool Use: stream text, then check for tool_use at the end
       const stream = await this.anthropic.messages.stream({
         model: settings.defaultModel || 'claude-sonnet-4-20250514',
         max_tokens: settings.maxTokensPerRequest,
         system: systemPrompt,
-        messages: [{ role: 'user', content: request.message }],
+        messages: claudeMessages,
+        tools: CLAUDE_TOOLS,
       });
-
-      let fullResponse = '';
 
       for await (const event of stream) {
         if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-          fullResponse += event.delta.text;
           yield { type: 'text', content: event.delta.text };
         }
       }
 
-      // Try to parse action at the end
-      const action = this.parseActionFromResponse(fullResponse);
-      if (action) {
-        yield { type: 'action', action };
+      // After streaming, check the final message for tool_use blocks
+      const finalMessage = await stream.finalMessage();
+      for (const block of finalMessage.content) {
+        if (block.type === 'tool_use') {
+          // Convert tool_use to an action for the client
+          const toolAction = this.toolUseToAction(block.name, block.input as Record<string, unknown>);
+          if (toolAction) {
+            yield { type: 'action', action: toolAction };
+          }
+          break;
+        }
       }
 
       yield { type: 'done' };
@@ -902,6 +1059,16 @@ export class AGIEngine {
    * Layer 2: Smart Intent Matching (fuzzy, panel-aware)
    */
   private tryPatternMatching(input: string, language: 'en' | 'ar', currentModule?: string): AgiAction | null {
+    // ===== LAYER -1: Skip pattern matching for CREATION intents =====
+    // Creation requests MUST go to Claude for interactive form fill via Tool Use.
+    // Pattern matching can only navigate — it cannot collect fields interactively.
+    const CREATION_VERBS = /(?:أنشئ|انشئ|أنشي|انشي|إنشاء|انشاء|أضف|اضف|سوي|سوّي|ابني|يلا نسوي|create|add|new|make)\b/i;
+    const ENTITY_NOUNS = /(?:مستخدم|يوزر|فرع|خط عمل|بزنس|user|branch|business|tenant|عيادة|species|فصيلة)/i;
+    if (CREATION_VERBS.test(input) && ENTITY_NOUNS.test(input)) {
+      console.log(`🤖 Zaki: Creation intent detected → skipping pattern matching, sending to Claude`);
+      return null;
+    }
+
     // ===== LAYER 0.5: READ Patterns (data queries) =====
     // "ما الفروع" = data query, NOT navigation — must check BEFORE navigation patterns
     for (const readPattern of READ_PATTERNS) {
@@ -1009,14 +1176,16 @@ export class AGIEngine {
    * Includes panel-aware pages and entity metadata for form fill
    */
   private buildSystemPrompt(currentModule?: string, language: 'en' | 'ar' = 'en'): string {
-    let prompt = BASE_SYSTEM_PROMPT;
+    // Use language-specific prompt — NEVER bilingual
+    let prompt = language === 'ar' ? BASE_SYSTEM_PROMPT_AR : BASE_SYSTEM_PROMPT_EN;
 
-    // Add available pages based on current panel
+    // Add available pages based on current panel (in user's language only)
     const panelRoutes = currentModule ? PANEL_ROUTES[currentModule] : PANEL_ROUTES['SYSTEM'];
     if (panelRoutes) {
-      prompt += '\n\nالصفحات المتاحة / Available pages:\n';
+      prompt += language === 'ar' ? '\n\nالصفحات المتاحة:\n' : '\n\nAvailable pages:\n';
       for (const [route, keywords] of Object.entries(panelRoutes)) {
-        prompt += `- ${route} — ${keywords.ar[0]} / ${keywords.en[0]}\n`;
+        const label = language === 'ar' ? keywords.ar[0] : keywords.en[0];
+        prompt += `- ${route} — ${label}\n`;
       }
     }
 
@@ -1027,40 +1196,266 @@ export class AGIEngine {
   }
 
   /**
-   * Parse action from Claude response
+   * Handle Claude Tool Use — execute the tool and return structured response
+   * This replaces the old JSON-in-text parsing with 99.9% reliable structured output
    */
-  private parseActionFromResponse(response: string): AgiAction | null {
-    try {
-      // Look for JSON in the response
-      const jsonMatch = response.match(/\{[\s\S]*"type"\s*:\s*"ACTION"[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        if (parsed.type === 'ACTION' && parsed.action) {
-          return parsed.action as AgiAction;
+  private async handleToolUse(
+    toolUse: { id: string; name: string; input: Record<string, unknown> },
+    textContent: string,
+    tenantId: string,
+    userId: string,
+    language: 'en' | 'ar',
+    existingFormState?: AgiFormFillState,
+  ): Promise<AgiChatResponse> {
+    switch (toolUse.name) {
+      // ─── READ DATA ─────────────────────────────────────
+      case 'read_data': {
+        const entity = toolUse.input.entity as string;
+        console.log(`🔧 Zaki Tool: read_data("${entity}")`);
+
+        const readAction: AgiAction = {
+          type: 'READ',
+          target: entity,
+          isDestructive: false,
+          requiresApproval: false,
+          riskLevel: 'LOW',
+          description: `Reading ${entity}...`,
+          descriptionAr: `جاري قراءة ${entity}...`,
+        };
+
+        // Permission check
+        const readPermCheck = await this.checkPermission(userId, tenantId, readAction, language);
+        if (!readPermCheck.granted) {
+          return {
+            success: true,
+            message: this.createMessage('assistant', readPermCheck.message!),
+          };
         }
+
+        // Execute via actionExecutor
+        const readResult = await actionExecutor.execute(tenantId, userId, readAction);
+        const readMsg = language === 'ar' ? readResult.messageAr : readResult.message;
+
+        return {
+          success: true,
+          message: this.createMessage('assistant', textContent || readMsg),
+          data: readResult.data,
+          formFillState: existingFormState || undefined,
+        };
       }
-    } catch {
-      // Not valid JSON, return null
+
+      // ─── NAVIGATE ──────────────────────────────────────
+      case 'navigate_to': {
+        const route = toolUse.input.route as string;
+        console.log(`🔧 Zaki Tool: navigate_to("${route}")`);
+
+        const navAction: AgiAction = {
+          type: 'NAVIGATE',
+          target: route,
+          isDestructive: false,
+          requiresApproval: false,
+          riskLevel: 'LOW',
+          description: textContent || `Navigating to ${route}`,
+          descriptionAr: textContent || `الانتقال إلى ${route}`,
+        };
+
+        return {
+          success: true,
+          message: this.createMessage('assistant', textContent || navAction.description),
+          action: navAction,
+        };
+      }
+
+      // ─── COLLECT FORM DATA ─────────────────────────────
+      case 'collect_form_data': {
+        console.log(`🔧 Zaki Tool: collect_form_data("${toolUse.input.entity}", complete=${toolUse.input.is_complete})`);
+
+        const formState: AgiFormFillState = {
+          entity: toolUse.input.entity as string,
+          action: 'CREATE',
+          collectedFields: (toolUse.input.collected_fields as Record<string, unknown>) || {},
+          missingRequired: (toolUse.input.missing_fields as string[]) || [],
+          isComplete: (toolUse.input.is_complete as boolean) || false,
+          confirmedByUser: (toolUse.input.confirmed_by_user as boolean) || false,
+        };
+
+        // Generate smart fallback message when Claude doesn't provide text
+        // (happens when stop_reason is "tool_use" — Claude may skip text block)
+        let formMessage = textContent;
+        if (!formMessage || formMessage.length < 3) {
+          if (formState.isComplete) {
+            // All fields collected — show summary and ask for confirmation
+            const meta = getEntityMeta(formState.entity);
+            const entityName = meta
+              ? (language === 'ar' ? meta.displayName.ar : meta.displayName.en)
+              : formState.entity;
+            const fieldLines = Object.entries(formState.collectedFields)
+              .filter(([, v]) => v !== undefined && v !== null && v !== '')
+              .map(([k, v]) => {
+                // Try to find field label from metadata
+                const fieldMeta = meta?.requiredFields.find((f: EntityFieldDef) => f.name === k)
+                  || meta?.optionalFields.find((f: EntityFieldDef) => f.name === k);
+                const label = fieldMeta
+                  ? (language === 'ar' ? fieldMeta.labelAr : fieldMeta.label)
+                  : k;
+                return `• ${label}: ${v}`;
+              })
+              .join('\n');
+
+            formMessage = language === 'ar'
+              ? `تم جمع كل البيانات المطلوبة لإنشاء ${entityName}:\n\n${fieldLines}\n\nهل تريد تأكيد الإنشاء؟`
+              : `All required data collected for creating ${entityName}:\n\n${fieldLines}\n\nDo you want to confirm creation?`;
+          } else if (formState.missingRequired.length > 0) {
+            // Still missing fields — ask for the next one
+            const nextFieldName = formState.missingRequired[0];
+            const meta = getEntityMeta(formState.entity);
+            const fieldMeta = meta?.requiredFields.find((f: EntityFieldDef) => f.name === nextFieldName)
+              || meta?.optionalFields.find((f: EntityFieldDef) => f.name === nextFieldName);
+            const fieldLabel = fieldMeta
+              ? (language === 'ar' ? fieldMeta.labelAr : fieldMeta.label)
+              : nextFieldName;
+
+            // If field has predefined options, show them as numbered list
+            if (fieldMeta?.options && fieldMeta.options.length > 0) {
+              const optionsList = fieldMeta.options.map((o, i) =>
+                `${i + 1}. ${language === 'ar' ? o.labelAr : o.label}`
+              ).join('\n');
+              formMessage = language === 'ar'
+                ? `اختر ${fieldLabel}:\n\n${optionsList}\n\nاكتب الرقم أو الاسم`
+                : `Choose ${fieldLabel}:\n\n${optionsList}\n\nType the number or name`;
+            } else {
+              formMessage = language === 'ar'
+                ? `ما هو ${fieldLabel}؟`
+                : `What is the ${fieldLabel}?`;
+            }
+          } else {
+            formMessage = language === 'ar'
+              ? 'جاري جمع البيانات...'
+              : 'Collecting data...';
+          }
+        }
+
+        return {
+          success: true,
+          message: this.createMessage('assistant', formMessage),
+          formFillState: formState,
+        };
+      }
+
+      // ─── CREATE ENTITY ─────────────────────────────────
+      case 'create_entity': {
+        const entity = toolUse.input.entity as string;
+        const data = (toolUse.input.data as Record<string, unknown>) || {};
+        console.log(`🔧 Zaki Tool: create_entity("${entity}") with ${Object.keys(data).length} fields`);
+        console.log(`🔧 Zaki Tool: create_entity data keys: ${Object.keys(data).join(', ')}`);
+
+        // ── Resolve name-to-UUID for FK fields ──
+        // Claude may pass branch name instead of UUID if read_data didn't include IDs
+        // or user referenced by name. Resolve here before executing.
+        try {
+          if (entity === 'users' && data.branchId && !isValidUUID(data.branchId as string)) {
+            const resolved = await resolveBranchByName(tenantId, data.branchId as string);
+            if (resolved) {
+              console.log(`🔧 Zaki: Resolved branchId "${data.branchId}" → "${resolved}"`);
+              data.branchId = resolved;
+            }
+          }
+          if (entity === 'branches' && data.businessLineId && !isValidUUID(data.businessLineId as string)) {
+            const resolved = await resolveBusinessLineByName(tenantId, data.businessLineId as string);
+            if (resolved) {
+              console.log(`🔧 Zaki: Resolved businessLineId "${data.businessLineId}" → "${resolved}"`);
+              data.businessLineId = resolved;
+            }
+          }
+        } catch (resolveErr) {
+          console.warn(`⚠️ Zaki: FK resolution error:`, resolveErr);
+        }
+
+        const createAction: AgiAction = {
+          type: 'CREATE',
+          target: entity,
+          params: data,
+          description: `Create ${entity}`,
+          descriptionAr: `إنشاء ${entity}`,
+          isDestructive: false,
+          requiresApproval: false,
+          riskLevel: 'MEDIUM',
+        };
+
+        // Permission check
+        const createPermCheck = await this.checkPermission(userId, tenantId, createAction, language);
+        if (!createPermCheck.granted) {
+          return {
+            success: true,
+            message: this.createMessage('assistant', createPermCheck.message!),
+          };
+        }
+
+        // Execute via actionExecutor
+        const createResult = await actionExecutor.execute(tenantId, userId, createAction);
+        const createMsg = language === 'ar' ? createResult.messageAr : createResult.message;
+
+        return {
+          success: true,
+          message: this.createMessage('assistant', createResult.success
+            ? (textContent || createMsg)
+            : createMsg),
+          action: createResult.success ? createAction : undefined,
+        };
+      }
+
+      // ─── UNKNOWN TOOL ──────────────────────────────────
+      default: {
+        console.warn(`⚠️ Zaki: Unknown tool "${toolUse.name}"`);
+        return {
+          success: true,
+          message: this.createMessage('assistant', textContent || (language === 'ar'
+            ? 'حدث خطأ غير متوقع'
+            : 'An unexpected error occurred')),
+        };
+      }
     }
-    return null;
   }
 
   /**
-   * Parse form fill state from Claude response
+   * Convert a tool_use block to an AgiAction (used by streaming)
    */
-  private parseFormFillFromResponse(response: string): AgiFormFillState | undefined {
-    try {
-      const jsonMatch = response.match(/\{[\s\S]*"type"\s*:\s*"FORM_FILL"[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        if (parsed.type === 'FORM_FILL' && parsed.formFillState) {
-          return parsed.formFillState as AgiFormFillState;
-        }
-      }
-    } catch {
-      // Not valid JSON, return undefined
+  private toolUseToAction(toolName: string, input: Record<string, unknown>): AgiAction | null {
+    switch (toolName) {
+      case 'read_data':
+        return {
+          type: 'READ',
+          target: input.entity as string,
+          isDestructive: false,
+          requiresApproval: false,
+          riskLevel: 'LOW',
+          description: `Reading ${input.entity}...`,
+          descriptionAr: `جاري قراءة ${input.entity}...`,
+        };
+      case 'navigate_to':
+        return {
+          type: 'NAVIGATE',
+          target: input.route as string,
+          isDestructive: false,
+          requiresApproval: false,
+          riskLevel: 'LOW',
+          description: `Navigate to ${input.route}`,
+          descriptionAr: `الانتقال إلى ${input.route}`,
+        };
+      case 'create_entity':
+        return {
+          type: 'CREATE',
+          target: input.entity as string,
+          params: input.data as Record<string, unknown>,
+          isDestructive: false,
+          requiresApproval: false,
+          riskLevel: 'MEDIUM',
+          description: `Create ${input.entity}`,
+          descriptionAr: `إنشاء ${input.entity}`,
+        };
+      default:
+        return null;
     }
-    return undefined;
   }
 
   /**

@@ -33,16 +33,15 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
       return;
     }
 
-    // Dynamic Socket.IO URL for Replit environment
-    // Backend ALWAYS runs on port 3000
+    // Dynamic Socket.IO URL - Backend runs on port 5500
     const getSocketUrl = () => {
       if (typeof window !== 'undefined') {
         const origin = window.location.origin;
-        // Remove existing port (if any) then add :3000
+        // Remove existing port (if any) then add backend port
         const baseWithoutPort = origin.replace(/:\d+$/, '');
-        return `${baseWithoutPort}:3000`;
+        return `${baseWithoutPort}:5500`;
       }
-      return 'http://localhost:3000';
+      return 'http://localhost:5500';
     };
 
     const socketUrl = getSocketUrl();

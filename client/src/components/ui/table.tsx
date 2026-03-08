@@ -30,7 +30,7 @@ export const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLA
   ({ className, style, ...props }, ref) => (
     <thead 
       ref={ref} 
-      className={cn('[&_tr]:border-b', className)}
+      className={cn('', className)}
       style={{
         backgroundColor: 'var(--table-header-bg)',
         ...style
@@ -45,7 +45,7 @@ export const TableBody = React.forwardRef<HTMLTableSectionElement, React.HTMLAtt
   ({ className, ...props }, ref) => (
     <tbody
       ref={ref}
-      className={cn('[&_tr:last-child]:border-0', className)}
+      className={cn('', className)}
       {...props}
     />
   )
@@ -78,14 +78,13 @@ export const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(
     <tr
       ref={ref}
       className={cn(
-        'border-b transition-colors',
+        'transition-colors',
         hoverable && 'hover:bg-[var(--table-row-bg-hover)]',
         selected && 'bg-[var(--table-row-bg-hover)]',
         className
       )}
       style={{
         backgroundColor: selected ? 'var(--table-row-bg-hover)' : 'var(--table-row-bg)',
-        borderColor: 'var(--table-row-border)',
         ...style
       }}
       {...props}
@@ -99,7 +98,7 @@ export const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttr
     <th
       ref={ref}
       className={cn(
-        'h-12 px-4 text-left align-middle font-medium [&:has([role=checkbox])]:pr-0',
+        'h-11 px-4 text-left align-middle text-sm font-semibold [&:has([role=checkbox])]:pr-0',
         className
       )}
       style={{
@@ -116,7 +115,7 @@ export const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttr
   ({ className, style, ...props }, ref) => (
     <td
       ref={ref}
-      className={cn('p-4 align-middle [&:has([role=checkbox])]:pr-0', className)}
+      className={cn('px-4 py-3 align-middle text-sm [&:has([role=checkbox])]:pr-0', className)}
       style={{
         color: 'var(--table-cell-text)',
         ...style

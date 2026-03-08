@@ -207,7 +207,7 @@ export const updateTenant = async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Forbidden: System access required' });
     }
 
-    const { name, defaultLanguage, country, timezone } = req.body;
+    const { name, defaultLanguage, country, timezone, aiAssistantEnabled } = req.body;
 
     // Check if tenant exists
     const [existing] = await db.select().from(tenants).where(eq(tenants.id, id)).limit(1);
@@ -224,6 +224,7 @@ export const updateTenant = async (req: Request, res: Response) => {
         defaultLanguage: defaultLanguage || existing.defaultLanguage,
         country: country !== undefined ? country : existing.country,
         timezone: timezone !== undefined ? timezone : existing.timezone,
+        aiAssistantEnabled: aiAssistantEnabled !== undefined ? aiAssistantEnabled : existing.aiAssistantEnabled,
         updatedAt: new Date(),
       })
       .where(eq(tenants.id, id))

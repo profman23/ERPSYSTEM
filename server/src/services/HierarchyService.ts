@@ -11,7 +11,11 @@ import { auditService } from '../core/audit';
 import { RequestContext } from '../core/context';
 import { contextLogger } from '../core/context';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
+import { UserRoleService } from './userRoleService';
+import { BranchService } from './BranchService';
+import { NotFoundError } from '../core/errors';
 
 export interface CreateTenantInput {
   code: string;
@@ -22,11 +26,12 @@ export interface CreateTenantInput {
   contactEmail?: string;
   contactPhone?: string;
   address?: string;
+  aiAssistantEnabled?: boolean;
 }
 
 export interface CreateBusinessLineInput {
   tenantId: string;
-  code: string;
+  code?: string;
   name: string;
   businessLineType?: string;
   description?: string;
@@ -36,13 +41,17 @@ export interface CreateBusinessLineInput {
 
 export interface CreateBranchInput {
   businessLineId: string;
-  code: string;
+  code?: string;
   name: string;
-  city?: string;
-  state?: string;
   country?: string;
-  postalCode?: string;
+  city?: string;
   address?: string;
+  buildingNumber?: string;
+  vatRegistrationNumber?: string;
+  commercialRegistrationNumber?: string;
+  state?: string;
+  postalCode?: string;
+  district?: string;
   phone?: string;
   email?: string;
   timezone?: string;
@@ -58,6 +67,8 @@ export interface CreateUserInput {
   password: string;
   role?: string;
   accessScope?: string;
+  allowedBranchIds?: string[];
+  roleId?: string;
 }
 
 export class HierarchyService {
@@ -78,6 +89,7 @@ export class HierarchyService {
       contactEmail: input.contactEmail,
       contactPhone: input.contactPhone,
       address: input.address,
+      aiAssistantEnabled: input.aiAssistantEnabled ?? false,
     }).returning();
 
     await db.insert(tenantQuotas).values({
@@ -114,9 +126,11 @@ export class HierarchyService {
       throw new Error('Tenant not found');
     }
 
+    const autoCode = input.code || `BL-${Date.now().toString(36).toUpperCase()}`;
+
     const [businessLine] = await db.insert(businessLines).values({
       tenantId: input.tenantId,
-      code: input.code,
+      code: autoCode,
       name: input.name,
       businessLineType: input.businessLineType || 'general',
       description: input.description,
@@ -143,7 +157,9 @@ export class HierarchyService {
 
   /**
    * Create a new branch under a business line
-   * Automatically resolves tenantId from parent business line
+   * Delegates to BranchService.create() — single source of truth for branch creation.
+   * BranchService handles: code generation, uniqueness check, atomic transaction,
+   * default warehouse creation, and 7 document number series seeding.
    */
   static async createBranch(input: CreateBranchInput) {
     const businessLine = await db.query.businessLines.findFirst({
@@ -151,25 +167,27 @@ export class HierarchyService {
     });
 
     if (!businessLine) {
-      throw new Error('Business line not found');
+      throw new NotFoundError('BusinessLine', input.businessLineId);
     }
 
     const tenantId = businessLine.tenantId;
 
-    const [branch] = await db.insert(branches).values({
-      tenantId,
+    const branch = await BranchService.create(tenantId, {
       businessLineId: input.businessLineId,
-      code: input.code,
       name: input.name,
-      city: input.city,
-      state: input.state,
-      country: input.country,
+      country: input.country || '',
+      city: input.city || '',
+      address: input.address || '',
+      buildingNumber: input.buildingNumber || '',
+      vatRegistrationNumber: input.vatRegistrationNumber || 'PENDING',
+      commercialRegistrationNumber: input.commercialRegistrationNumber || 'PENDING',
       postalCode: input.postalCode,
-      address: input.address,
+      district: input.district,
       phone: input.phone,
       email: input.email,
       timezone: input.timezone,
-    }).returning();
+      isActive: true,
+    });
 
     await auditService.log({
       action: 'create',
@@ -180,12 +198,12 @@ export class HierarchyService {
       metadata: { tenantId, businessLineId: input.businessLineId, branchId: branch.id },
     });
 
-    contextLogger.info('Branch created', { 
-      branchId: branch.id, 
+    contextLogger.info('Branch created', {
+      branchId: branch.id,
       businessLineId: input.businessLineId,
-      tenantId 
+      tenantId,
     });
-    
+
     return branch;
   }
 
@@ -218,6 +236,7 @@ export class HierarchyService {
 
     const [user] = await db.insert(users).values({
       code: userCode,
+      name: `${input.firstName} ${input.lastName}`.trim(),
       firstName: input.firstName,
       lastName: input.lastName,
       email: input.email,
@@ -230,7 +249,25 @@ export class HierarchyService {
       branchId: input.branchId,
       businessLineId,
       tenantId,
+      allowedBranchIds: input.allowedBranchIds || [],
     }).returning();
+
+    // Atomic role assignment — if roleId provided, assign in same flow
+    if (input.roleId) {
+      try {
+        await UserRoleService.assignRoleToUser(
+          tenantId,
+          user.id, // assignedBy = the user being created (system will override)
+          { userId: user.id, roleId: input.roleId },
+          false
+        );
+        contextLogger.info('Role assigned atomically', { userId: user.id, roleId: input.roleId, tenantId });
+      } catch (roleErr) {
+        contextLogger.error('Atomic role assignment failed — user created without role', {
+          userId: user.id, roleId: input.roleId, tenantId, error: String(roleErr),
+        });
+      }
+    }
 
     await auditService.log({
       action: 'create',
@@ -241,13 +278,13 @@ export class HierarchyService {
       metadata: { tenantId, businessLineId, branchId: input.branchId, userId: user.id },
     });
 
-    contextLogger.info('User created', { 
-      userId: user.id, 
+    contextLogger.info('User created', {
+      userId: user.id,
       branchId: input.branchId,
       businessLineId,
-      tenantId 
+      tenantId
     });
-    
+
     return { ...user, passwordHash: undefined };
   }
 
@@ -372,7 +409,52 @@ export class HierarchyService {
   }
 
   /**
-   * Validate branch capacity before adding user
+   * Validate business line quota before creating a new one
+   */
+  static async validateBusinessLineQuota(tenantId: string): Promise<boolean> {
+    const tenant = await db.query.tenants.findFirst({
+      where: eq(tenants.id, tenantId),
+    });
+    if (!tenant) return false;
+
+    const blList = await db.query.businessLines.findMany({
+      where: and(eq(businessLines.tenantId, tenantId), eq(businessLines.isActive, true)),
+    });
+    return blList.length < (tenant.allowedBusinessLines ?? 999999);
+  }
+
+  /**
+   * Validate branch quota before creating a new one
+   */
+  static async validateBranchQuota(tenantId: string): Promise<boolean> {
+    const tenant = await db.query.tenants.findFirst({
+      where: eq(tenants.id, tenantId),
+    });
+    if (!tenant) return false;
+
+    const branchList = await db.query.branches.findMany({
+      where: and(eq(branches.tenantId, tenantId), eq(branches.isActive, true)),
+    });
+    return branchList.length < (tenant.allowedBranches ?? 999999);
+  }
+
+  /**
+   * Validate user quota before creating a new one
+   */
+  static async validateUserQuota(tenantId: string): Promise<boolean> {
+    const tenant = await db.query.tenants.findFirst({
+      where: eq(tenants.id, tenantId),
+    });
+    if (!tenant) return false;
+
+    const userList = await db.query.users.findMany({
+      where: and(eq(users.tenantId, tenantId), eq(users.isActive, true)),
+    });
+    return userList.length < (tenant.allowedUsers ?? 999999);
+  }
+
+  /**
+   * Validate branch capacity before adding user (legacy - now uses tenant.allowedUsers)
    */
   static async validateBranchCapacity(branchId: string): Promise<boolean> {
     const branch = await db.query.branches.findFirst({
@@ -381,17 +463,7 @@ export class HierarchyService {
 
     if (!branch) return false;
 
-    const quota = await db.query.tenantQuotas.findFirst({
-      where: eq(tenantQuotas.tenantId, branch.tenantId),
-    });
-
-    if (!quota) return true;
-
-    const userCount = await db.query.users.findMany({
-      where: eq(users.tenantId, branch.tenantId),
-    });
-
-    return userCount.length < quota.maxUsers;
+    return this.validateUserQuota(branch.tenantId);
   }
 }
 

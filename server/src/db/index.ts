@@ -1,23 +1,89 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import 'dotenv/config';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import pg from 'pg';
 import * as schema from './schemas';
+import logger from '../config/logger';
 
-const connectionString = process.env.DATABASE_URL!;
+const { Pool } = pg;
 
-/**
- * Connection Pool Configuration for 3000+ Tenants
- * Optimized for Neon PostgreSQL serverless
- */
-const client = postgres(connectionString, {
-  max: 100,                    // Maximum connections in pool
-  idle_timeout: 30,            // Close idle connections after 30s
-  connect_timeout: 5,          // Timeout if no connection available in 5s
-  max_lifetime: 60 * 30,       // Max connection lifetime: 30 minutes
-  prepare: false,              // Disable prepared statements for serverless
-  ssl: 'require',              // Require SSL for Neon
-  onnotice: () => {},          // Suppress notices
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error('DATABASE_URL environment variable is not set!');
+}
+
+// Parse connection string to check if SSL is required
+const url = new URL(connectionString);
+const sslMode = url.searchParams.get('sslmode');
+
+// Dynamic pool sizing based on environment
+// Production: 100 connections to handle 50K+ concurrent users via PgBouncer/Neon
+const env = process.env.NODE_ENV || 'development';
+const poolConfig = {
+  development: { min: 2, max: 10 },
+  staging: { min: 5, max: 50 },
+  production: { min: 10, max: 100 },
+}[env] || { min: 2, max: 10 };
+
+const maxPoolSize = parseInt(process.env.DB_POOL_MAX || String(poolConfig.max));
+const minPoolSize = parseInt(process.env.DB_POOL_MIN || String(poolConfig.min));
+
+const pool = new Pool({
+  connectionString,
+  max: maxPoolSize,
+  min: minPoolSize,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,       // Fail fast (10s) instead of 30s
+  allowExitOnIdle: false,
+  ssl: sslMode === 'require' ? {
+    rejectUnauthorized: false
+  } : false,
 });
 
-console.log('✅ Database pool configured: max=100, idle_timeout=30s');
+// Pool error handling - prevent unhandled errors from crashing the process
+pool.on('error', (err) => {
+  logger.error('Unexpected database pool error', { error: err.message });
+});
 
-export const db = drizzle(client, { schema });
+// Pool statistics helper for monitoring
+export function getPoolStats() {
+  return {
+    totalCount: pool.totalCount,
+    idleCount: pool.idleCount,
+    waitingCount: pool.waitingCount,
+    maxSize: maxPoolSize,
+    utilizationPercent: Math.round((pool.totalCount / maxPoolSize) * 100),
+  };
+}
+
+// Pool health monitoring — warns when pool is under pressure, errors at >80%
+let lastWarningTime = 0;
+setInterval(() => {
+  const stats = getPoolStats();
+  const now = Date.now();
+
+  // Log error when pool utilization exceeds 80%
+  if (stats.utilizationPercent > 80 && now - lastWarningTime > 30000) {
+    lastWarningTime = now;
+    logger.error('DB pool high utilization', {
+      utilization: `${stats.utilizationPercent}%`,
+      total: stats.totalCount,
+      max: stats.maxSize,
+      idle: stats.idleCount,
+      waiting: stats.waitingCount,
+    });
+  } else if (stats.waitingCount > 5 && now - lastWarningTime > 30000) {
+    lastWarningTime = now;
+    logger.warn('DB pool backlog detected', {
+      waiting: stats.waitingCount,
+      total: stats.totalCount,
+      max: stats.maxSize,
+      idle: stats.idleCount,
+    });
+  }
+}, 10000);
+
+logger.info(`Database pool configured: min=${minPoolSize}, max=${maxPoolSize}, timeout=10s (${env})`);
+
+export const db = drizzle(pool, { schema });
+export { pool };

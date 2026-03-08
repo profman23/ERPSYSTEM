@@ -1,0 +1,68 @@
+name: Tests
+on:
+  push:
+    branches: [main, 'feature/**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: cd server && npm ci
+      - name: TypeScript check (server)
+        run: cd server && npx tsc --noEmit
+      - name: Run backend tests
+        run: cd server && npm test
+
+  frontend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: cd client && npm ci
+      - name: TypeScript check (client)
+        run: cd client && npx tsc --noEmit
+      - name: Run frontend tests
+        run: cd client && npm test
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET_TEST }}
+      NODE_ENV: test
+      SERVER_PORT: '5500'
+      CLIENT_URL: 'http://localhost:5501'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: cd server && npm ci
+      - run: cd client && npm ci
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Run E2E tests
+        run: npx playwright test
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

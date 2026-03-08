@@ -1,21 +1,20 @@
 /**
- * DPF Static Structure Definition
- * Central source of truth for all modules, screens, and actions
+ * DPF Static Structure Definition (SAP B1 Style)
+ * Central source of truth for all modules and screens
  * Based on GLOBAL_MODULE_MAP.md architecture
- * 
+ *
+ * Authorization Levels (per screen):
+ * - 0: No Authorization (screen hidden, route blocked)
+ * - 1: Read Only (view only, no create/update)
+ * - 2: Full Authorization (all operations allowed)
+ *
  * This structure is automatically synced to the database on server startup
  * All tenants inherit this structure via DPF sync script
  */
 
-export interface DPFActionDefinition {
-  actionCode: string;
-  actionName: string;
-  actionNameAr: string;
-  actionType: 'CREATE' | 'READ' | 'UPDATE' | 'DELETE' | 'EXPORT' | 'IMPORT' | 'APPROVE' | 'CUSTOM';
-  description?: string;
-  descriptionAr?: string;
-}
-
+/**
+ * Screen Definition (SAP B1 Style - no actions, just screens)
+ */
 export interface DPFScreenDefinition {
   screenCode: string;
   screenName: string;
@@ -23,9 +22,11 @@ export interface DPFScreenDefinition {
   route?: string;
   description?: string;
   descriptionAr?: string;
-  actions: DPFActionDefinition[];
 }
 
+/**
+ * Module Definition
+ */
 export interface DPFModuleDefinition {
   moduleCode: string;
   moduleName: string;
@@ -35,12 +36,14 @@ export interface DPFModuleDefinition {
   description?: string;
   descriptionAr?: string;
   sortOrder: string;
+  isSystemModule?: boolean; // true = SYSTEM-level module (platform-wide)
   screens: DPFScreenDefinition[];
 }
 
 /**
- * Complete DPF Structure - 14 Top-Level Modules
- * Aligned with GLOBAL_MODULE_MAP.md
+ * Complete DPF Structure — Only DEVELOPED modules/screens
+ * Tenant: 5 modules (16 screens) | System: 8 modules (11 screens)
+ * Add new modules/screens here ONLY when the feature is fully built.
  */
 export const DPF_STRUCTURE: DPFModuleDefinition[] = [
   // ═══════════════════════════════════════════════════════════════
@@ -60,74 +63,100 @@ export const DPF_STRUCTURE: DPFModuleDefinition[] = [
         screenCode: 'TENANTS',
         screenName: 'Tenant Management',
         screenNameAr: 'إدارة المستأجرين',
-        route: '/admin/tenants',
+        route: '/app/administration/tenants',
         description: 'Manage tenants and multi-tenant configuration',
         descriptionAr: 'إدارة المستأجرين والتكوين متعدد المستأجرين',
-        actions: [
-          { actionCode: 'tenants.create', actionName: 'Create Tenant', actionNameAr: 'إنشاء مستأجر', actionType: 'CREATE' },
-          { actionCode: 'tenants.view', actionName: 'View Tenants', actionNameAr: 'عرض المستأجرين', actionType: 'READ' },
-          { actionCode: 'tenants.update', actionName: 'Update Tenant', actionNameAr: 'تحديث مستأجر', actionType: 'UPDATE' },
-          { actionCode: 'tenants.delete', actionName: 'Delete Tenant', actionNameAr: 'حذف مستأجر', actionType: 'DELETE' },
-        ],
+        sortOrder: '001',
       },
       {
         screenCode: 'BUSINESS_LINES',
         screenName: 'Business Lines',
         screenNameAr: 'خطوط الأعمال',
-        route: '/admin/business-lines',
+        route: '/app/administration/business-lines',
         description: 'Manage business lines and branding',
         descriptionAr: 'إدارة خطوط الأعمال والعلامة التجارية',
-        actions: [
-          { actionCode: 'business-lines.create', actionName: 'Create Business Line', actionNameAr: 'إنشاء خط أعمال', actionType: 'CREATE' },
-          { actionCode: 'business-lines.view', actionName: 'View Business Lines', actionNameAr: 'عرض خطوط الأعمال', actionType: 'READ' },
-          { actionCode: 'business-lines.update', actionName: 'Update Business Line', actionNameAr: 'تحديث خط أعمال', actionType: 'UPDATE' },
-          { actionCode: 'business-lines.delete', actionName: 'Delete Business Line', actionNameAr: 'حذف خط أعمال', actionType: 'DELETE' },
-        ],
+        sortOrder: '002',
       },
       {
         screenCode: 'BRANCHES',
         screenName: 'Branch Management',
         screenNameAr: 'إدارة الفروع',
-        route: '/admin/branches',
+        route: '/app/administration/branches',
         description: 'Manage clinic branches and locations',
         descriptionAr: 'إدارة فروع العيادة والمواقع',
-        actions: [
-          { actionCode: 'branches.create', actionName: 'Create Branch', actionNameAr: 'إنشاء فرع', actionType: 'CREATE' },
-          { actionCode: 'branches.view', actionName: 'View Branches', actionNameAr: 'عرض الفروع', actionType: 'READ' },
-          { actionCode: 'branches.update', actionName: 'Update Branch', actionNameAr: 'تحديث فرع', actionType: 'UPDATE' },
-          { actionCode: 'branches.delete', actionName: 'Delete Branch', actionNameAr: 'حذف فرع', actionType: 'DELETE' },
-        ],
+        sortOrder: '003',
       },
       {
         screenCode: 'USERS',
         screenName: 'User Management',
         screenNameAr: 'إدارة المستخدمين',
-        route: '/admin/users',
+        route: '/app/administration/users',
         description: 'Manage users and access control',
         descriptionAr: 'إدارة المستخدمين والتحكم في الوصول',
-        actions: [
-          { actionCode: 'users.create', actionName: 'Create User', actionNameAr: 'إنشاء مستخدم', actionType: 'CREATE' },
-          { actionCode: 'users.view', actionName: 'View Users', actionNameAr: 'عرض المستخدمين', actionType: 'READ' },
-          { actionCode: 'users.update', actionName: 'Update User', actionNameAr: 'تحديث مستخدم', actionType: 'UPDATE' },
-          { actionCode: 'users.delete', actionName: 'Delete User', actionNameAr: 'حذف مستخدم', actionType: 'DELETE' },
-          { actionCode: 'users.assign_role', actionName: 'Assign Role', actionNameAr: 'تعيين دور', actionType: 'CUSTOM' },
-        ],
+        sortOrder: '004',
       },
       {
         screenCode: 'ROLES',
         screenName: 'Roles & Permissions',
         screenNameAr: 'الأدوار والصلاحيات',
-        route: '/admin/roles',
+        route: '/app/administration/roles',
         description: 'Manage roles and permission matrix',
         descriptionAr: 'إدارة الأدوار ومصفوفة الصلاحيات',
-        actions: [
-          { actionCode: 'roles.create', actionName: 'Create Role', actionNameAr: 'إنشاء دور', actionType: 'CREATE' },
-          { actionCode: 'roles.view', actionName: 'View Roles', actionNameAr: 'عرض الأدوار', actionType: 'READ' },
-          { actionCode: 'roles.update', actionName: 'Update Role', actionNameAr: 'تحديث دور', actionType: 'UPDATE' },
-          { actionCode: 'roles.delete', actionName: 'Delete Role', actionNameAr: 'حذف دور', actionType: 'DELETE' },
-          { actionCode: 'permissions.view', actionName: 'View Permissions', actionNameAr: 'عرض الصلاحيات', actionType: 'READ' },
-          { actionCode: 'permissions.assign', actionName: 'Assign Permissions', actionNameAr: 'تعيين صلاحيات', actionType: 'CUSTOM' },
-        ],
+        sortOrder: '005',
+      },
+      {
+        screenCode: 'POSTING_PERIODS',
+        screenName: 'Posting Periods',
+        screenNameAr: 'فترات الترحيل',
+        route: '/app/administration/setup/posting-periods',
+        description: 'Manage fiscal years and posting periods',
+        descriptionAr: 'إدارة السنوات المالية وفترات الترحيل',
+        sortOrder: '006',
+      },
+      {
+        screenCode: 'TAX_CODES',
+        screenName: 'Tax Codes',
+        screenNameAr: 'رموز الضريبة',
+        route: '/app/administration/setup/tax-codes',
+        description: 'Manage tax codes and VAT configuration',
+        descriptionAr: 'إدارة رموز الضريبة وتكوين ضريبة القيمة المضافة',
+        sortOrder: '007',
+      },
+      {
+        screenCode: 'DOCUMENT_NUMBER_SERIES',
+        screenName: 'Document Number Series',
+        screenNameAr: 'سلسلة أرقام المستندات',
+        route: '/app/administration/setup/document-number-series',
+        description: 'Manage document numbering series per branch',
+        descriptionAr: 'إدارة سلسلة ترقيم المستندات لكل فرع',
+        sortOrder: '008',
+      },
+      {
+        screenCode: 'WAREHOUSES',
+        screenName: 'Warehouse Management',
+        screenNameAr: 'إدارة المستودعات',
+        route: '/app/administration/setup/warehouses',
+        description: 'Manage warehouses and storage locations',
+        descriptionAr: 'إدارة المستودعات ومواقع التخزين',
+        sortOrder: '009',
+      },
+      {
+        screenCode: 'ITEM_GROUPS',
+        screenName: 'Item Groups',
+        screenNameAr: 'مجموعات الأصناف',
+        route: '/app/administration/setup/item-groups',
+        description: 'Manage item groups and categories',
+        descriptionAr: 'إدارة مجموعات وفئات الأصناف',
+        sortOrder: '010',
+      },
+      {
+        screenCode: 'UNITS_OF_MEASURE',
+        screenName: 'Units of Measure',
+        screenNameAr: 'وحدات القياس',
+        route: '/app/administration/setup/units-of-measure',
+        description: 'Manage units of measurement for inventory and pharmacy',
+        descriptionAr: 'إدارة وحدات القياس للمخزون والصيدلية',
+        sortOrder: '011',
       },
     ],
   },
@@ -150,23 +179,7 @@ export const DPF_STRUCTURE: DPFModuleDefinition[] = [
         screenName: 'Patient Registry',
         screenNameAr: 'سجل المرضى',
         route: '/patients',
-        actions: [
-          { actionCode: 'patients.create', actionName: 'Register Patient', actionNameAr: 'تسجيل مريض', actionType: 'CREATE' },
-          { actionCode: 'patients.view', actionName: 'View Patients', actionNameAr: 'عرض المرضى', actionType: 'READ' },
-          { actionCode: 'patients.update', actionName: 'Update Patient', actionNameAr: 'تحديث مريض', actionType: 'UPDATE' },
-          { actionCode: 'patients.delete', actionName: 'Delete Patient', actionNameAr: 'حذف مريض', actionType: 'DELETE' },
-          { actionCode: 'patients.export', actionName: 'Export Patients', actionNameAr: 'تصدير المرضى', actionType: 'EXPORT' },
-        ],
-      },
-      {
-        screenCode: 'PATIENT_DETAILS',
-        screenName: 'Patient Details',
-        screenNameAr: 'تفاصيل المريض',
-        route: '/patients/:id',
-        actions: [
-          { actionCode: 'patient-details.view', actionName: 'View Details', actionNameAr: 'عرض التفاصيل', actionType: 'READ' },
-          { actionCode: 'patient-details.edit', actionName: 'Edit Details', actionNameAr: 'تحرير التفاصيل', actionType: 'UPDATE' },
-        ],
+        sortOrder: '001',
       },
     ],
   },
@@ -189,142 +202,13 @@ export const DPF_STRUCTURE: DPFModuleDefinition[] = [
         screenName: 'Client Registry',
         screenNameAr: 'سجل العملاء',
         route: '/clients',
-        actions: [
-          { actionCode: 'clients.create', actionName: 'Register Client', actionNameAr: 'تسجيل عميل', actionType: 'CREATE' },
-          { actionCode: 'clients.view', actionName: 'View Clients', actionNameAr: 'عرض العملاء', actionType: 'READ' },
-          { actionCode: 'clients.update', actionName: 'Update Client', actionNameAr: 'تحديث عميل', actionType: 'UPDATE' },
-          { actionCode: 'clients.delete', actionName: 'Delete Client', actionNameAr: 'حذف عميل', actionType: 'DELETE' },
-        ],
+        sortOrder: '001',
       },
     ],
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // 4. APPOINTMENTS MODULE
-  // ═══════════════════════════════════════════════════════════════
-  {
-    moduleCode: 'APPOINTMENTS',
-    moduleName: 'Appointments',
-    moduleNameAr: 'المواعيد',
-    category: 'CLINICAL',
-    icon: 'calendar',
-    description: 'Appointment scheduling and management',
-    descriptionAr: 'جدولة وإدارة المواعيد',
-    sortOrder: '004',
-    screens: [
-      {
-        screenCode: 'APPOINTMENT_CALENDAR',
-        screenName: 'Appointment Calendar',
-        screenNameAr: 'تقويم المواعيد',
-        route: '/appointments',
-        actions: [
-          { actionCode: 'appointments.create', actionName: 'Create Appointment', actionNameAr: 'إنشاء موعد', actionType: 'CREATE' },
-          { actionCode: 'appointments.view', actionName: 'View Appointments', actionNameAr: 'عرض المواعيد', actionType: 'READ' },
-          { actionCode: 'appointments.update', actionName: 'Update Appointment', actionNameAr: 'تحديث موعد', actionType: 'UPDATE' },
-          { actionCode: 'appointments.cancel', actionName: 'Cancel Appointment', actionNameAr: 'إلغاء موعد', actionType: 'DELETE' },
-          { actionCode: 'appointments.confirm', actionName: 'Confirm Appointment', actionNameAr: 'تأكيد موعد', actionType: 'APPROVE' },
-        ],
-      },
-    ],
-  },
-
-  // ═══════════════════════════════════════════════════════════════
-  // 5. CLINICAL MODULE (EMR)
-  // ═══════════════════════════════════════════════════════════════
-  {
-    moduleCode: 'CLINICAL',
-    moduleName: 'Clinical Records',
-    moduleNameAr: 'السجلات السريرية',
-    category: 'CLINICAL',
-    icon: 'file-text',
-    description: 'Electronic medical records and clinical documentation',
-    descriptionAr: 'السجلات الطبية الإلكترونية والتوثيق السريري',
-    sortOrder: '005',
-    screens: [
-      {
-        screenCode: 'EMR',
-        screenName: 'Medical Records',
-        screenNameAr: 'السجلات الطبية',
-        route: '/clinical/emr',
-        actions: [
-          { actionCode: 'emr.create', actionName: 'Create Record', actionNameAr: 'إنشاء سجل', actionType: 'CREATE' },
-          { actionCode: 'emr.view', actionName: 'View Records', actionNameAr: 'عرض السجلات', actionType: 'READ' },
-          { actionCode: 'emr.update', actionName: 'Update Record', actionNameAr: 'تحديث سجل', actionType: 'UPDATE' },
-          { actionCode: 'emr.delete', actionName: 'Delete Record', actionNameAr: 'حذف سجل', actionType: 'DELETE' },
-        ],
-      },
-      {
-        screenCode: 'PRESCRIPTIONS',
-        screenName: 'Prescriptions',
-        screenNameAr: 'الوصفات الطبية',
-        route: '/clinical/prescriptions',
-        actions: [
-          { actionCode: 'prescriptions.create', actionName: 'Create Prescription', actionNameAr: 'إنشاء وصفة', actionType: 'CREATE' },
-          { actionCode: 'prescriptions.view', actionName: 'View Prescriptions', actionNameAr: 'عرض الوصفات', actionType: 'READ' },
-          { actionCode: 'prescriptions.approve', actionName: 'Approve Prescription', actionNameAr: 'الموافقة على الوصفة', actionType: 'APPROVE' },
-        ],
-      },
-    ],
-  },
-
-  // ═══════════════════════════════════════════════════════════════
-  // 6. PHARMACY MODULE
-  // ═══════════════════════════════════════════════════════════════
-  {
-    moduleCode: 'PHARMACY',
-    moduleName: 'Pharmacy',
-    moduleNameAr: 'الصيدلية',
-    category: 'CLINICAL',
-    icon: 'pill',
-    description: 'Pharmacy management and medication tracking',
-    descriptionAr: 'إدارة الصيدلية وتتبع الأدوية',
-    sortOrder: '006',
-    screens: [
-      {
-        screenCode: 'MEDICATIONS',
-        screenName: 'Medication Inventory',
-        screenNameAr: 'مخزون الأدوية',
-        route: '/pharmacy/medications',
-        actions: [
-          { actionCode: 'medications.create', actionName: 'Add Medication', actionNameAr: 'إضافة دواء', actionType: 'CREATE' },
-          { actionCode: 'medications.view', actionName: 'View Medications', actionNameAr: 'عرض الأدوية', actionType: 'READ' },
-          { actionCode: 'medications.update', actionName: 'Update Medication', actionNameAr: 'تحديث دواء', actionType: 'UPDATE' },
-          { actionCode: 'medications.delete', actionName: 'Delete Medication', actionNameAr: 'حذف دواء', actionType: 'DELETE' },
-        ],
-      },
-    ],
-  },
-
-  // ═══════════════════════════════════════════════════════════════
-  // 7. LABORATORY MODULE
-  // ═══════════════════════════════════════════════════════════════
-  {
-    moduleCode: 'LABORATORY',
-    moduleName: 'Laboratory',
-    moduleNameAr: 'المختبر',
-    category: 'CLINICAL',
-    icon: 'flask',
-    description: 'Laboratory tests and results management',
-    descriptionAr: 'إدارة الفحوصات المخبرية والنتائج',
-    sortOrder: '007',
-    screens: [
-      {
-        screenCode: 'LAB_TESTS',
-        screenName: 'Lab Tests',
-        screenNameAr: 'الفحوصات المخبرية',
-        route: '/laboratory/tests',
-        actions: [
-          { actionCode: 'lab-tests.create', actionName: 'Order Test', actionNameAr: 'طلب فحص', actionType: 'CREATE' },
-          { actionCode: 'lab-tests.view', actionName: 'View Tests', actionNameAr: 'عرض الفحوصات', actionType: 'READ' },
-          { actionCode: 'lab-tests.update', actionName: 'Update Results', actionNameAr: 'تحديث النتائج', actionType: 'UPDATE' },
-          { actionCode: 'lab-tests.approve', actionName: 'Approve Results', actionNameAr: 'الموافقة على النتائج', actionType: 'APPROVE' },
-        ],
-      },
-    ],
-  },
-
-  // ═══════════════════════════════════════════════════════════════
-  // 8. FINANCE MODULE
+  // 4. FINANCE MODULE
   // ═══════════════════════════════════════════════════════════════
   {
     moduleCode: 'FINANCE',
@@ -334,37 +218,31 @@ export const DPF_STRUCTURE: DPFModuleDefinition[] = [
     icon: 'dollar-sign',
     description: 'Financial management and accounting',
     descriptionAr: 'الإدارة المالية والمحاسبة',
-    sortOrder: '008',
+    sortOrder: '004',
     screens: [
       {
-        screenCode: 'INVOICES',
-        screenName: 'Invoices',
-        screenNameAr: 'الفواتير',
-        route: '/finance/invoices',
-        actions: [
-          { actionCode: 'invoices.create', actionName: 'Create Invoice', actionNameAr: 'إنشاء فاتورة', actionType: 'CREATE' },
-          { actionCode: 'invoices.view', actionName: 'View Invoices', actionNameAr: 'عرض الفواتير', actionType: 'READ' },
-          { actionCode: 'invoices.update', actionName: 'Update Invoice', actionNameAr: 'تحديث فاتورة', actionType: 'UPDATE' },
-          { actionCode: 'invoices.delete', actionName: 'Delete Invoice', actionNameAr: 'حذف فاتورة', actionType: 'DELETE' },
-          { actionCode: 'invoices.export', actionName: 'Export Invoices', actionNameAr: 'تصدير الفواتير', actionType: 'EXPORT' },
-        ],
+        screenCode: 'CHART_OF_ACCOUNTS',
+        screenName: 'Chart of Accounts',
+        screenNameAr: 'دليل الحسابات',
+        route: '/app/finance/chart-of-accounts',
+        description: 'Manage chart of accounts and account hierarchy',
+        descriptionAr: 'إدارة دليل الحسابات وهيكل الحسابات',
+        sortOrder: '001',
       },
       {
-        screenCode: 'PAYMENTS',
-        screenName: 'Payments',
-        screenNameAr: 'المدفوعات',
-        route: '/finance/payments',
-        actions: [
-          { actionCode: 'payments.create', actionName: 'Record Payment', actionNameAr: 'تسجيل دفعة', actionType: 'CREATE' },
-          { actionCode: 'payments.view', actionName: 'View Payments', actionNameAr: 'عرض المدفوعات', actionType: 'READ' },
-          { actionCode: 'payments.refund', actionName: 'Process Refund', actionNameAr: 'معالجة استرداد', actionType: 'CUSTOM' },
-        ],
+        screenCode: 'JOURNAL_ENTRIES',
+        screenName: 'Journal Entries',
+        screenNameAr: 'قيود اليومية',
+        route: '/app/finance/journal-entries',
+        description: 'Double-entry bookkeeping — create and reverse journal entries',
+        descriptionAr: 'القيد المزدوج — إنشاء وعكس قيود اليومية',
+        sortOrder: '002',
       },
     ],
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // 9. INVENTORY MODULE
+  // 5. INVENTORY MODULE
   // ═══════════════════════════════════════════════════════════════
   {
     moduleCode: 'INVENTORY',
@@ -374,166 +252,244 @@ export const DPF_STRUCTURE: DPFModuleDefinition[] = [
     icon: 'package',
     description: 'Inventory and stock management',
     descriptionAr: 'إدارة المخزون والمخزون',
-    sortOrder: '009',
+    sortOrder: '005',
     screens: [
       {
-        screenCode: 'STOCK',
-        screenName: 'Stock Management',
-        screenNameAr: 'إدارة المخزون',
-        route: '/inventory/stock',
-        actions: [
-          { actionCode: 'stock.create', actionName: 'Add Stock Item', actionNameAr: 'إضافة عنصر مخزون', actionType: 'CREATE' },
-          { actionCode: 'stock.view', actionName: 'View Stock', actionNameAr: 'عرض المخزون', actionType: 'READ' },
-          { actionCode: 'stock.update', actionName: 'Update Stock', actionNameAr: 'تحديث المخزون', actionType: 'UPDATE' },
-          { actionCode: 'stock.delete', actionName: 'Delete Stock Item', actionNameAr: 'حذف عنصر مخزون', actionType: 'DELETE' },
-        ],
+        screenCode: 'ITEM_MASTER',
+        screenName: 'Item Master Data',
+        screenNameAr: 'بيانات الأصناف',
+        route: '/app/inventory/items',
+        sortOrder: '001',
       },
     ],
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // 10. HR MODULE
+  // SYSTEM MODULES (Platform-wide, SYSTEM users only)
+  // ═══════════════════════════════════════════════════════════════
+
+  // ═══════════════════════════════════════════════════════════════
+  // S1. SYSTEM TENANTS MODULE
   // ═══════════════════════════════════════════════════════════════
   {
-    moduleCode: 'HR',
-    moduleName: 'Human Resources',
-    moduleNameAr: 'الموارد البشرية',
-    category: 'OPERATIONS',
-    icon: 'users',
-    description: 'Staff management and HR operations',
-    descriptionAr: 'إدارة الموظفين وعمليات الموارد البشرية',
-    sortOrder: '010',
+    moduleCode: 'SYSTEM_TENANTS',
+    moduleName: 'Tenant Management',
+    moduleNameAr: 'إدارة المستأجرين',
+    category: 'SYSTEM',
+    icon: 'building',
+    description: 'Platform-wide tenant management and configuration',
+    descriptionAr: 'إدارة المستأجرين على مستوى المنصة',
+    sortOrder: '101',
+    isSystemModule: true,
     screens: [
       {
-        screenCode: 'STAFF',
-        screenName: 'Staff Management',
-        screenNameAr: 'إدارة الموظفين',
-        route: '/hr/staff',
-        actions: [
-          { actionCode: 'staff.create', actionName: 'Add Staff', actionNameAr: 'إضافة موظف', actionType: 'CREATE' },
-          { actionCode: 'staff.view', actionName: 'View Staff', actionNameAr: 'عرض الموظفين', actionType: 'READ' },
-          { actionCode: 'staff.update', actionName: 'Update Staff', actionNameAr: 'تحديث موظف', actionType: 'UPDATE' },
-          { actionCode: 'staff.delete', actionName: 'Delete Staff', actionNameAr: 'حذف موظف', actionType: 'DELETE' },
-        ],
+        screenCode: 'SYSTEM_TENANT_LIST',
+        screenName: 'All Tenants',
+        screenNameAr: 'جميع المستأجرين',
+        route: '/system/tenants',
+        description: 'View and manage all platform tenants',
+        descriptionAr: 'عرض وإدارة جميع مستأجري المنصة',
+        sortOrder: '001',
       },
     ],
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // 11. POS MODULE
+  // S2. SYSTEM USERS MODULE
   // ═══════════════════════════════════════════════════════════════
   {
-    moduleCode: 'POS',
-    moduleName: 'Point of Sale',
-    moduleNameAr: 'نقطة البيع',
-    category: 'SALES',
-    icon: 'shopping-cart',
-    description: 'Point of sale and retail operations',
-    descriptionAr: 'نقطة البيع وعمليات البيع بالتجزئة',
-    sortOrder: '011',
+    moduleCode: 'SYSTEM_USERS',
+    moduleName: 'Platform Users',
+    moduleNameAr: 'مستخدمي المنصة',
+    category: 'SYSTEM',
+    icon: 'users-cog',
+    description: 'Manage platform-level system users',
+    descriptionAr: 'إدارة مستخدمي النظام على مستوى المنصة',
+    sortOrder: '102',
+    isSystemModule: true,
     screens: [
       {
-        screenCode: 'POS_TERMINAL',
-        screenName: 'POS Terminal',
-        screenNameAr: 'محطة نقطة البيع',
-        route: '/pos',
-        actions: [
-          { actionCode: 'pos.create_sale', actionName: 'Create Sale', actionNameAr: 'إنشاء بيع', actionType: 'CREATE' },
-          { actionCode: 'pos.view_sales', actionName: 'View Sales', actionNameAr: 'عرض المبيعات', actionType: 'READ' },
-          { actionCode: 'pos.process_payment', actionName: 'Process Payment', actionNameAr: 'معالجة دفع', actionType: 'CUSTOM' },
-          { actionCode: 'pos.refund', actionName: 'Process Refund', actionNameAr: 'معالجة استرداد', actionType: 'CUSTOM' },
-        ],
+        screenCode: 'SYSTEM_USER_LIST',
+        screenName: 'System Users',
+        screenNameAr: 'مستخدمي النظام',
+        route: '/system/administration/users',
+        description: 'View and manage system-level users',
+        descriptionAr: 'عرض وإدارة مستخدمي النظام',
+        sortOrder: '001',
       },
     ],
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // 12. INSURANCE MODULE
+  // S3. SYSTEM ROLES MODULE
   // ═══════════════════════════════════════════════════════════════
   {
-    moduleCode: 'INSURANCE',
-    moduleName: 'Insurance',
-    moduleNameAr: 'التأمين',
-    category: 'FINANCE',
+    moduleCode: 'SYSTEM_ROLES',
+    moduleName: 'System Roles',
+    moduleNameAr: 'أدوار النظام',
+    category: 'SYSTEM',
     icon: 'shield',
-    description: 'Insurance claims and provider management',
-    descriptionAr: 'مطالبات التأمين وإدارة مقدمي الخدمات',
-    sortOrder: '012',
+    description: 'Manage system-level roles and permissions',
+    descriptionAr: 'إدارة أدوار وصلاحيات النظام',
+    sortOrder: '103',
+    isSystemModule: true,
     screens: [
       {
-        screenCode: 'CLAIMS',
-        screenName: 'Insurance Claims',
-        screenNameAr: 'مطالبات التأمين',
-        route: '/insurance/claims',
-        actions: [
-          { actionCode: 'claims.create', actionName: 'Create Claim', actionNameAr: 'إنشاء مطالبة', actionType: 'CREATE' },
-          { actionCode: 'claims.view', actionName: 'View Claims', actionNameAr: 'عرض المطالبات', actionType: 'READ' },
-          { actionCode: 'claims.update', actionName: 'Update Claim', actionNameAr: 'تحديث مطالبة', actionType: 'UPDATE' },
-          { actionCode: 'claims.submit', actionName: 'Submit Claim', actionNameAr: 'تقديم مطالبة', actionType: 'APPROVE' },
-        ],
+        screenCode: 'SYSTEM_ROLE_LIST',
+        screenName: 'System Roles',
+        screenNameAr: 'أدوار النظام',
+        route: '/system/administration/roles',
+        description: 'View and manage system roles',
+        descriptionAr: 'عرض وإدارة أدوار النظام',
+        sortOrder: '001',
       },
     ],
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // 13. ANALYTICS MODULE
+  // S4. SYSTEM SUBSCRIPTIONS MODULE
   // ═══════════════════════════════════════════════════════════════
   {
-    moduleCode: 'ANALYTICS',
-    moduleName: 'Analytics & Reports',
-    moduleNameAr: 'التحليلات والتقارير',
-    category: 'ANALYTICS',
-    icon: 'bar-chart',
-    description: 'Business intelligence and reporting',
-    descriptionAr: 'ذكاء الأعمال وإعداد التقارير',
-    sortOrder: '013',
+    moduleCode: 'SYSTEM_SUBSCRIPTIONS',
+    moduleName: 'Subscriptions',
+    moduleNameAr: 'الاشتراكات',
+    category: 'SYSTEM',
+    icon: 'credit-card',
+    description: 'Manage tenant subscriptions and billing',
+    descriptionAr: 'إدارة اشتراكات وفواتير المستأجرين',
+    sortOrder: '104',
+    isSystemModule: true,
     screens: [
       {
-        screenCode: 'REPORTS',
-        screenName: 'Reports',
-        screenNameAr: 'التقارير',
-        route: '/analytics/reports',
-        actions: [
-          { actionCode: 'reports.view', actionName: 'View Reports', actionNameAr: 'عرض التقارير', actionType: 'READ' },
-          { actionCode: 'reports.generate', actionName: 'Generate Report', actionNameAr: 'توليد تقرير', actionType: 'CUSTOM' },
-          { actionCode: 'reports.export', actionName: 'Export Report', actionNameAr: 'تصدير تقرير', actionType: 'EXPORT' },
-        ],
-      },
-      {
-        screenCode: 'DASHBOARDS',
-        screenName: 'Dashboards',
-        screenNameAr: 'لوحات المعلومات',
-        route: '/analytics/dashboards',
-        actions: [
-          { actionCode: 'dashboards.view', actionName: 'View Dashboards', actionNameAr: 'عرض لوحات المعلومات', actionType: 'READ' },
-          { actionCode: 'dashboards.create', actionName: 'Create Dashboard', actionNameAr: 'إنشاء لوحة معلومات', actionType: 'CREATE' },
-        ],
+        screenCode: 'SYSTEM_SUBSCRIPTION_LIST',
+        screenName: 'All Subscriptions',
+        screenNameAr: 'جميع الاشتراكات',
+        route: '/system/subscriptions',
+        description: 'View and manage all tenant subscriptions',
+        descriptionAr: 'عرض وإدارة جميع اشتراكات المستأجرين',
+        sortOrder: '001',
       },
     ],
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // 14. AI/AGI MODULE
+  // S5. SYSTEM SETTINGS MODULE
   // ═══════════════════════════════════════════════════════════════
   {
-    moduleCode: 'AI_AGI',
-    moduleName: 'AI & Automation',
-    moduleNameAr: 'الذكاء الاصطناعي والأتمتة',
-    category: 'AI',
+    moduleCode: 'SYSTEM_SETTINGS',
+    moduleName: 'System Settings',
+    moduleNameAr: 'إعدادات النظام',
+    category: 'SYSTEM',
+    icon: 'sliders',
+    description: 'Platform-wide configuration and settings',
+    descriptionAr: 'التكوين والإعدادات على مستوى المنصة',
+    sortOrder: '105',
+    isSystemModule: true,
+    screens: [
+      {
+        screenCode: 'SYSTEM_CONFIG',
+        screenName: 'Platform Configuration',
+        screenNameAr: 'تكوين المنصة',
+        route: '/system/settings',
+        description: 'Configure platform-wide settings',
+        descriptionAr: 'تكوين إعدادات المنصة',
+        sortOrder: '001',
+      },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // S6. SYSTEM MONITORING MODULE
+  // ═══════════════════════════════════════════════════════════════
+  {
+    moduleCode: 'SYSTEM_MONITORING',
+    moduleName: 'Monitoring',
+    moduleNameAr: 'المراقبة',
+    category: 'SYSTEM',
+    icon: 'activity',
+    description: 'Platform health monitoring and diagnostics',
+    descriptionAr: 'مراقبة صحة المنصة والتشخيصات',
+    sortOrder: '106',
+    isSystemModule: true,
+    screens: [
+      {
+        screenCode: 'SYSTEM_METRICS',
+        screenName: 'Platform Metrics',
+        screenNameAr: 'مقاييس المنصة',
+        route: '/system/monitoring',
+        description: 'View platform performance metrics',
+        descriptionAr: 'عرض مقاييس أداء المنصة',
+        sortOrder: '001',
+      },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // S7. SYSTEM DPF MODULE
+  // ═══════════════════════════════════════════════════════════════
+  {
+    moduleCode: 'SYSTEM_DPF',
+    moduleName: 'DPF Management',
+    moduleNameAr: 'إدارة DPF',
+    category: 'SYSTEM',
+    icon: 'database',
+    description: 'Dynamic Permission Fabric structure management',
+    descriptionAr: 'إدارة هيكل الصلاحيات الديناميكي',
+    sortOrder: '107',
+    isSystemModule: true,
+    screens: [
+      {
+        screenCode: 'SYSTEM_DPF_MANAGER',
+        screenName: 'DPF Manager',
+        screenNameAr: 'مدير DPF',
+        route: '/system/dpf',
+        description: 'Manage DPF modules, screens, and structure',
+        descriptionAr: 'إدارة وحدات وشاشات وهيكل DPF',
+        sortOrder: '001',
+      },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // S8. SYSTEM AI MODULE (Platform-wide AI Management)
+  // ═══════════════════════════════════════════════════════════════
+  {
+    moduleCode: 'SYSTEM_AI',
+    moduleName: 'AI Management',
+    moduleNameAr: 'إدارة الذكاء الاصطناعي',
+    category: 'SYSTEM',
     icon: 'cpu',
-    description: 'AI-powered features and automation',
-    descriptionAr: 'ميزات الذكاء الاصطناعي والأتمتة',
-    sortOrder: '014',
+    description: 'Platform-wide AI configuration and monitoring',
+    descriptionAr: 'تكوين ومراقبة الذكاء الاصطناعي على مستوى المنصة',
+    sortOrder: '108',
+    isSystemModule: true,
     screens: [
       {
-        screenCode: 'AGI_SETTINGS',
-        screenName: 'AGI Configuration',
-        screenNameAr: 'تكوين AGI',
-        route: '/ai/settings',
-        actions: [
-          { actionCode: 'agi.view', actionName: 'View AGI Settings', actionNameAr: 'عرض إعدادات AGI', actionType: 'READ' },
-          { actionCode: 'agi.configure', actionName: 'Configure AGI', actionNameAr: 'تكوين AGI', actionType: 'UPDATE' },
-        ],
+        screenCode: 'SYS_AI_CONFIG',
+        screenName: 'AI Configuration',
+        screenNameAr: 'تكوين الذكاء الاصطناعي',
+        route: '/system/ai/config',
+        description: 'Configure platform-wide AI settings',
+        descriptionAr: 'تكوين إعدادات الذكاء الاصطناعي على مستوى المنصة',
+        sortOrder: '001',
+      },
+      {
+        screenCode: 'SYS_AI_MONITORING',
+        screenName: 'AI Monitoring',
+        screenNameAr: 'مراقبة الذكاء الاصطناعي',
+        route: '/system/ai/monitoring',
+        description: 'Monitor AI usage and performance across tenants',
+        descriptionAr: 'مراقبة استخدام وأداء الذكاء الاصطناعي عبر المستأجرين',
+        sortOrder: '002',
+      },
+      {
+        screenCode: 'SYS_AI_LOGS',
+        screenName: 'AI System Logs',
+        screenNameAr: 'سجلات نظام الذكاء الاصطناعي',
+        route: '/system/ai/logs',
+        description: 'View platform-wide AI audit logs',
+        descriptionAr: 'عرض سجلات تدقيق الذكاء الاصطناعي على مستوى المنصة',
+        sortOrder: '003',
       },
     ],
   },
@@ -544,18 +500,73 @@ export const DPF_STRUCTURE: DPFModuleDefinition[] = [
  */
 export function getDPFStatistics() {
   let totalScreens = 0;
-  let totalActions = 0;
 
   DPF_STRUCTURE.forEach(module => {
     totalScreens += module.screens.length;
-    module.screens.forEach(screen => {
-      totalActions += screen.actions.length;
-    });
   });
 
   return {
     totalModules: DPF_STRUCTURE.length,
     totalScreens,
-    totalActions,
   };
+}
+
+/**
+ * Get SYSTEM modules only (platform-wide)
+ * Used for SYSTEM role management
+ */
+export function getSystemModules(): DPFModuleDefinition[] {
+  return DPF_STRUCTURE.filter(module => module.isSystemModule === true);
+}
+
+/**
+ * Get TENANT modules only (non-system)
+ * Used for tenant role management
+ */
+export function getTenantModules(): DPFModuleDefinition[] {
+  return DPF_STRUCTURE.filter(module => module.isSystemModule !== true);
+}
+
+/**
+ * Get statistics for SYSTEM modules
+ */
+export function getSystemModuleStatistics() {
+  const systemModules = getSystemModules();
+  let totalScreens = 0;
+
+  systemModules.forEach(module => {
+    totalScreens += module.screens.length;
+  });
+
+  return {
+    totalModules: systemModules.length,
+    totalScreens,
+  };
+}
+
+/**
+ * Get all screen codes (flat list)
+ */
+export function getAllScreenCodes(): string[] {
+  const codes: string[] = [];
+  DPF_STRUCTURE.forEach(module => {
+    module.screens.forEach(screen => {
+      codes.push(screen.screenCode);
+    });
+  });
+  return codes;
+}
+
+/**
+ * Get screen by code
+ */
+export function getScreenByCode(screenCode: string): { module: DPFModuleDefinition; screen: DPFScreenDefinition } | null {
+  for (const module of DPF_STRUCTURE) {
+    for (const screen of module.screens) {
+      if (screen.screenCode === screenCode) {
+        return { module, screen };
+      }
+    }
+  }
+  return null;
 }

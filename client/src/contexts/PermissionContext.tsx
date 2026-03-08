@@ -1,56 +1,54 @@
 /**
- * Enterprise-Grade Permission Context
- * Complete DPF-AGI permission management with real-time updates
- * 
+ * SAP B1 Style Permission Context
+ * Screen-level authorization with 3 levels: None (0), Read (1), Full (2)
+ *
  * Features:
- * - Full permission matrix loading (hierarchical DPF structure)
- * - Flat permission codes for fast lookups
- * - Auto-refresh on login, role changes, permission updates
+ * - Screen-level authorization levels instead of granular permissions
+ * - Auto-refresh on login, role changes
  * - Socket.IO real-time synchronization
  * - React Query integration for caching and invalidation
  */
 
-import { createContext, useState, useEffect, useCallback, ReactNode, useMemo } from 'react';
+import { createContext, useState, useEffect, useCallback, ReactNode, useMemo, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useSocket } from '../providers/SocketProvider';
 import { useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
-import type { 
-  PermissionMatrixModule, 
-  DPFPermission, 
-  DPFModule,
-  DPFScreen,
-  DPFAction 
-} from '../../../types/dpf';
+import { apiClient } from '@/lib/api';
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+// Authorization Levels (SAP B1 Style)
+export enum AuthorizationLevel {
+  NONE = 0,        // No Authorization - screen hidden, route blocked
+  READ_ONLY = 1,   // Read Only - view only, no create/update
+  FULL = 2,        // Full Authorization - all operations allowed
+}
 
-// ═══════════════════════════════════════════════════════════════
+// Screen Authorization Map: screenCode -> AuthorizationLevel
+export type ScreenAuthorizations = Record<string, AuthorizationLevel>;
+
+// ===================================================================
 // TYPES
-// ═══════════════════════════════════════════════════════════════
+// ===================================================================
 
 interface PermissionContextType {
-  // Permission Data
-  permissionCodes: string[];
-  rolePermissions: string[];
-  permissionMatrix: PermissionMatrixModule[];
-  allPermissions: DPFPermission[];
-  
-  // DPF Structure
-  modules: DPFModule[];
-  screens: DPFScreen[];
-  actions: DPFAction[];
-  
+  // SAP B1 Style Authorization
+  screenAuthorizations: ScreenAuthorizations;
+
   // State
   loading: boolean;
   error: string | null;
-  
-  // Permission Check Methods
+
+  // SAP B1 Style Check Methods
+  getScreenAuth: (screenCode: string) => AuthorizationLevel;
+  canAccessScreen: (screenCode: string) => boolean;          // Level >= 1 (READ_ONLY or FULL)
+  canModifyScreen: (screenCode: string) => boolean;          // Level == 2 (FULL only)
+  hasReadAccess: (screenCode: string) => boolean;            // Level >= 1
+  hasFullAccess: (screenCode: string) => boolean;            // Level == 2
+
+  // Legacy compatibility methods (maps to screen auth)
   hasPermission: (code: string) => boolean;
-  hasAction: (module: string, screen: string, action: string) => boolean;
   hasAnyPermission: (codes: string[]) => boolean;
   hasAllPermissions: (codes: string[]) => boolean;
-  
+
   // Utility Methods
   refreshPermissions: () => Promise<void>;
   clearPermissions: () => void;
@@ -58,9 +56,9 @@ interface PermissionContextType {
 
 export const PermissionContext = createContext<PermissionContextType | null>(null);
 
-// ═══════════════════════════════════════════════════════════════
+// ===================================================================
 // PROVIDER COMPONENT
-// ═══════════════════════════════════════════════════════════════
+// ===================================================================
 
 interface PermissionProviderProps {
   children: ReactNode;
@@ -70,50 +68,34 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
   const { user, accessToken } = useAuth();
   const { socket } = useSocket();
   const queryClient = useQueryClient();
-  
-  // State
-  const [permissionCodes, setPermissionCodes] = useState<string[]>([]);
-  const [rolePermissions, setRolePermissions] = useState<string[]>([]);
-  const [permissionMatrix, setPermissionMatrix] = useState<PermissionMatrixModule[]>([]);
-  const [allPermissions, setAllPermissions] = useState<DPFPermission[]>([]);
+
+  // State - SAP B1 Style
+  const [screenAuthorizations, setScreenAuthorizations] = useState<ScreenAuthorizations>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ═══════════════════════════════════════════════════════════════
-  // FETCH PERMISSIONS - CORE LOADING LOGIC
-  // ═══════════════════════════════════════════════════════════════
+  // ===================================================================
+  // FETCH SCREEN AUTHORIZATIONS - CORE LOADING LOGIC
+  // ===================================================================
 
   const fetchPermissions = useCallback(async () => {
     if (!user || !accessToken) {
-      setPermissionCodes([]);
-      setRolePermissions([]);
-      setPermissionMatrix([]);
-      setAllPermissions([]);
+      setScreenAuthorizations({});
       setLoading(false);
       return;
     }
 
-    // CRITICAL: SYSTEM users have ALL permissions - skip API fetch
-    // This prevents errors from tenant-scoped endpoints and ensures
-    // SYSTEM admins always have full platform access
-    if (user.accessScope === 'system') {
-      console.log('✅ SYSTEM user detected - granting full permissions (bypassing API)');
-      setPermissionCodes(['*']); // Wildcard to indicate full access
-      setRolePermissions(['*']);
-      setPermissionMatrix([]);
-      setAllPermissions([]);
+    // Only SUPER_ADMIN and SYSTEM_ADMIN roles get automatic full access
+    // Other system users must have their permissions checked via API
+    if (user.accessScope === 'system' && (user.role === 'super_admin' || user.role === 'system_admin')) {
+      setScreenAuthorizations({ '*': AuthorizationLevel.FULL });
       setLoading(false);
       return;
     }
 
-    // TENANT_ADMIN users also have ALL permissions within their tenant scope
-    // They are auto-granted the TENANT_ADMIN role with full tenant access
+    // TENANT_ADMIN users have FULL access to all tenant screens
     if (user.accessScope === 'tenant' && user.role === 'tenant_admin') {
-      console.log('✅ TENANT_ADMIN user detected - granting full tenant permissions');
-      setPermissionCodes(['*']); // Wildcard to indicate full tenant access
-      setRolePermissions(['*']);
-      setPermissionMatrix([]);
-      setAllPermissions([]);
+      setScreenAuthorizations({ '*': AuthorizationLevel.FULL });
       setLoading(false);
       return;
     }
@@ -122,77 +104,62 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
       setLoading(true);
       setError(null);
 
-      // Parallel fetch: Load both flat list AND hierarchical matrix
-      // These endpoints are tenant-scoped and work for tenant/branch users
-      const [permissionsResponse, matrixResponse] = await Promise.all([
-        axios.get(`${API_BASE}/tenant/permissions/all`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }),
-        axios.get(`${API_BASE}/tenant/permissions/matrix`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }),
-      ]);
+      // Fetch user's screen authorizations via apiClient (correct base URL + auth interceptor)
+      const response = await apiClient.get('/tenant/users/me/screen-authorizations');
 
-      // Extract flat permission codes
-      const permissions: DPFPermission[] = permissionsResponse.data.data || [];
-      const codes = permissions
-        .filter(p => p.isActive === 'true')
-        .map(p => p.permissionCode);
+      const authorizations: ScreenAuthorizations = response.data.data || {};
+      setScreenAuthorizations(authorizations);
 
-      // Extract hierarchical matrix
-      const matrix: PermissionMatrixModule[] = matrixResponse.data.data || [];
-
-      // Store all data
-      setAllPermissions(permissions);
-      setPermissionCodes(codes);
-      setRolePermissions(codes); // TODO: Filter by user's actual roles when user-role endpoint exists
-      setPermissionMatrix(matrix);
-
-      console.log('✅ Permissions loaded:', {
-        totalPermissions: permissions.length,
-        activeCodes: codes.length,
-        modules: matrix.length,
+      const screenCount = Object.keys(authorizations).length;
+      console.log('✅ Screen authorizations loaded:', {
+        screenCount,
+        screens: authorizations,
+        withAccess: Object.values(authorizations).filter(level => level >= 1).length,
+        withFullAccess: Object.values(authorizations).filter(level => level === 2).length,
       });
+      if (screenCount === 0) {
+        console.warn('⚠️ No screen authorizations found — sidebar will be empty. Check if user has a role assigned in dpf_user_roles table.');
+      }
     } catch (err: any) {
       const errorMessage = err.response?.data?.error || 'Failed to load permissions';
-      setError(errorMessage);
       console.error('❌ Permission loading failed:', err);
-      
-      // Clear permissions on error
-      setPermissionCodes([]);
-      setRolePermissions([]);
-      setPermissionMatrix([]);
-      setAllPermissions([]);
+
+      // If endpoint doesn't exist yet, don't show error - fallback to wildcard for admins
+      if (err.response?.status === 404) {
+        console.warn('⚠️ Screen authorizations endpoint not found - using fallback');
+        if (user.role === 'admin' || user.role === 'system_user') {
+          setScreenAuthorizations({ '*': AuthorizationLevel.FULL });
+        } else {
+          setScreenAuthorizations({});
+        }
+        setError(null);
+      } else {
+        setError(errorMessage);
+        setScreenAuthorizations({});
+      }
     } finally {
       setLoading(false);
     }
   }, [user, accessToken]);
 
-  // ═══════════════════════════════════════════════════════════════
+  // ===================================================================
   // AUTO-REFRESH ON LOGIN
-  // ═══════════════════════════════════════════════════════════════
+  // ===================================================================
 
   useEffect(() => {
     if (user && accessToken) {
-      console.log('🔄 User logged in - loading permissions...');
+      console.log('🔄 User logged in - loading screen authorizations...');
       fetchPermissions();
     } else {
-      console.log('🔓 User logged out - clearing permissions...');
-      setPermissionCodes([]);
-      setRolePermissions([]);
-      setPermissionMatrix([]);
-      setAllPermissions([]);
+      console.log('🔓 User logged out - clearing authorizations...');
+      setScreenAuthorizations({});
       setLoading(false);
     }
   }, [user, accessToken, fetchPermissions]);
 
-  // ═══════════════════════════════════════════════════════════════
+  // ===================================================================
   // SOCKET.IO REAL-TIME UPDATES
-  // ═══════════════════════════════════════════════════════════════
+  // ===================================================================
 
   useEffect(() => {
     if (!socket || !user) return;
@@ -200,8 +167,6 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     const handlePermissionsUpdated = () => {
       console.log('🔄 Permissions updated via Socket.IO - refreshing...');
       fetchPermissions();
-      
-      // Invalidate React Query cache
       queryClient.invalidateQueries({ queryKey: ['permissions'] });
       queryClient.invalidateQueries({ queryKey: ['roles'] });
     };
@@ -216,7 +181,6 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
       fetchPermissions();
     };
 
-    // Listen to permission-related Socket.IO events
     socket.on('permissions-updated', handlePermissionsUpdated);
     socket.on('role-updated', handleRoleUpdated);
     socket.on('role-assigned', handleRoleAssigned);
@@ -228,105 +192,134 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     };
   }, [socket, user, fetchPermissions, queryClient]);
 
-  // ═══════════════════════════════════════════════════════════════
-  // PERMISSION CHECK METHODS
-  // CRITICAL: SYSTEM users (accessScope === 'system') have ALL permissions
-  // ═══════════════════════════════════════════════════════════════
+  // ===================================================================
+  // SAP B1 STYLE AUTHORIZATION CHECK METHODS
+  // ===================================================================
 
   const isFullAccessUser = useMemo(() => {
-    return user?.accessScope === 'system' || 
-           (user?.accessScope === 'tenant' && user?.role === 'tenant_admin');
-  }, [user?.accessScope, user?.role]);
+    // SUPER_ADMIN, SYSTEM_ADMIN, and TENANT_ADMIN get automatic full access
+    // Other users rely on their role's screen authorizations
+    return (user?.accessScope === 'system' && (user?.role === 'super_admin' || user?.role === 'system_admin')) ||
+           (user?.accessScope === 'tenant' && user?.role === 'tenant_admin') ||
+           screenAuthorizations['*'] === AuthorizationLevel.FULL;
+  }, [user?.accessScope, user?.role, screenAuthorizations]);
 
+  // Get authorization level for a screen (returns 0 if not found)
+  const getScreenAuth = useCallback(
+    (screenCode: string): AuthorizationLevel => {
+      if (isFullAccessUser) return AuthorizationLevel.FULL;
+      return screenAuthorizations[screenCode] ?? AuthorizationLevel.NONE;
+    },
+    [screenAuthorizations, isFullAccessUser]
+  );
+
+  // Can user access the screen? (Level >= 1 = READ_ONLY or FULL)
+  const canAccessScreen = useCallback(
+    (screenCode: string): boolean => {
+      if (isFullAccessUser) return true;
+      return (screenAuthorizations[screenCode] ?? 0) >= AuthorizationLevel.READ_ONLY;
+    },
+    [screenAuthorizations, isFullAccessUser]
+  );
+
+  // Can user modify data on the screen? (Level == 2 = FULL only)
+  const canModifyScreen = useCallback(
+    (screenCode: string): boolean => {
+      if (isFullAccessUser) return true;
+      return (screenAuthorizations[screenCode] ?? 0) === AuthorizationLevel.FULL;
+    },
+    [screenAuthorizations, isFullAccessUser]
+  );
+
+  // Alias for canAccessScreen
+  const hasReadAccess = canAccessScreen;
+
+  // Alias for canModifyScreen
+  const hasFullAccess = canModifyScreen;
+
+  // ===================================================================
+  // LEGACY COMPATIBILITY METHODS
+  // Maps old permission codes to screen codes
+  // ===================================================================
+
+  // Extract screen code from permission code (e.g., "tenants.view" -> "TENANTS")
+  const extractScreenCode = (permissionCode: string): string => {
+    const parts = permissionCode.split('.');
+    return parts[0]?.toUpperCase() || '';
+  };
+
+  // Legacy: hasPermission - checks if user has access based on action type
   const hasPermission = useCallback(
     (code: string): boolean => {
-      if (isFullAccessUser) {
-        return true;
+      if (isFullAccessUser) return true;
+
+      const screenCode = extractScreenCode(code);
+      const level = screenAuthorizations[screenCode] ?? 0;
+
+      // For 'view' actions, READ_ONLY is sufficient
+      if (code.includes('.view') || code.includes('.read') || code.includes('.list')) {
+        return level >= AuthorizationLevel.READ_ONLY;
       }
-      return permissionCodes.includes(code);
+
+      // For modifying actions (create, update, delete, full_control), need FULL access
+      return level === AuthorizationLevel.FULL;
     },
-    [permissionCodes, isFullAccessUser]
+    [screenAuthorizations, isFullAccessUser]
   );
 
-  const hasAction = useCallback(
-    (module: string, screen: string, action: string): boolean => {
-      if (isFullAccessUser) {
-        return true;
-      }
-      const permissionCode = `${module}:${screen}:${action}`;
-      return permissionCodes.includes(permissionCode);
-    },
-    [permissionCodes, isFullAccessUser]
-  );
-
+  // Legacy: hasAnyPermission
   const hasAnyPermission = useCallback(
     (codes: string[]): boolean => {
-      if (isFullAccessUser) {
-        return true;
-      }
-      return codes.some(code => permissionCodes.includes(code));
+      if (isFullAccessUser) return true;
+      return codes.some(code => hasPermission(code));
     },
-    [permissionCodes, isFullAccessUser]
+    [hasPermission, isFullAccessUser]
   );
 
+  // Legacy: hasAllPermissions
   const hasAllPermissions = useCallback(
     (codes: string[]): boolean => {
-      if (isFullAccessUser) {
-        return true;
-      }
-      return codes.every(code => permissionCodes.includes(code));
+      if (isFullAccessUser) return true;
+      return codes.every(code => hasPermission(code));
     },
-    [permissionCodes, isFullAccessUser]
+    [hasPermission, isFullAccessUser]
   );
 
   const clearPermissions = useCallback(() => {
-    setPermissionCodes([]);
-    setRolePermissions([]);
-    setPermissionMatrix([]);
-    setAllPermissions([]);
+    setScreenAuthorizations({});
   }, []);
 
-  // ═══════════════════════════════════════════════════════════════
-  // EXTRACT DPF STRUCTURE FROM MATRIX
-  // ═══════════════════════════════════════════════════════════════
-
-  const modules = useMemo(() => {
-    return permissionMatrix.map(m => m.module);
-  }, [permissionMatrix]);
-
-  const screens = useMemo(() => {
-    return permissionMatrix.flatMap(m =>
-      m.screens.map(s => s.screen)
-    );
-  }, [permissionMatrix]);
-
-  const actions = useMemo(() => {
-    return permissionMatrix.flatMap(m =>
-      m.screens.flatMap(s => s.actions)
-    );
-  }, [permissionMatrix]);
-
-  // ═══════════════════════════════════════════════════════════════
+  // ===================================================================
   // CONTEXT VALUE
-  // ═══════════════════════════════════════════════════════════════
+  // ===================================================================
 
-  const value: PermissionContextType = {
-    permissionCodes,
-    rolePermissions,
-    permissionMatrix,
-    allPermissions,
-    modules,
-    screens,
-    actions,
+  // Memoize context value to prevent unnecessary consumer re-renders
+  const value = useMemo<PermissionContextType>(() => ({
+    screenAuthorizations,
     loading,
     error,
+
+    // SAP B1 Style methods
+    getScreenAuth,
+    canAccessScreen,
+    canModifyScreen,
+    hasReadAccess,
+    hasFullAccess,
+
+    // Legacy compatibility
     hasPermission,
-    hasAction,
     hasAnyPermission,
     hasAllPermissions,
+
+    // Utility
     refreshPermissions: fetchPermissions,
     clearPermissions,
-  };
+  }), [
+    screenAuthorizations, loading, error,
+    getScreenAuth, canAccessScreen, canModifyScreen, hasReadAccess, hasFullAccess,
+    hasPermission, hasAnyPermission, hasAllPermissions,
+    fetchPermissions, clearPermissions,
+  ]);
 
   return (
     <PermissionContext.Provider value={value}>

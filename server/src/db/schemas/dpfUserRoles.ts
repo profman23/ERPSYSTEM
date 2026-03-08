@@ -8,6 +8,7 @@ import { branches } from './branches';
 /**
  * DPF User Roles - Junction table with scope support
  * Links users to roles with tenant/business-line/branch scoping
+ * Relations: see ./relations.ts
  */
 export const dpfUserRoles = pgTable('dpf_user_roles', {
   id: uuid('id').primaryKey().defaultRandom(),

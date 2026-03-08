@@ -8,13 +8,12 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Save, X, Sparkles, Search } from 'lucide-react';
+import { Loader2, Save, X, Sparkles, Search, Check } from 'lucide-react';
 import { RoleImpactPreview } from './RoleImpactPreview';
-import { useToast } from '@/hooks/use-toast';
-import type { DPFRole, DPFPermission } from '../../../../types/dpf';
+import { useToast } from '@/components/ui/toast';
+import type { DPFRole, DPFPermission } from '@types/dpf';
 import type { User } from '@/hooks/useUserRoles';
 
 interface UserRoleAssignmentDrawerProps {
@@ -40,15 +39,22 @@ export function UserRoleAssignmentDrawer({
   onSave,
   isSaving,
 }: UserRoleAssignmentDrawerProps) {
-  const { toast } = useToast();
-  const [selectedRoleIds, setSelectedRoleIds] = useState<Set<string>>(new Set());
+  const { showToast } = useToast();
+  // ONE ROLE PER USER - single selection instead of Set
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [agiCommand, setAgiCommand] = useState('');
   const [isProcessingAgi, setIsProcessingAgi] = useState(false);
 
+  // Convert single role to Set for compatibility with RoleImpactPreview
+  const selectedRoleIds = useMemo(() => {
+    return selectedRoleId ? new Set([selectedRoleId]) : new Set<string>();
+  }, [selectedRoleId]);
+
   useEffect(() => {
     if (open && currentRoles) {
-      setSelectedRoleIds(new Set(currentRoles.map(r => r.id)));
+      // ONE ROLE PER USER - take only the first role if exists
+      setSelectedRoleId(currentRoles.length > 0 ? currentRoles[0].id : null);
     }
   }, [open, currentRoles]);
 
@@ -64,163 +70,118 @@ export function UserRoleAssignmentDrawer({
   }, [allRoles, searchQuery]);
 
   const hasChanges = useMemo(() => {
-    const currentIds = new Set(currentRoles.map(r => r.id));
-    if (currentIds.size !== selectedRoleIds.size) return true;
-    for (const id of selectedRoleIds) {
-      if (!currentIds.has(id)) return true;
-    }
-    return false;
-  }, [currentRoles, selectedRoleIds]);
+    const currentRoleId = currentRoles.length > 0 ? currentRoles[0].id : null;
+    return selectedRoleId !== currentRoleId;
+  }, [currentRoles, selectedRoleId]);
 
-  const handleToggleRole = (roleId: string) => {
-    const newSet = new Set(selectedRoleIds);
-    if (newSet.has(roleId)) {
-      newSet.delete(roleId);
-    } else {
-      newSet.add(roleId);
-    }
-    setSelectedRoleIds(newSet);
+  const handleSelectRole = (roleId: string) => {
+    // Toggle: if already selected, deselect; otherwise select
+    setSelectedRoleId(prev => prev === roleId ? null : roleId);
   };
 
   const handleReset = () => {
-    setSelectedRoleIds(new Set(currentRoles.map(r => r.id)));
+    setSelectedRoleId(currentRoles.length > 0 ? currentRoles[0].id : null);
     setSearchQuery('');
     setAgiCommand('');
   };
 
   const handleSave = async () => {
     try {
-      await onSave(Array.from(selectedRoleIds));
-      toast({
-        title: 'Success',
-        description: 'User roles updated successfully',
-      });
+      await onSave(selectedRoleId ? [selectedRoleId] : []);
+      showToast('success', selectedRoleId ? 'User role updated successfully' : 'User role removed successfully');
       onOpenChange(false);
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.response?.data?.error || 'Failed to update user roles',
-        variant: 'destructive',
-      });
+      showToast('error', error.response?.data?.error || 'Failed to update user role');
     }
   };
 
   const interpretAgiCommand = async () => {
     const trimmedCommand = agiCommand.trim();
-    
+
     if (!trimmedCommand.startsWith('/agi ')) {
-      toast({
-        title: 'Invalid command',
-        description: 'AGI commands must start with "/agi ". Example: "/agi make admin"',
-        variant: 'destructive',
-      });
+      showToast('warning', 'Invalid command', 'AGI commands must start with "/agi ". Example: "/agi make admin"');
       return;
     }
 
     const command = trimmedCommand.slice(5).trim();
     if (!command) {
-      toast({
-        title: 'No command',
-        description: 'Please provide a command after "/agi"',
-      });
+      showToast('warning', 'No command', 'Please provide a command after "/agi"');
       return;
     }
 
     setIsProcessingAgi(true);
-    
+
     try {
       const commandLower = command.toLowerCase();
-      const newSelection = new Set(selectedRoleIds);
-
       const isArabic = /[\u0600-\u06FF]/.test(command);
-      
-      if ((commandLower.includes('all') && commandLower.includes('finance')) || 
-          (isArabic && command.includes('كل') && command.includes('مالي'))) {
-        const financeRoles = allRoles.filter(r =>
+
+      // ONE ROLE PER USER - find first matching role
+      let matchedRole: typeof allRoles[0] | null = null;
+      let matchDescription = '';
+
+      if ((commandLower.includes('finance') || commandLower.includes('مالي')) ||
+          (isArabic && command.includes('مالي'))) {
+        matchedRole = allRoles.find(r =>
           r.roleCode.toLowerCase().includes('finance') ||
           r.roleName.toLowerCase().includes('finance') ||
           r.roleNameAr?.includes('مالي')
-        );
-        financeRoles.forEach(r => newSelection.add(r.id));
-        toast({
-          title: 'AGI Interpreted',
-          description: `Added ${financeRoles.length} finance-related roles`,
-        });
-      } else if ((commandLower.includes('all') && commandLower.includes('admin')) ||
-                 (isArabic && (command.includes('كل') || command.includes('جميع')) && (command.includes('مدير') || command.includes('إداري')))) {
-        const adminRoles = allRoles.filter(r =>
+        ) || null;
+        matchDescription = 'finance role';
+      } else if ((commandLower.includes('admin') || commandLower.includes('مدير')) ||
+                 (isArabic && (command.includes('مدير') || command.includes('إداري')))) {
+        matchedRole = allRoles.find(r =>
           r.roleCode.toLowerCase().includes('admin') ||
           r.roleName.toLowerCase().includes('admin') ||
           r.roleNameAr?.includes('مدير') ||
           r.roleNameAr?.includes('إداري')
-        );
-        adminRoles.forEach(r => newSelection.add(r.id));
-        toast({
-          title: 'AGI Interpreted',
-          description: `Added ${adminRoles.length} admin-related roles`,
-        });
-      } else if (commandLower.includes('remove all') || commandLower.includes('clear') ||
-                 (isArabic && (command.includes('أزل') || command.includes('احذف')) && (command.includes('كل') || command.includes('جميع')))) {
-        newSelection.clear();
-        toast({
-          title: 'AGI Interpreted',
-          description: 'Removed all roles',
-        });
-      } else if (commandLower.includes('readonly') || commandLower.includes('read-only') || commandLower.includes('view only') ||
-                 (isArabic && (command.includes('قراءة فقط') || command.includes('عرض فقط')))) {
-        const viewOnlyRoles = allRoles.filter(r =>
+        ) || null;
+        matchDescription = 'admin role';
+      } else if (commandLower.includes('remove') || commandLower.includes('clear') || commandLower.includes('none') ||
+                 (isArabic && (command.includes('أزل') || command.includes('احذف')))) {
+        setSelectedRoleId(null);
+        showToast('info', 'AGI Interpreted', 'Role removed');
+        setAgiCommand('');
+        setIsProcessingAgi(false);
+        return;
+      } else if (commandLower.includes('readonly') || commandLower.includes('read-only') || commandLower.includes('view') ||
+                 (isArabic && (command.includes('قراءة') || command.includes('عرض')))) {
+        matchedRole = allRoles.find(r =>
           r.roleCode.toLowerCase().includes('view') ||
           r.roleCode.toLowerCase().includes('read') ||
           r.roleName.toLowerCase().includes('viewer') ||
           r.roleNameAr?.includes('قراءة') ||
           r.roleNameAr?.includes('عرض')
-        );
-        viewOnlyRoles.forEach(r => newSelection.add(r.id));
-        toast({
-          title: 'AGI Interpreted',
-          description: `Added ${viewOnlyRoles.length} read-only roles`,
-        });
+        ) || null;
+        matchDescription = 'read-only role';
       } else if (commandLower.includes('manager') || commandLower.includes('supervisor') ||
                  (isArabic && (command.includes('مشرف') || command.includes('مسؤول')))) {
-        const managerRoles = allRoles.filter(r =>
+        matchedRole = allRoles.find(r =>
           r.roleCode.toLowerCase().includes('manager') ||
           r.roleName.toLowerCase().includes('manager') ||
           r.roleName.toLowerCase().includes('supervisor') ||
           r.roleNameAr?.includes('مشرف') ||
           r.roleNameAr?.includes('مسؤول')
-        );
-        managerRoles.forEach(r => newSelection.add(r.id));
-        toast({
-          title: 'AGI Interpreted',
-          description: `Added ${managerRoles.length} manager/supervisor roles`,
-        });
+        ) || null;
+        matchDescription = 'manager role';
       } else {
-        const matchedRoles = allRoles.filter(r =>
+        matchedRole = allRoles.find(r =>
           r.roleName.toLowerCase().includes(commandLower) ||
           r.roleCode.toLowerCase().includes(commandLower) ||
           r.roleNameAr?.includes(command)
-        );
-        if (matchedRoles.length > 0) {
-          matchedRoles.forEach(r => newSelection.add(r.id));
-          toast({
-            title: 'AGI Interpreted',
-            description: `Added ${matchedRoles.length} matching roles`,
-          });
-        } else {
-          toast({
-            title: 'No matches',
-            description: 'Could not interpret command. Try "/agi all admin" or "/agi كل المديرين"',
-          });
-        }
+        ) || null;
+        matchDescription = 'matching role';
       }
 
-      setSelectedRoleIds(newSelection);
+      if (matchedRole) {
+        setSelectedRoleId(matchedRole.id);
+        showToast('info', 'AGI Interpreted', `Selected ${matchDescription}: ${matchedRole.roleName}`);
+      } else {
+        showToast('warning', 'No matches', 'Could not find a matching role. Try "/agi admin" or "/agi مدير"');
+      }
+
       setAgiCommand('');
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to process AI command',
-      });
+      showToast('error', 'Failed to process AI command');
     } finally {
       setIsProcessingAgi(false);
     }
@@ -311,59 +272,73 @@ export function UserRoleAssignmentDrawer({
           <div className="space-y-2">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                Available Roles ({filteredRoles.length})
+                Select Role ({filteredRoles.length} available)
               </p>
               <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                {selectedRoleIds.size} selected
+                {selectedRoleId ? '1 role selected' : 'No role selected'}
               </p>
             </div>
 
-            <div 
+            <div
               className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-3"
               style={{ borderColor: 'var(--color-border)' }}
             >
               {filteredRoles.length === 0 ? (
-                <p 
+                <p
                   className="text-sm text-center py-4"
                   style={{ color: 'var(--color-text-muted)' }}
                 >
                   No roles found
                 </p>
               ) : (
-                filteredRoles.map((role) => (
-                  <div
-                    key={role.id}
-                    className="flex items-start gap-3 p-2 rounded cursor-pointer transition-colors"
-                    style={{ backgroundColor: 'transparent' }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-surface-hover)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    onClick={() => handleToggleRole(role.id)}
-                  >
-                    <Checkbox
-                      checked={selectedRoleIds.has(role.id)}
-                      onCheckedChange={() => handleToggleRole(role.id)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-                          {role.roleName}
+                filteredRoles.map((role) => {
+                  const isSelected = selectedRoleId === role.id;
+                  return (
+                    <div
+                      key={role.id}
+                      className="flex items-start gap-3 p-3 rounded cursor-pointer transition-all border-2"
+                      style={{
+                        backgroundColor: isSelected ? 'var(--color-surface-hover)' : 'transparent',
+                        borderColor: isSelected ? 'var(--color-primary)' : 'transparent',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--color-surface-hover)';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                      onClick={() => handleSelectRole(role.id)}
+                    >
+                      <div
+                        className="w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0"
+                        style={{
+                          borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)',
+                          backgroundColor: isSelected ? 'var(--color-primary)' : 'transparent',
+                        }}
+                      >
+                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                            {role.roleName}
+                          </p>
+                          {role.isProtected === 'true' && (
+                            <Badge variant="warning" className="text-xs">Protected</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                          {role.roleCode}
                         </p>
-                        {role.isProtected === 'true' && (
-                          <Badge variant="warning" className="text-xs">Protected</Badge>
+                        {role.description && (
+                          <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                            {role.description}
+                          </p>
                         )}
                       </div>
-                      <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                        {role.roleCode}
-                      </p>
-                      {role.description && (
-                        <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
-                          {role.description}
-                        </p>
-                      )}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>

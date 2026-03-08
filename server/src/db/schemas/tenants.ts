@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text, jsonb, integer, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, text, jsonb, integer, boolean, index } from 'drizzle-orm/pg-core';
 
 export const subscriptionPlanEnum = ['trial', 'standard', 'professional', 'enterprise'] as const;
 export type SubscriptionPlan = typeof subscriptionPlanEnum[number];
@@ -30,6 +30,7 @@ export const tenants = pgTable('tenants', {
   allowedUsers: integer('allowed_users').notNull().default(50),
   storageLimitGB: integer('storage_limit_gb').notNull().default(10),
   apiRateLimit: integer('api_rate_limit').notNull().default(1000),
+  aiAssistantEnabled: boolean('ai_assistant_enabled').notNull().default(false),
   settings: jsonb('settings').default({}),
   dpfTemplateApplied: timestamp('dpf_template_applied'),
   createdAt: timestamp('created_at').defaultNow().notNull(),

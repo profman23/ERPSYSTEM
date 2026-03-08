@@ -66,7 +66,7 @@ export const DEFAULT_RATE_LIMITS: Record<string, RateLimitConfig> = {
   },
   auth: {
     type: 'ip',
-    maxRequests: 5,
+    maxRequests: 30,
     windowMs: 15 * 60 * 1000,
     algorithm: 'fixed_window',
     skipSuccessfulRequests: true,

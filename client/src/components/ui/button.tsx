@@ -13,9 +13,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       switch (variant) {
         case 'default':
           return {
-            backgroundColor: 'var(--btn-primary-bg)',
+            background: 'var(--btn-primary-bg)',
             color: 'var(--btn-primary-text)',
-            borderColor: 'var(--btn-primary-bg)',
+            borderColor: 'transparent',
           };
         case 'secondary':
           return {

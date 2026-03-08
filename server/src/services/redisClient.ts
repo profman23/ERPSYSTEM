@@ -1,109 +1,81 @@
 import Redis from 'ioredis';
+import logger from '../config/logger';
 
 let redisClient: Redis | null = null;
+let redisAvailable = false;
 
-const getRedisConfig = () => {
-  // Prefer REDIS_URL for single connection string (Upstash, etc.)
-  if (process.env.REDIS_URL) {
-    return {
-      connectionString: process.env.REDIS_URL,
-      retryStrategy: (times: number) => {
-        if (times > 3) {
-          return null;
-        }
-        return Math.min(times * 100, 1000);
-      },
-      maxRetriesPerRequest: 3,
-      enableReadyCheck: true,
-      lazyConnect: true,
-      reconnectOnError: () => false,
-    };
-  }
-
-  // Fallback to individual environment variables
-  return {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379', 10),
-    password: process.env.REDIS_PASSWORD,
-    retryStrategy: (times: number) => {
-      if (times > 3) {
-        return null;
-      }
-      return Math.min(times * 100, 1000);
-    },
-    maxRetriesPerRequest: 3,
-    enableReadyCheck: true,
-    lazyConnect: true,
-    reconnectOnError: () => false,
-  };
-};
-
-export const initializeRedis = async (): Promise<Redis> => {
-  if (redisClient) {
+export const initializeRedis = async (): Promise<Redis | null> => {
+  if (redisClient && redisAvailable) {
     return redisClient;
   }
 
   const redisUrl = process.env.REDIS_URL;
-  const config = getRedisConfig();
-  
-  // If REDIS_URL is provided, use it directly
-  if (redisUrl) {
-    console.log('🔌 Connecting to Redis via REDIS_URL (Upstash)...');
-    const usesTls = redisUrl.startsWith('rediss://');
-    
-    redisClient = new Redis(redisUrl, {
-      maxRetriesPerRequest: 3,
-      enableReadyCheck: true,
-      lazyConnect: false, // Connect immediately
-      tls: usesTls ? { rejectUnauthorized: false } : undefined,
-    });
-  } else {
-    console.log('🔌 Connecting to Redis via HOST/PORT...');
-    redisClient = new Redis(config as any);
+
+  if (!redisUrl) {
+    logger.warn('⚠️ No REDIS_URL configured - running without Redis (L1 cache only)');
+    return null;
   }
 
-  let connectionAttempted = false;
+  logger.info('🔌 Connecting to Redis...');
+  const usesTls = redisUrl.startsWith('rediss://');
+
+  redisClient = new Redis(redisUrl, {
+    maxRetriesPerRequest: 3,
+    enableReadyCheck: true,
+    lazyConnect: false,
+    connectTimeout: 10000,
+    commandTimeout: 5000,
+    retryStrategy: (times: number) => {
+      if (times > 5) {
+        logger.error('❌ Redis max retries exceeded - giving up reconnection');
+        return null;
+      }
+      const delay = Math.min(times * 200, 2000);
+      logger.info(`🔄 Redis reconnecting in ${delay}ms (attempt ${times}/5)...`);
+      return delay;
+    },
+    tls: usesTls ? { rejectUnauthorized: false } : undefined,
+  });
 
   redisClient.on('connect', () => {
-    console.log('✅ Redis client connected');
+    logger.info('✅ Redis client connected');
   });
 
   redisClient.on('ready', () => {
-    console.log('✅ Redis client ready');
+    redisAvailable = true;
+    logger.info('✅ Redis client ready - L2 cache enabled');
   });
 
   redisClient.on('error', (err) => {
-    if (!connectionAttempted) {
-      console.error('❌ Redis connection failed:', err.message);
-      connectionAttempted = true;
+    if (redisAvailable) {
+      logger.error('❌ Redis error (was connected):', err.message);
     }
+    redisAvailable = false;
   });
 
   redisClient.on('close', () => {
-    if (!connectionAttempted) {
-      console.warn('⚠️ Redis client connection closed');
-    }
+    redisAvailable = false;
+    logger.warn('⚠️ Redis connection closed');
   });
 
   redisClient.on('reconnecting', () => {
-    if (!connectionAttempted) {
-      console.log('🔄 Redis client reconnecting...');
-    }
+    logger.info('🔄 Redis reconnecting...');
   });
 
   try {
-    // Wait for ready state with timeout
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(new Error('Redis connection timeout (5s)'));
-      }, 5000);
+        reject(new Error('Redis connection timeout (10s)'));
+      }, 10000);
 
       if (redisClient!.status === 'ready') {
         clearTimeout(timeout);
+        redisAvailable = true;
         resolve();
       } else {
         redisClient!.once('ready', () => {
           clearTimeout(timeout);
+          redisAvailable = true;
           resolve();
         });
         redisClient!.once('error', (err) => {
@@ -114,24 +86,34 @@ export const initializeRedis = async (): Promise<Redis> => {
     });
 
     await redisClient.ping();
-    console.log('✅ Redis connection established successfully');
+    logger.info('✅ Redis connection established - PING successful');
   } catch (error) {
-    console.error('❌ Failed to connect to Redis:', error);
-    console.warn('⚠️ Continuing without Redis - caching disabled');
+    const msg = error instanceof Error ? error.message : String(error);
+    logger.error(`❌ Failed to connect to Redis: ${msg}`);
+    logger.warn('⚠️ Continuing without Redis - L1 cache only, rate limiting degraded');
+    redisAvailable = false;
   }
 
   return redisClient;
 };
 
 export const getRedisClient = (): Redis | null => {
+  if (!redisClient || !redisAvailable) return null;
   return redisClient;
 };
 
+export const isRedisAvailable = (): boolean => redisAvailable;
+
 export const closeRedis = async (): Promise<void> => {
   if (redisClient) {
-    await redisClient.quit();
+    redisAvailable = false;
+    try {
+      await redisClient.quit();
+    } catch {
+      redisClient.disconnect();
+    }
     redisClient = null;
-    console.log('✅ Redis client closed');
+    logger.info('✅ Redis client closed');
   }
 };
 
