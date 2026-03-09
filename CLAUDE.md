@@ -105,17 +105,25 @@ Package:    npm only (not yarn/pnpm)
 ### CI/CD Pipeline (`.github/workflows/test.yml`)
 
 ```
-Push/PR → Backend tests (parallel) → E2E tests (after both pass, main only)
-       → Frontend tests (parallel) ↗
+Push/PR → Backend tests (parallel) ──┐
+       → Frontend tests (parallel) ──┤
+                                      ↓
+                              All passed?
+                             ├─ YES → deploy-staging → curl Render Deploy Hooks → Staging deploys
+                             │      → e2e-tests (main only)
+                             └─ NO  → ❌ No deploy, developer notified
 ```
 
 | Job | Runs on | Steps |
 |-----|---------|-------|
 | `backend-tests` | Every push/PR | `npm ci` → `tsc --noEmit` → `npm test` |
 | `frontend-tests` | Every push/PR | `npm ci` → `tsc --noEmit` → `npm test` |
-| `e2e-tests` | Main branch only | Install Playwright → run against test DB |
+| `deploy-staging` | Main push only, after tests pass | `curl` Render Deploy Hooks (backend + frontend) |
+| `e2e-tests` | Main push only, after tests pass | Install Playwright → run against test DB |
 
-**GitHub Secrets required:** `DATABASE_URL_TEST`, `JWT_SECRET_TEST`
+**Deploy Gate:** Render Auto-Deploy is **OFF**. Staging only deploys via Deploy Hooks triggered by CI after all tests pass. No tests = no deploy.
+
+**GitHub Secrets required:** `DATABASE_URL_TEST`, `JWT_SECRET_TEST`, `RENDER_DEPLOY_HOOK_BACKEND`, `RENDER_DEPLOY_HOOK_FRONTEND`
 
 ### Deployment Environments
 
