@@ -10,7 +10,7 @@ services:
     plan: free
     branch: main
     buildCommand: cd server && npm ci && npm run build
-    startCommand: cd server && node dist/server/src/index.js
+    startCommand: cd server && npx tsx src/index.ts
     healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
@@ -53,7 +53,7 @@ services:
     plan: starter
     branch: production
     buildCommand: cd server && npm ci && npm run build
-    startCommand: cd server && node dist/server/src/index.js
+    startCommand: cd server && npx tsx src/index.ts
     healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
