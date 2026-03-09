@@ -109,7 +109,7 @@ Push/PR → Backend tests (parallel) ──┐
        → Frontend tests (parallel) ──┤
                                       ↓
                               All passed?
-                             ├─ YES → deploy-staging → curl Render Deploy Hooks → Staging deploys
+                             ├─ YES → Render auto-deploys (After CI checks pass) → Staging live
                              │      → e2e-tests (main only)
                              └─ NO  → ❌ No deploy, developer notified
 ```
@@ -118,12 +118,11 @@ Push/PR → Backend tests (parallel) ──┐
 |-----|---------|-------|
 | `backend-tests` | Every push/PR | `npm ci` → `tsc --noEmit` → `npm test` |
 | `frontend-tests` | Every push/PR | `npm ci` → `tsc --noEmit` → `npm test` |
-| `deploy-staging` | Main push only, after tests pass | `curl` Render Deploy Hooks (backend + frontend) |
 | `e2e-tests` | Main push only, after tests pass | Install Playwright → run against test DB |
 
-**Deploy Gate:** Render Auto-Deploy is **OFF**. Staging only deploys via Deploy Hooks triggered by CI after all tests pass. No tests = no deploy.
+**Deploy Gate:** Render Auto-Deploy = **"After CI checks pass"**. Staging only deploys after all GitHub Actions checks succeed. No tests = no deploy.
 
-**GitHub Secrets required:** `DATABASE_URL_TEST`, `JWT_SECRET_TEST`, `RENDER_DEPLOY_HOOK_BACKEND`, `RENDER_DEPLOY_HOOK_FRONTEND`
+**GitHub Secrets required:** `DATABASE_URL_TEST`, `JWT_SECRET_TEST`
 
 ### Deployment Environments
 

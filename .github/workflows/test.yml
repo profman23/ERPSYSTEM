@@ -66,13 +66,3 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 14
-
-  deploy-staging:
-    runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-tests]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    steps:
-      - name: Deploy Backend to Render
-        run: curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}" | grep -q "200" || exit 1
-      - name: Deploy Frontend to Render
-        run: curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}" | grep -q "200" || exit 1
