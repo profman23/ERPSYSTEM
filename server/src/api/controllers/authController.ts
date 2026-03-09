@@ -105,21 +105,39 @@ export const login = async (req: Request, res: Response) => {
     // Update last login time
     await AuthService.updateLastLogin(user.id);
 
-    // Fetch user's branch details for multi-branch users (avoids extra API call)
-    const allowedBranchIds: string[] = (user as any).allowedBranchIds || [];
-    const allBranchIds = new Set<string>();
-    if (user.branchId) allBranchIds.add(user.branchId);
-    allowedBranchIds.forEach(id => allBranchIds.add(id));
-
+    // Fetch user's branch details
+    // Tenant-scoped users (admins) see ALL active tenant branches — SAP B1 principle:
+    // admin access is derived from role, not stored per-user (Single Source of Truth)
     let userBranches: Array<{ id: string; name: string; code: string; city: string | null; country: string | null }> = [];
-    if (allBranchIds.size > 0) {
+    let resolvedAllowedBranchIds: string[];
+
+    if (user.accessScope === 'tenant') {
       userBranches = await db.select({
         id: branches.id,
         name: branches.name,
         code: branches.code,
         city: branches.city,
         country: branches.country,
-      }).from(branches).where(inArray(branches.id, Array.from(allBranchIds)));
+      }).from(branches).where(
+        and(eq(branches.tenantId, tenant.id), eq(branches.isActive, true))
+      );
+      resolvedAllowedBranchIds = userBranches.map(b => b.id);
+    } else {
+      // Branch-scoped users: explicit branchId + allowedBranchIds
+      resolvedAllowedBranchIds = (user as any).allowedBranchIds || [];
+      const allBranchIds = new Set<string>();
+      if (user.branchId) allBranchIds.add(user.branchId);
+      resolvedAllowedBranchIds.forEach(id => allBranchIds.add(id));
+
+      if (allBranchIds.size > 0) {
+        userBranches = await db.select({
+          id: branches.id,
+          name: branches.name,
+          code: branches.code,
+          city: branches.city,
+          country: branches.country,
+        }).from(branches).where(inArray(branches.id, Array.from(allBranchIds)));
+      }
     }
 
     // Pre-warm permission cache (fire-and-forget, does not block login response)
@@ -141,7 +159,7 @@ export const login = async (req: Request, res: Response) => {
         tenantId: user.tenantId,
         businessLineId: user.businessLineId,
         branchId: user.branchId,
-        allowedBranchIds,
+        allowedBranchIds: resolvedAllowedBranchIds,
         branches: userBranches,
       },
     });

@@ -78,6 +78,7 @@ Package:    npm only (not yarn/pnpm)
 
 ### Recently Completed
 - Journal Entries (double-entry bookkeeping engine, full list/create/detail/reverse workflow)
+- Financial document UI pattern (SAP B1 style: Create + Detail same layout, shared reversal components)
 - Item Master Data (CRUD + frontend form with image upload)
 - Comprehensive test suite: 477 backend (35 files) + 104 frontend (20 files) + 25 E2E Playwright
 - CI/CD: GitHub Actions workflow (backend + frontend + E2E pipeline)
@@ -1016,6 +1017,37 @@ Props: `value` (URL), `onUpload` (File → Promise<URL>), `onRemove`, `maxSizeMB
 - Reversal: creates new POSTED entry with swapped debits/credits, marks original REVERSED
 - Reference: `server/src/services/JournalEntryService.ts`
 
+### Financial Document UI Pattern (SAP B1 Style)
+
+All 7 financial document types (Journal Entry, Sales Invoice, Purchase Order, Credit Note, Delivery Note, Goods Receipt PO, Payment Receipt) share the same UI pattern:
+
+| Rule | Standard |
+|------|----------|
+| **Create + Detail = same layout** | Detail page mirrors Create page with all fields `disabled`. No separate "view" design. |
+| **Save = POSTED** | No DRAFT. Clicking Save/Add = document is final. |
+| **Detail = read-only** | All `<Input disabled>`, `<AccountSelector disabled>`. No edit capability. |
+| **Code field** | Hidden on Create (auto-generated), visible on Detail (read-only, `font-mono`). |
+| **Status badges** | `DocumentStatusBadge` in Detail header. Source type `Badge` next to it. |
+| **Corrections** | Only via Reverse button in Detail footer (creates new document with negated values). |
+| **Template pages** | `CreateJournalEntryPage.tsx` (Create) + `JournalEntryDetailPage.tsx` (Detail) — copy for new types. |
+
+**Shared behavioral components** (reused across all 7 document types):
+
+| Component | Path | Purpose |
+|-----------|------|---------|
+| `DocumentStatusBadge` | `client/src/components/document/DocumentStatusBadge.tsx` | POSTED/REVERSED badge with bilingual labels |
+| `DocumentReversalBanner` | `client/src/components/document/DocumentReversalBanner.tsx` | Info/warning banners linking to original/reversal document |
+| `ReverseDocumentDialog` | `client/src/components/document/ReverseDocumentDialog.tsx` | Reversal confirmation dialog (date + remarks) |
+| `useDocumentReversal` | `client/src/hooks/useDocumentReversal.ts` | Dialog state + `canReverse` logic |
+
+**Pattern rule:** Extract shared **behaviors** (reversal, status). Keep domain-specific **layout** at page level. Each document type has different fields and line columns — no visual wrapper abstraction.
+
+**New document type checklist (frontend):**
+1. Copy `CreateJournalEntryPage.tsx` → adapt fields and line columns
+2. Copy `JournalEntryDetailPage.tsx` → adapt fields and line columns (all disabled)
+3. Import `DocumentStatusBadge`, `DocumentReversalBanner`, `ReverseDocumentDialog` from `@/components/document`
+4. Import `useDocumentReversal` from `@/hooks/useDocumentReversal`
+
 ---
 
 ## FEATURE BUILD CHECKLIST
@@ -1114,6 +1146,7 @@ client/src/
   components/ui/                    ← Shared UI (DataTable, Drawer, Skeleton, etc.)
   components/ui/*.test.tsx          ← Component tests (Testing Library)
   components/{domain}/              ← Domain-specific components
+  components/document/              ← Shared financial document components (reversal, status)
   lib/api.ts                        ← apiClient (axios + interceptors)
   lib/apiError.ts                   ← extractApiError()
   contexts/                         ← Auth, Permission contexts
@@ -1170,6 +1203,12 @@ types/                              ← Shared types (client + server)
 | Document numbering | `server/src/services/DocumentNumberSeriesService.ts` |
 | Posting periods | `server/src/services/PostingPeriodService.ts` |
 | Journal entries | `server/src/services/JournalEntryService.ts` |
+| Document status badge | `client/src/components/document/DocumentStatusBadge.tsx` |
+| Reversal dialog | `client/src/components/document/ReverseDocumentDialog.tsx` |
+| Reversal banners | `client/src/components/document/DocumentReversalBanner.tsx` |
+| Document reversal hook | `client/src/hooks/useDocumentReversal.ts` |
+| Document Create template | `client/src/pages/finance/CreateJournalEntryPage.tsx` |
+| Document Detail template | `client/src/pages/finance/JournalEntryDetailPage.tsx` |
 | Service test template | `server/src/services/SpeciesService.test.ts` |
 | Route test template | `server/src/routes/tenant/species.test.ts` |
 | Hook test template | `client/src/hooks/useSpecies.test.ts` |

@@ -155,7 +155,11 @@ export default function LoginPage() {
 
       // Single-branch user: auto-set active branch
       if (user.branchId) {
-        setActiveBranch(user.branchId, '');
+        const defaultBranch = user.branches?.find((b: { id: string }) => b.id === user.branchId);
+        setActiveBranch(user.branchId, defaultBranch?.name || '');
+      } else if (user.branches?.length === 1) {
+        // Tenant admin with single branch (no branchId assigned): auto-select
+        setActiveBranch(user.branches[0].id, user.branches[0].name);
       }
 
       const dashboardPath = getScopeDashboardPath(user.accessScope);

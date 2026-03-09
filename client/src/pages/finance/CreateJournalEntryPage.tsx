@@ -350,6 +350,12 @@ export default function CreateJournalEntryPage() {
             <span className="flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--color-text)' }}>
               <StyledIcon icon={BookOpen} emoji="📖" className="w-4 h-4" style={{ color: 'var(--color-text-muted)' }} />
               {isRTL ? 'بنود القيد' : 'Entry Lines'}
+              <span
+                className="text-xs px-1.5 py-0.5 rounded-full font-mono"
+                style={{ backgroundColor: 'var(--badge-default-bg)', color: 'var(--badge-default-text)', borderColor: 'var(--badge-default-border)', border: '1px solid' }}
+              >
+                {lines.length}
+              </span>
             </span>
             <Button type="button" variant="ghost" size="sm" onClick={addLine}>
               <Plus className="w-4 h-4 me-1" />
