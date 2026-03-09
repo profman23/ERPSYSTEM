@@ -136,7 +136,7 @@ export function TenantFormModal({
         name: tenant.name,
         countryCode: tenant.countryCode || 'EG',
         timezone: 'Africa/Cairo',
-        subscriptionPlan: tenant.subscriptionPlan,
+        subscriptionPlan: tenant.subscriptionPlan as TenantFormData['subscriptionPlan'],
         contactEmail: tenant.contactEmail || '',
         contactPhone: tenant.contactPhone || '',
         address: tenant.address || '',
@@ -285,7 +285,7 @@ export function TenantFormModal({
 
           <SubscriptionPlanSelector
             value={subscriptionPlan}
-            onChange={(plan) => setValue('subscriptionPlan', plan)}
+            onChange={(plan) => setValue('subscriptionPlan', plan as TenantFormData['subscriptionPlan'])}
             error={errors.subscriptionPlan?.message}
           />
 

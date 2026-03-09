@@ -18,7 +18,7 @@ import { useScopePath } from '@/hooks/useScopePath';
 import { useScreenPermission } from '@/hooks/useScreenPermission';
 import { extractApiError } from '@/lib/apiError';
 import { useToast } from '@/components/ui/toast';
-import type { CreateRoleInput } from '@types/dpf';
+import type { CreateRoleInput } from '@shared/dpf';
 
 const SCREEN_CODE = 'ROLES';
 

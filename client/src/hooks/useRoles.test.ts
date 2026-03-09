@@ -17,7 +17,7 @@ describe('useRoles', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.data).toHaveLength(1);
     expect(result.current.data?.pagination.total).toBe(1);
-    expect(result.current.data?.data[0].code).toBe('ADMIN');
+    expect(result.current.data?.data[0].roleCode).toBe('ADMIN');
   });
 
   it('is disabled when enabled=false', async () => {
@@ -40,8 +40,8 @@ describe('useRole', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.id).toBe('r1');
-    expect(result.current.data?.code).toBe('ADMIN');
-    expect(result.current.data?.name).toBe('Admin');
+    expect(result.current.data?.roleCode).toBe('ADMIN');
+    expect(result.current.data?.roleName).toBe('Admin');
   });
 
   it('is disabled when id is undefined', async () => {

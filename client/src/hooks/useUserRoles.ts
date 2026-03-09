@@ -6,7 +6,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import type { DPFRole, DPFUserRole } from '@types/dpf';
+import type { DPFRole, DPFUserRole } from '@shared/dpf';
 import axios from 'axios';
 
 export interface User {

@@ -188,7 +188,7 @@ interface DateRangeFilterProps {
   onChange: (value: { from?: string; to?: string }) => void;
 }
 
-function DateRangeFilter({ filter, value = {}, onChange }: DateRangeFilterProps) {
+function DateRangeFilter({ filter: _filter, value = {}, onChange }: DateRangeFilterProps) {
   return (
     <div className="flex items-center gap-2">
       <div className="relative flex-1">
@@ -232,7 +232,7 @@ interface BooleanFilterProps {
   onChange: (value: boolean | undefined) => void;
 }
 
-function BooleanFilter({ filter, value, onChange }: BooleanFilterProps) {
+function BooleanFilter({ filter: _filter, value, onChange }: BooleanFilterProps) {
   return (
     <div className="flex items-center gap-2">
       <button

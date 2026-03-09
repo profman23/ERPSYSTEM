@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { useRouteBreadcrumbs } from '@/hooks/useRouteBreadcrumbs';
 import axios from 'axios';
-import type { DPFPermission } from '@types/dpf';
+import type { DPFPermission } from '@shared/dpf';
 
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/api/v1';
 

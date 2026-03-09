@@ -120,7 +120,7 @@ export default function SystemUsersListPage() {
           u.name?.toLowerCase().includes(query) ||
           u.firstName?.toLowerCase().includes(query) ||
           u.lastName?.toLowerCase().includes(query) ||
-          u.tenantCode?.toLowerCase().includes(query) ||
+          (u as UserRecord).tenantCode?.toLowerCase().includes(query) ||
           u.phone?.toLowerCase().includes(query)
       );
     }

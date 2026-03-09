@@ -15,7 +15,7 @@ describe('minimal', () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <QueryClientProvider client={qc}>
-        {children}
+        {children as unknown as React.JSX.Element}
       </QueryClientProvider>
     );
     const { result } = renderHook(() => ({ hello: 'world' }), { wrapper });

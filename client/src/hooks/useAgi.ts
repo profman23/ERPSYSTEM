@@ -13,7 +13,7 @@ import type {
   AgiUsageStats,
   AgiAnalytics,
   PaginatedAgiResponse,
-} from '@types/agi';
+} from '@shared/agi';
 
 // ═══════════════════════════════════════════════════════════════
 // QUERY KEYS

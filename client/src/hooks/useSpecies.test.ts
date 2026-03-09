@@ -2,10 +2,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { createHookWrapper, createTestQueryClient } from '../test/renderWithProviders';
 import { useSpeciesList, useSpeciesDetail, useCreateSpecies, useDeleteSpecies } from './useSpecies';
-import { http, HttpResponse } from 'msw';
-import { server } from '../test/mocks/server';
-
-const API = 'http://localhost:5500/api/v1';
 
 describe('useSpeciesList', () => {
   it('fetches paginated list', async () => {

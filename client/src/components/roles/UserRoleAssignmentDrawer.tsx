@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Save, X, Sparkles, Search, Check } from 'lucide-react';
 import { RoleImpactPreview } from './RoleImpactPreview';
 import { useToast } from '@/components/ui/toast';
-import type { DPFRole, DPFPermission } from '@types/dpf';
+import type { DPFRole, DPFPermission } from '@shared/dpf';
 import type { User } from '@/hooks/useUserRoles';
 
 interface UserRoleAssignmentDrawerProps {

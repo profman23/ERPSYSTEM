@@ -276,7 +276,7 @@ const SimpleSelect = React.forwardRef<HTMLButtonElement, SimpleSelectProps>(
     return (
       <div className={className}>
         <Select value={selectValue} onValueChange={handleChange} disabled={disabled}>
-          <SelectTrigger ref={ref} error={error} className={triggerClassName}>
+          <SelectTrigger ref={ref as React.Ref<never>} error={error} className={triggerClassName}>
             <SelectValue placeholder={placeholder} />
           </SelectTrigger>
           <SelectContent className={contentClassName}>

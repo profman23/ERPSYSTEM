@@ -23,7 +23,7 @@ import { TableSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { useScreenPermission } from '@/hooks/useScreenPermission';
-import type { RoleListItem } from '@types/dpf';
+import type { RoleListItem } from '@shared/dpf';
 
 const SCREEN_CODE = 'ROLES';
 

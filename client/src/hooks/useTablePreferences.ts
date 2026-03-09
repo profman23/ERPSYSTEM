@@ -95,7 +95,7 @@ export function useTablePreferences({
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Debounce timer ref
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Load from localStorage on mount
   useEffect(() => {

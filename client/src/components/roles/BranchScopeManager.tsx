@@ -36,7 +36,7 @@ interface BranchScopeManagerProps {
   onUpdate?: () => void;
 }
 
-export function BranchScopeManager({ userRoleId, userId, onUpdate }: BranchScopeManagerProps) {
+export function BranchScopeManager({ userRoleId, userId: _userId, onUpdate }: BranchScopeManagerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [assignedBranches, setAssignedBranches] = useState<AssignedBranch[]>([]);
   const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);

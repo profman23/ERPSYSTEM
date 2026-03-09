@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/accordion';
 import { PermissionCheckbox } from './PermissionCheckbox';
 import { Badge } from '@/components/ui/badge';
-import type { PermissionMatrixModule, PermissionMatrixScreen, DPFAction } from '@types/dpf';
+import type { PermissionMatrixModule, PermissionMatrixScreen, DPFAction } from '@shared/dpf';
 
 interface PermissionTreeProps {
   modules: PermissionMatrixModule[];
@@ -83,7 +83,7 @@ export function PermissionTree({
                     <PermissionCheckbox
                       id={`module-${module.module.moduleCode}`}
                       label={module.module.moduleName}
-                      labelAr={module.module.moduleNameAr}
+                      labelAr={module.module.moduleNameAr ?? undefined}
                       checked={moduleState.checked}
                       indeterminate={moduleState.indeterminate}
                       onCheckedChange={(checked) => onModuleToggle(module.module.moduleCode, checked as boolean)}
@@ -119,7 +119,7 @@ export function PermissionTree({
                               <PermissionCheckbox
                                 id={`screen-${screenKey}`}
                                 label={screen.screen.screenName}
-                                labelAr={screen.screen.screenNameAr}
+                                labelAr={screen.screen.screenNameAr ?? undefined}
                                 checked={screenState.checked}
                                 indeterminate={screenState.indeterminate}
                                 onCheckedChange={(checked) =>
@@ -139,7 +139,7 @@ export function PermissionTree({
                                   key={action.actionCode}
                                   id={`action-${action.actionCode}`}
                                   label={action.actionName}
-                                  labelAr={action.actionNameAr}
+                                  labelAr={action.actionNameAr ?? undefined}
                                   checked={selectedPermissions.has(action.actionCode)}
                                   onCheckedChange={(checked) =>
                                     onPermissionToggle(action.actionCode, checked as boolean)

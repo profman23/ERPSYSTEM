@@ -9,7 +9,7 @@
  */
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode, useState } from 'react';
+import React, { ReactNode, useState } from 'react';
 
 /**
  * Create QueryClient with optimized settings
@@ -112,7 +112,7 @@ export const QueryProvider = ({ children }: QueryProviderProps) => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      {children as unknown as React.JSX.Element}
     </QueryClientProvider>
   );
 };

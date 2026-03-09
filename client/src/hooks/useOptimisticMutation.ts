@@ -12,7 +12,7 @@
  */
 
 import { useMutation, useQueryClient, QueryKey } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { useToast } from '@/components/ui/toast';
 import { queryKeys } from '@/lib/queryKeys';
 import { apiClient } from '@/lib/api';
 
@@ -46,6 +46,7 @@ export function useOptimisticMutation<TData, TVariables, TContext = unknown>({
   invalidateOnSuccess = [],
 }: OptimisticMutationOptions<TData, TVariables, TContext>) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   return useMutation({
     mutationFn,
@@ -73,16 +74,14 @@ export function useOptimisticMutation<TData, TVariables, TContext = unknown>({
         queryClient.setQueryData(queryKey, (context as any).previousData);
       }
 
-      toast.error(errorMessage, {
-        description: error.message,
-      });
+      showToast('error', errorMessage, error.message);
 
       onError?.(error, variables, context);
     },
 
     onSuccess: (data: TData, variables: TVariables) => {
       if (successMessage) {
-        toast.success(successMessage);
+        showToast('success', successMessage);
       }
 
       onSuccess?.(data, variables);
@@ -111,6 +110,7 @@ interface AssignRoleVariables {
 
 export function useAssignUserRole() {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   return useMutation({
     mutationFn: async ({ userId, roleId }: AssignRoleVariables) => {
@@ -139,11 +139,11 @@ export function useAssignUserRole() {
       if (context?.previousRoles) {
         queryClient.setQueryData(queryKeys.users.roles(userId), context.previousRoles);
       }
-      toast.error('Failed to assign role', { description: error.message });
+      showToast('error', 'Failed to assign role', error.message);
     },
 
     onSuccess: (_, { roleName }) => {
-      toast.success(`Role "${roleName || 'assigned'}" successfully`);
+      showToast('success', `Role "${roleName || 'assigned'}" successfully`);
     },
 
     onSettled: (_, __, { userId }) => {
@@ -164,6 +164,7 @@ interface RemoveRoleVariables {
 
 export function useRemoveUserRole() {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   return useMutation({
     mutationFn: async ({ userId, roleId }: RemoveRoleVariables) => {
@@ -192,11 +193,11 @@ export function useRemoveUserRole() {
       if (context?.previousRoles) {
         queryClient.setQueryData(queryKeys.users.roles(userId), context.previousRoles);
       }
-      toast.error('Failed to remove role', { description: error.message });
+      showToast('error', 'Failed to remove role', error.message);
     },
 
     onSuccess: () => {
-      toast.success('Role removed successfully');
+      showToast('success', 'Role removed successfully');
     },
 
     onSettled: (_, __, { userId }) => {
@@ -217,6 +218,7 @@ interface UpdateStatusVariables {
 
 export function useUpdateUserStatus() {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   return useMutation({
     mutationFn: async ({ userId, status }: UpdateStatusVariables) => {
@@ -258,11 +260,11 @@ export function useUpdateUserStatus() {
       if (context?.previousList) {
         queryClient.setQueryData(queryKeys.users.lists(), context.previousList);
       }
-      toast.error('Failed to update status', { description: error.message });
+      showToast('error', 'Failed to update status', error.message);
     },
 
     onSuccess: (_, { status }) => {
-      toast.success(`User ${status === 'active' ? 'activated' : status === 'suspended' ? 'suspended' : 'deactivated'} successfully`);
+      showToast('success', `User ${status === 'active' ? 'activated' : status === 'suspended' ? 'suspended' : 'deactivated'} successfully`);
     },
 
     onSettled: (_, __, { userId }) => {
@@ -282,6 +284,7 @@ interface BulkAssignRolesVariables {
 
 export function useBulkAssignRoles() {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   return useMutation({
     mutationFn: async ({ assignments }: BulkAssignRolesVariables) => {
@@ -290,13 +293,11 @@ export function useBulkAssignRoles() {
     },
 
     onSuccess: (data) => {
-      toast.success(`${data.totalProcessed} role assignments completed`, {
-        description: data.totalFailed > 0 ? `${data.totalFailed} failed` : undefined,
-      });
+      showToast('success', `${data.totalProcessed} role assignments completed`, data.totalFailed > 0 ? `${data.totalFailed} failed` : undefined);
     },
 
     onError: (error: Error) => {
-      toast.error('Bulk assignment failed', { description: error.message });
+      showToast('error', 'Bulk assignment failed', error.message);
     },
 
     onSettled: () => {
@@ -318,6 +319,7 @@ interface DeleteEntityOptions {
 
 export function useDeleteEntity({ endpoint, queryKey, entityName }: DeleteEntityOptions) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -346,11 +348,11 @@ export function useDeleteEntity({ endpoint, queryKey, entityName }: DeleteEntity
       if (context?.previousData) {
         queryClient.setQueryData(queryKey, context.previousData);
       }
-      toast.error(`Failed to delete ${entityName}`, { description: error.message });
+      showToast('error', `Failed to delete ${entityName}`, error.message);
     },
 
     onSuccess: () => {
-      toast.success(`${entityName} deleted successfully`);
+      showToast('success', `${entityName} deleted successfully`);
     },
 
     onSettled: () => {

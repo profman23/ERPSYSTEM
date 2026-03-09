@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Plus, Minus, Shield, CheckCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useBatchRolePermissions } from '@/hooks/useRolePermissions';
-import type { DPFPermission, DPFRole } from '@types/dpf';
+import type { DPFPermission, DPFRole } from '@shared/dpf';
 
 interface RoleImpactPreviewProps {
   currentRoles: DPFRole[];

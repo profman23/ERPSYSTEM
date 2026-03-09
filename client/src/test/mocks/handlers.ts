@@ -55,7 +55,7 @@ const PATIENTS = [
 ];
 
 const ROLES = [
-  { id: 'r1', tenantId: 't1', code: 'ADMIN', name: 'Admin', type: 'BUILT_IN', isActive: true },
+  { id: 'r1', tenantId: 't1', roleCode: 'ADMIN', roleName: 'Admin', roleType: 'BUILT_IN', isActive: 'true', isProtected: 'false', isDefault: 'false', usersCount: 0, permissionsCount: 0 },
 ];
 
 // ─── Handlers ─────────────────────────────────────────────────────────────────
@@ -156,7 +156,7 @@ export const handlers = [
 
   // ── Items ──
   http.get(`${API}/tenant/items`, () => HttpResponse.json(paginated([]))),
-  http.get(`${API}/tenant/items/:id`, ({ params }) => {
+  http.get(`${API}/tenant/items/:id`, ({ params: _params }) => {
     return error('Not found', 'NOT_FOUND', 404);
   }),
   http.post(`${API}/tenant/items`, async ({ request }) => {

@@ -99,6 +99,12 @@ export function VirtualizedList<T extends VirtualizedListItem>({
 
   const itemData = { items, renderItem };
 
+  // Wrapper to bridge React 19 built-in types with @types/react from react-window
+  const RowComponent = useCallback(
+    (props: ListChildComponentProps) => <MemoizedRow {...props} />,
+    []
+  );
+
   if (items.length === 0 && !isLoading) {
     return (
       <div
@@ -126,7 +132,7 @@ export function VirtualizedList<T extends VirtualizedListItem>({
           onItemsRendered={handleItemsRendered}
           overscanCount={overscanCount}
         >
-          {MemoizedRow as React.ComponentType<ListChildComponentProps>}
+          {RowComponent}
         </VariableSizeList>
       ) : (
         <FixedSizeList
@@ -139,7 +145,7 @@ export function VirtualizedList<T extends VirtualizedListItem>({
           onItemsRendered={handleItemsRendered}
           overscanCount={overscanCount}
         >
-          {MemoizedRow as React.ComponentType<ListChildComponentProps>}
+          {RowComponent}
         </FixedSizeList>
       )}
       {isLoading && (

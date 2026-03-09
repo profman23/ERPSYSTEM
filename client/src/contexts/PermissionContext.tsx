@@ -9,7 +9,7 @@
  * - React Query integration for caching and invalidation
  */
 
-import { createContext, useState, useEffect, useCallback, ReactNode, useMemo, useRef } from 'react';
+import { createContext, useState, useEffect, useCallback, ReactNode, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import { useSocket } from '../providers/SocketProvider';
 import { useQueryClient } from '@tanstack/react-query';

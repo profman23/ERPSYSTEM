@@ -15,7 +15,7 @@ import { RoleForm } from '@/components/roles/RoleForm';
 import { useDPFModuleTree } from '@/hooks/useDPFModules';
 import { useToast } from '@/components/ui/toast';
 import { useScreenPermission } from '@/hooks/useScreenPermission';
-import type { CreateRoleInput } from '@types/dpf';
+import type { CreateRoleInput } from '@shared/dpf';
 
 const SCREEN_CODE = 'SYSTEM_ROLE_LIST';
 

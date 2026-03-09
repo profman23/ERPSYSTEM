@@ -214,7 +214,7 @@ export {
   // Media
   Play,
   Pause,
-  Stop,
+  Square,
   SkipBack,
   SkipForward,
   Volume,

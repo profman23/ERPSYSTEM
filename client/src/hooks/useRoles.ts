@@ -10,7 +10,7 @@ import type {
   CreateRoleInput,
   UpdateRoleInput,
   PaginatedResponse,
-} from '@types/dpf';
+} from '@shared/dpf';
 
 interface UseRolesParams {
   page?: number;

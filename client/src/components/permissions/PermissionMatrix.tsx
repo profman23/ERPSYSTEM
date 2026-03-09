@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/components/ui/toast';
 import { PermissionTree } from './PermissionTree';
 import { Loader2 } from 'lucide-react';
-import type { PermissionMatrixModule, DPFPermission, AssignPermissionsInput } from '@types/dpf';
+import type { PermissionMatrixModule, DPFPermission, AssignPermissionsInput } from '@shared/dpf';
 
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/api/v1';
 

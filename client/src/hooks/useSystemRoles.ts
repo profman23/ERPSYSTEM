@@ -14,7 +14,7 @@ import type {
   PaginatedResponse,
   ApiResponse,
   PermissionMatrixModule,
-} from '@types/dpf';
+} from '@shared/dpf';
 
 interface UseSystemRolesParams {
   page?: number;

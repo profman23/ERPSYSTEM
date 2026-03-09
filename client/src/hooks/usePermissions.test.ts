@@ -3,7 +3,7 @@ import { renderHook } from '@testing-library/react';
 import React from 'react';
 import { PermissionContext, AuthorizationLevel } from '../contexts/PermissionContext';
 import type { ReactNode } from 'react';
-import { usePermissions, useScreenAccess, useScreenAuth } from './usePermissions';
+import { usePermissions } from './usePermissions';
 
 // Helper to create a wrapper with mocked PermissionContext
 function createPermissionWrapper(authorizations: Record<string, AuthorizationLevel> = {}) {

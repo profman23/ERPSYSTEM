@@ -44,7 +44,7 @@ export default function SystemAiConfigPage() {
 
   // Data fetching
   const { data: config, isLoading: configLoading, refetch: refetchConfig } = useSystemAiConfig();
-  const { data: health, isLoading: healthLoading } = useSystemAiHealth();
+  const { data: health } = useSystemAiHealth();
   const updateConfig = useUpdateSystemAiConfig();
 
   // Local form state
@@ -170,7 +170,7 @@ export default function SystemAiConfigPage() {
               <CardTitle className="text-lg">AI Service Status</CardTitle>
             </div>
             <Badge
-              variant={healthStatus === 'HEALTHY' ? 'default' : 'destructive'}
+              variant={healthStatus === 'HEALTHY' ? 'default' : 'error'}
               className="flex items-center gap-1"
             >
               {healthStatus === 'HEALTHY' ? (

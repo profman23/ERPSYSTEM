@@ -147,7 +147,7 @@ export const lightTheme = {
 // ═══════════════════════════════════════════════════════════════
 // THEME TYPES
 // ═══════════════════════════════════════════════════════════════
-export type ThemeColors = typeof darkTheme;
+export type ThemeColors = { [K in keyof typeof darkTheme]: string };
 export type ThemeMode = 'dark' | 'light' | 'system';
 
 export const themes = {

@@ -3,7 +3,6 @@
  * Platform-wide AI usage monitoring and statistics
  */
 
-import { useState } from 'react';
 import {
   Cpu,
   Activity,
@@ -17,7 +16,7 @@ import {
   Clock,
   DollarSign,
 } from 'lucide-react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -198,7 +197,7 @@ export default function SystemAiMonitoringPage() {
                       ? 'default'
                       : monitoring?.apiStatus === 'DEGRADED'
                       ? 'secondary'
-                      : 'destructive'
+                      : 'error'
                   }
                 >
                   {monitoring?.apiStatus ?? 'UNKNOWN'}
@@ -295,12 +294,28 @@ export default function SystemAiMonitoringPage() {
         </CardHeader>
         <CardContent>
           <div className="flex gap-3">
-            <Button variant="outline" asChild>
-              <a href="/system/ai/logs">View All Logs</a>
-            </Button>
-            <Button variant="outline" asChild>
-              <a href="/system/ai/config">Configure AI</a>
-            </Button>
+            <Link
+              to="/system/ai/logs"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 border transition-colors"
+              style={{
+                backgroundColor: 'transparent',
+                color: 'var(--color-text)',
+                borderColor: 'var(--color-border)',
+              }}
+            >
+              View All Logs
+            </Link>
+            <Link
+              to="/system/ai/config"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 border transition-colors"
+              style={{
+                backgroundColor: 'transparent',
+                color: 'var(--color-text)',
+                borderColor: 'var(--color-border)',
+              }}
+            >
+              Configure AI
+            </Link>
           </div>
         </CardContent>
       </Card>

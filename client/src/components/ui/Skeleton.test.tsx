@@ -4,7 +4,7 @@ import { Skeleton } from './Skeleton';
 
 describe('Skeleton', () => {
   it('renders with default styles', () => {
-    const { container } = render(<Skeleton data-testid="skeleton" />);
+    render(<Skeleton data-testid="skeleton" />);
     const el = screen.getByTestId('skeleton');
 
     expect(el).toBeInTheDocument();

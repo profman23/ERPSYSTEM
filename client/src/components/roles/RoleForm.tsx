@@ -20,7 +20,7 @@ import { StyledIcon } from '@/components/ui/StyledIcon';
 import { apiClient } from '@/lib/api';
 import ScreenAuthorizationGrid, { getAllModuleScreens } from './ScreenAuthorizationGrid';
 import type { ModuleDefinition } from './ScreenAuthorizationGrid';
-import type { RoleListItem, CreateRoleInput } from '@types/dpf';
+import type { RoleListItem, CreateRoleInput } from '@shared/dpf';
 
 interface RoleFormProps {
   mode: 'create' | 'edit';

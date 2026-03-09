@@ -21,7 +21,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import {
   useSystemRoles,
 } from '@/hooks/useSystemRoles';
-import type { RoleListItem } from '@types/dpf';
+import type { RoleListItem } from '@shared/dpf';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { useRouteBreadcrumbs } from '@/hooks/useRouteBreadcrumbs';
 import { useLanguage } from '@/contexts/LanguageContext';

@@ -8,7 +8,7 @@ import type {
   SystemAiConfig,
   UpdateSystemAiConfigInput,
   SystemAiMonitoring,
-} from '@types/agi';
+} from '@shared/agi';
 
 // ═══════════════════════════════════════════════════════════════
 // QUERY KEYS

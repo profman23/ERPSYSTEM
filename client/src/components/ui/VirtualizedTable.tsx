@@ -177,6 +177,12 @@ export function VirtualizedTable<T extends { id: string }>({
     [onSort]
   );
 
+  // Wrapper to bridge React 19 built-in types with @types/react from react-window
+  const RowComponent = useCallback(
+    (props: ListChildComponentProps<RowData<T>>) => <TableRow {...props} />,
+    []
+  );
+
   const rowData: RowData<T> = {
     columns,
     data,
@@ -246,7 +252,7 @@ export function VirtualizedTable<T extends { id: string }>({
           itemData={rowData}
           overscanCount={5}
         >
-          {TableRow as React.ComponentType<ListChildComponentProps<RowData<T>>>}
+          {RowComponent}
         </FixedSizeList>
       )}
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { ErrorBoundary } from './ErrorBoundary';
 
@@ -12,7 +13,7 @@ afterEach(() => {
 });
 
 // A component that throws an error on render
-function ThrowError({ message }: { message: string }) {
+function ThrowError({ message }: { message: string }): React.ReactNode {
   throw new Error(message);
 }
 

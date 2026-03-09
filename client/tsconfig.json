@@ -19,7 +19,7 @@
     "paths": {
       "@/*": ["./src/*"],
       "@assets/*": ["./src/assets/*"],
-      "@types/*": ["../types/*"]
+      "@shared/*": ["../types/*"]
     }
   },
   "include": ["src", "../types"],

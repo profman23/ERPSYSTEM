@@ -9,7 +9,7 @@ import type {
   PermissionMatrixModule,
   DPFPermission,
   AssignPermissionsInput,
-} from '@types/dpf';
+} from '@shared/dpf';
 
 /**
  * GET /api/v1/tenant/dpf/permissions/matrix
