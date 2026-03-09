@@ -14,7 +14,7 @@ import {
   createModuleSchema,
   updateModuleSchema,
 } from '../../validations/dpfModuleValidation';
-import { requirePermission } from '../../rbac/permissionMiddleware';
+import { requirePermission, requireScreenAuth } from '../../rbac/permissionMiddleware';
 
 const router = Router();
 
@@ -31,10 +31,11 @@ router.get(
 
 // ─── MODULE TREE ─────────────────────────────────────────────────────────────
 // GET /tree — single JOIN, cached. Used by ScreenAuthorizationGrid.
-// Supports ?scope=system|tenant override for system panel editing tenant roles.
+// Permission: ROLES (read) — this endpoint serves role creation/editing.
+// Matches system endpoint pattern: system/dpf.ts uses SYSTEM_ROLE_LIST.
 router.get(
   '/tree',
-  requirePermission('dpf.modules.view'),
+  requireScreenAuth('ROLES', 'read'),
   BaseController.handle(async ({ tenantId, query, isSystem }) => {
     // Allow explicit scope override via query param
     const scopeOverride = query.scope as string | undefined;
