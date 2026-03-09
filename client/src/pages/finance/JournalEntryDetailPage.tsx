@@ -103,7 +103,7 @@ export default function JournalEntryDetailPage() {
             {isRTL ? 'تفاصيل القيد' : 'Entry Details'}
           </h1>
         </div>
-        <div className="max-w-4xl"><TableSkeleton rows={6} columns={4} showHeader /></div>
+        <TableSkeleton rows={6} columns={4} showHeader />
       </div>
     );
   }
@@ -160,8 +160,8 @@ export default function JournalEntryDetailPage() {
         getDetailPath={(docId) => getPath(`finance/journal-entries/${docId}`)}
       />
 
-      {/* Cards — same max-w-4xl as Create */}
-      <div className="space-y-4 max-w-4xl">
+      {/* Cards */}
+      <div className="space-y-4">
         {/* Card 1: Entry Details — same layout as Create, all fields disabled */}
         <div
           className="rounded-lg border"
@@ -176,30 +176,26 @@ export default function JournalEntryDetailPage() {
           </div>
 
           <div className="px-5 py-5 space-y-4">
-            {/* Document Code — visible on Detail only (hidden on Create per CLAUDE.md) */}
-            <div className="space-y-1.5">
-              <Label className="text-xs flex items-center gap-1.5">
-                <StyledIcon icon={Hash} emoji="#️⃣" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
-                {isRTL ? 'رقم القيد' : 'Entry Code'}
-              </Label>
-              <Input value={entry.code} disabled className="h-9 max-w-[300px] font-mono" />
-            </div>
-
-            {/* Branch — same as Create (disabled in both) */}
-            <div className="space-y-1.5">
-              <Label className="text-xs flex items-center gap-1.5">
-                <StyledIcon icon={Hash} emoji="#️⃣" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
-                {isRTL ? 'الفرع' : 'Branch'}
-              </Label>
-              <Input
-                value={activeBranch?.branchName || (isRTL ? 'غير محدد' : 'Not selected')}
-                disabled
-                className="h-9 max-w-[300px]"
-              />
-            </div>
-
-            {/* Dates row — grid-cols-3 — same as Create */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Entry Code + Branch + Dates row */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1.5">
+                  <StyledIcon icon={Hash} emoji="#️⃣" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
+                  {isRTL ? 'رقم القيد' : 'Entry Code'}
+                </Label>
+                <Input value={entry.code} disabled className="h-9 font-mono" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1.5">
+                  <StyledIcon icon={Hash} emoji="#️⃣" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
+                  {isRTL ? 'الفرع' : 'Branch'}
+                </Label>
+                <Input
+                  value={activeBranch?.branchName || (isRTL ? 'غير محدد' : 'Not selected')}
+                  disabled
+                  className="h-9"
+                />
+              </div>
               <div className="space-y-1.5">
                 <Label className="text-xs flex items-center gap-1.5">
                   <StyledIcon icon={Calendar} emoji="📅" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
@@ -272,17 +268,17 @@ export default function JournalEntryDetailPage() {
               <table className="w-full">
                 <thead>
                   <tr style={{ backgroundColor: 'var(--color-surface-secondary)' }}>
-                    <th className="px-3 py-2 text-start font-medium w-10" style={{ color: 'var(--color-text-secondary)' }}>#</th>
+                    <th className="px-3 py-2 text-start font-medium w-12" style={{ color: 'var(--color-text-secondary)' }}>#</th>
                     <th className="px-3 py-2 text-start font-medium" style={{ color: 'var(--color-text-secondary)' }}>
                       {isRTL ? 'الحساب' : 'Account'}
                     </th>
-                    <th className="px-3 py-2 text-start font-medium w-36" style={{ color: 'var(--color-text-secondary)' }}>
+                    <th className="px-3 py-2 text-start font-medium w-44" style={{ color: 'var(--color-text-secondary)' }}>
                       {isRTL ? 'مدين' : 'Debit'}
                     </th>
-                    <th className="px-3 py-2 text-start font-medium w-36" style={{ color: 'var(--color-text-secondary)' }}>
+                    <th className="px-3 py-2 text-start font-medium w-44" style={{ color: 'var(--color-text-secondary)' }}>
                       {isRTL ? 'دائن' : 'Credit'}
                     </th>
-                    <th className="px-3 py-2 text-start font-medium w-40" style={{ color: 'var(--color-text-secondary)' }}>
+                    <th className="px-3 py-2 text-start font-medium w-56" style={{ color: 'var(--color-text-secondary)' }}>
                       {isRTL ? 'ملاحظات' : 'Remarks'}
                     </th>
                   </tr>

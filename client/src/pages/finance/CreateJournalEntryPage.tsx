@@ -216,7 +216,7 @@ export default function CreateJournalEntryPage() {
       {/* Error Banner */}
       {submitError && (
         <div
-          className="rounded-lg px-5 py-3 text-sm border max-w-4xl"
+          className="rounded-lg px-5 py-3 text-sm border"
           style={{
             backgroundColor: 'var(--badge-danger-bg)',
             borderColor: 'var(--badge-danger-border)',
@@ -227,7 +227,7 @@ export default function CreateJournalEntryPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4 max-w-4xl">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Card 1: Header */}
         <div
           className="rounded-lg border"
@@ -242,24 +242,22 @@ export default function CreateJournalEntryPage() {
           </div>
 
           <div className="px-5 py-5 space-y-4">
-            {/* Branch (auto-filled, read-only) */}
-            <div className="space-y-1.5">
-              <Label className="text-xs flex items-center gap-1.5">
-                <StyledIcon icon={Hash} emoji="#️⃣" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
-                {isRTL ? 'الفرع' : 'Branch'}
-              </Label>
-              <Input
-                value={activeBranch?.branchName || (isRTL ? 'غير محدد' : 'Not selected')}
-                disabled
-                className="h-9 max-w-[300px]"
-              />
-              {errors.branch && (
-                <p className="text-xs" style={{ color: 'var(--color-text-danger)' }}>{errors.branch}</p>
-              )}
-            </div>
-
-            {/* Dates row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Branch + Dates row */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1.5">
+                  <StyledIcon icon={Hash} emoji="#️⃣" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
+                  {isRTL ? 'الفرع' : 'Branch'}
+                </Label>
+                <Input
+                  value={activeBranch?.branchName || (isRTL ? 'غير محدد' : 'Not selected')}
+                  disabled
+                  className="h-9"
+                />
+                {errors.branch && (
+                  <p className="text-xs" style={{ color: 'var(--color-text-danger)' }}>{errors.branch}</p>
+                )}
+              </div>
               <div className="space-y-1.5">
                 <Label className="text-xs flex items-center gap-1.5">
                   <StyledIcon icon={Calendar} emoji="📅" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
@@ -372,20 +370,20 @@ export default function CreateJournalEntryPage() {
               <table className="w-full">
                 <thead>
                   <tr style={{ backgroundColor: 'var(--color-surface-secondary)' }}>
-                    <th className="px-3 py-2 text-start font-medium w-10" style={{ color: 'var(--color-text-secondary)' }}>#</th>
+                    <th className="px-3 py-2 text-start font-medium w-12" style={{ color: 'var(--color-text-secondary)' }}>#</th>
                     <th className="px-3 py-2 text-start font-medium" style={{ color: 'var(--color-text-secondary)' }}>
                       {isRTL ? 'الحساب' : 'Account'} *
                     </th>
-                    <th className="px-3 py-2 text-start font-medium w-36" style={{ color: 'var(--color-text-secondary)' }}>
+                    <th className="px-3 py-2 text-start font-medium w-44" style={{ color: 'var(--color-text-secondary)' }}>
                       {isRTL ? 'مدين' : 'Debit'}
                     </th>
-                    <th className="px-3 py-2 text-start font-medium w-36" style={{ color: 'var(--color-text-secondary)' }}>
+                    <th className="px-3 py-2 text-start font-medium w-44" style={{ color: 'var(--color-text-secondary)' }}>
                       {isRTL ? 'دائن' : 'Credit'}
                     </th>
-                    <th className="px-3 py-2 text-start font-medium w-40" style={{ color: 'var(--color-text-secondary)' }}>
+                    <th className="px-3 py-2 text-start font-medium w-56" style={{ color: 'var(--color-text-secondary)' }}>
                       {isRTL ? 'ملاحظات' : 'Remarks'}
                     </th>
-                    <th className="px-3 py-2 w-10"></th>
+                    <th className="px-3 py-2 w-12"></th>
                   </tr>
                 </thead>
                 <tbody>

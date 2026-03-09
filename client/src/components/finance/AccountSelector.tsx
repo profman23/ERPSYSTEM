@@ -13,7 +13,8 @@
  * - RTL support
  */
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Search, X, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -98,7 +99,10 @@ export function AccountSelector({
   const { isRTL } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [openUpward, setOpenUpward] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const displayLabel = isRTL && labelAr ? labelAr : label;
@@ -141,11 +145,14 @@ export function AccountSelector({
     ? `${selectedOption.code} - ${isRTL && selectedOption.nameAr ? selectedOption.nameAr : selectedOption.name}`
     : '';
 
-  // Close on outside click
+  // Close on outside click (check both container and portal dropdown)
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const inContainer = containerRef.current?.contains(target);
+      const inDropdown = dropdownRef.current?.contains(target);
+      if (!inContainer && !inDropdown) {
         setIsOpen(false);
         setSearch('');
       }
@@ -154,12 +161,26 @@ export function AccountSelector({
     return () => document.removeEventListener('mousedown', handler);
   }, [isOpen]);
 
-  // Focus search input when opened
+  // Calculate dropdown position + direction when opened
+  const updatePosition = useCallback(() => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const flip = spaceBelow < 300;
+    setOpenUpward(flip);
+    setDropdownPos({
+      top: flip ? rect.top : rect.bottom + 4,
+      left: rect.left,
+      width: rect.width,
+    });
+  }, []);
+
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
+    if (isOpen) {
+      updatePosition();
+      inputRef.current?.focus();
     }
-  }, [isOpen]);
+  }, [isOpen, updatePosition]);
 
   const handleSelect = (id: string) => {
     onChange(id === value ? null : id);
@@ -224,14 +245,21 @@ export function AccountSelector({
         <p className="mt-1 text-xs" style={{ color: 'var(--color-text-danger)' }}>{error}</p>
       )}
 
-      {/* Dropdown */}
-      {isOpen && (
+      {/* Dropdown — rendered via Portal to escape overflow clipping */}
+      {isOpen && createPortal(
         <div
+          ref={dropdownRef}
           className={cn(
-            'absolute z-50 mt-1 w-full rounded-lg border shadow-lg',
+            'fixed z-[9999] rounded-lg border shadow-lg',
             'bg-[var(--select-dropdown-bg)] border-[var(--select-dropdown-border)]',
             'max-h-72 flex flex-col',
           )}
+          style={{
+            top: openUpward ? undefined : dropdownPos.top,
+            bottom: openUpward ? window.innerHeight - dropdownPos.top + 4 : undefined,
+            left: dropdownPos.left,
+            width: dropdownPos.width,
+          }}
         >
           {/* Search */}
           <div className="p-2 border-b border-[var(--color-border)]">
@@ -293,7 +321,8 @@ export function AccountSelector({
               })
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
