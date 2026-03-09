@@ -3,8 +3,10 @@ import jwt from 'jsonwebtoken';
 import { db } from '../db';
 import { users, authTokens } from '../db/schemas';
 import { eq, and } from 'drizzle-orm';
+import { env } from '../config/env';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+// env.ts validates JWT_SECRET exists and is ≥16 chars at startup (fail-fast)
+const JWT_SECRET = env.JWT_SECRET as string;
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY = '30d';
 

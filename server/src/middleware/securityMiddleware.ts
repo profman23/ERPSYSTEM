@@ -61,7 +61,13 @@ export const corsMiddleware = cors({
       callback(null, true);
       return;
     }
-    
+
+    // Allow all .onrender.com domains for Render deployments
+    if (origin.endsWith('.onrender.com')) {
+      callback(null, true);
+      return;
+    }
+
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {

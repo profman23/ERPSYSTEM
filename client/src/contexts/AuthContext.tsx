@@ -17,11 +17,6 @@ const getApiUrl = () => {
   if (import.meta.env.VITE_API_URL) {
     return `${import.meta.env.VITE_API_URL}/api/v1`;
   }
-  if (typeof window !== 'undefined') {
-    const origin = window.location.origin;
-    const baseWithoutPort = origin.replace(/:\d+$/, '');
-    return `${baseWithoutPort}:5500/api/v1`;
-  }
   return 'http://localhost:5500/api/v1';
 };
 
