@@ -34,7 +34,7 @@ for (const user of TEST_USERS) {
     // Login via the UI
     await page.goto('/login');
     await page.getByLabel(/email/i).fill(user.email);
-    await page.getByLabel(/password/i).fill(user.password);
+    await page.locator('input[type="password"]').fill(user.password);
     await page.getByLabel(/tenant/i).fill(user.tenantCode);
     await page.getByRole('button', { name: /sign in|log in|login/i }).click();
 
