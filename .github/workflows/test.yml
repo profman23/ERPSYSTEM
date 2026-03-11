@@ -47,7 +47,7 @@ jobs:
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
       JWT_SECRET: ${{ secrets.JWT_SECRET_TEST }}
-      NODE_ENV: test
+      NODE_ENV: development
       SERVER_PORT: '5500'
       CLIENT_URL: 'http://localhost:5501'
     steps:
