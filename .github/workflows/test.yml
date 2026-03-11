@@ -60,9 +60,9 @@ jobs:
       - run: cd server && npm ci
       - run: cd client && npm ci
       - name: Install Playwright browsers
-        run: npx --no-install playwright install --with-deps chromium
+        run: ./node_modules/.bin/playwright install --with-deps chromium
       - name: Run E2E tests
-        run: npx --no-install playwright test
+        run: ./node_modules/.bin/playwright test
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
