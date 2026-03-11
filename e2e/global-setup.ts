@@ -33,13 +33,67 @@ const TEST_USERS = [
   },
 ];
 
+/** Helper: create tenant + admin user if not exists */
+async function ensureTenant(
+  request: any,
+  headers: Record<string, string>,
+  existingTenants: { code: string; id: string }[],
+  tenantConfig: { code: string; name: string; contactEmail: string },
+  userConfig: { firstName: string; lastName: string; email: string; password: string }
+) {
+  const existing = existingTenants.find((t) => t.code === tenantConfig.code);
+  let tenantId = existing?.id;
+
+  // Create tenant if not exists
+  if (!tenantId) {
+    const res = await request.post(`${API}/system/tenants/advanced`, {
+      headers,
+      data: {
+        name: tenantConfig.name,
+        code: tenantConfig.code,
+        countryCode: 'AE',
+        subscriptionPlan: 'professional',
+        contactEmail: tenantConfig.contactEmail,
+        defaultLanguage: 'en',
+      },
+    });
+    expect(res.ok(), `Failed to create ${tenantConfig.code}: ${res.status()}`).toBeTruthy();
+    const body = await res.json();
+    tenantId = body.data?.id;
+  }
+
+  // Create user (idempotent — ignore "already exists")
+  if (tenantId) {
+    const res = await request.post(`${API}/system/users`, {
+      headers,
+      data: {
+        userType: 'tenant_admin',
+        firstName: userConfig.firstName,
+        lastName: userConfig.lastName,
+        email: userConfig.email,
+        password: userConfig.password,
+        tenantId,
+      },
+    });
+    if (!res.ok()) {
+      const body = await res.json().catch(() => ({}));
+      const msg = (body.error || body.message || '').toLowerCase();
+      if (!msg.includes('already exists') && !msg.includes('duplicate')) {
+        expect.soft(res.ok(), `Failed to create user ${userConfig.email}: ${res.status()} ${msg}`).toBeTruthy();
+      }
+    }
+  }
+}
+
 /**
  * Seed test tenants and users via system API.
  * Idempotent — skips creation if tenant/user already exists.
  */
 setup('seed test data', async ({ request }) => {
-  setup.setTimeout(60_000); // Tenant creation with full setup (COA, DPF, etc.) takes time
-  // 1. Login as system admin to get an access token
+  // Each tenant advanced creation takes ~30s on CI (COA, DPF, posting periods)
+  setup.setTimeout(180_000);
+
+  // 1. Login as system admin
   const loginRes = await request.post(`${API}/auth/login`, {
     data: {
       tenantCode: 'SYSTEM',
@@ -51,108 +105,23 @@ setup('seed test data', async ({ request }) => {
   const { accessToken } = await loginRes.json();
   const headers = { Authorization: `Bearer ${accessToken}` };
 
-  // 2. Check existing tenants
+  // 2. Fetch existing tenants
   const tenantsRes = await request.get(`${API}/system/tenants?limit=100`, { headers });
   expect(tenantsRes.ok()).toBeTruthy();
   const tenantsData = await tenantsRes.json();
-  const existingCodes = new Set(
-    (tenantsData.data?.data || tenantsData.data || []).map((t: { code: string }) => t.code)
+  const existingTenants = (tenantsData.data?.data || tenantsData.data || []) as { code: string; id: string }[];
+
+  // 3. Ensure PETCARE tenant + admin user
+  await ensureTenant(request, headers, existingTenants,
+    { code: 'PETCARE', name: 'PetCare Clinic', contactEmail: 'admin@petcare.vet' },
+    { firstName: 'Tenant', lastName: 'Admin', email: 'tenantadmin@petcare.vet', password: 'Test@123' }
   );
 
-  // 3. Create PETCARE tenant if not exists
-  let petcareId: string | null = null;
-  if (!existingCodes.has('PETCARE')) {
-    const createRes = await request.post(`${API}/system/tenants/advanced`, {
-      headers,
-      data: {
-        name: 'PetCare Clinic',
-        code: 'PETCARE',
-        countryCode: 'AE',
-        subscriptionPlan: 'professional',
-        contactEmail: 'admin@petcare.vet',
-        defaultLanguage: 'en',
-      },
-    });
-    expect(createRes.ok(), `Failed to create PETCARE: ${createRes.status()}`).toBeTruthy();
-    const created = await createRes.json();
-    petcareId = created.data?.id;
-  } else {
-    // Find the existing tenant ID
-    const tenant = (tenantsData.data?.data || tenantsData.data || []).find(
-      (t: { code: string }) => t.code === 'PETCARE'
-    );
-    petcareId = tenant?.id;
-  }
-
-  // 4. Create PETCAREPLUS tenant if not exists
-  let petcarePlusId: string | null = null;
-  if (!existingCodes.has('PETCAREPLUS')) {
-    const createRes = await request.post(`${API}/system/tenants/advanced`, {
-      headers,
-      data: {
-        name: 'PetCare Plus Veterinary',
-        code: 'PETCAREPLUS',
-        countryCode: 'AE',
-        subscriptionPlan: 'professional',
-        contactEmail: 'admin@petcareplus.vet',
-        defaultLanguage: 'en',
-      },
-    });
-    expect(createRes.ok(), `Failed to create PETCAREPLUS: ${createRes.status()}`).toBeTruthy();
-    const created = await createRes.json();
-    petcarePlusId = created.data?.id;
-  } else {
-    const tenant = (tenantsData.data?.data || tenantsData.data || []).find(
-      (t: { code: string }) => t.code === 'PETCAREPLUS'
-    );
-    petcarePlusId = tenant?.id;
-  }
-
-  // 5. Create tenant admin user for PETCARE if not exists
-  if (petcareId) {
-    const createUserRes = await request.post(`${API}/system/users`, {
-      headers,
-      data: {
-        userType: 'tenant_admin',
-        firstName: 'Tenant',
-        lastName: 'Admin',
-        email: 'tenantadmin@petcare.vet',
-        password: 'Test@123',
-        tenantId: petcareId,
-      },
-    });
-    // 201 = created, 400/409 = already exists (both OK)
-    if (!createUserRes.ok()) {
-      const body = await createUserRes.json().catch(() => ({}));
-      const msg = body.error || body.message || '';
-      // Only fail if it's NOT a duplicate error
-      if (!msg.toLowerCase().includes('already exists') && !msg.toLowerCase().includes('duplicate')) {
-        expect(createUserRes.ok(), `Failed to create PETCARE admin: ${createUserRes.status()} ${msg}`).toBeTruthy();
-      }
-    }
-  }
-
-  // 6. Create app user for PETCAREPLUS if not exists
-  if (petcarePlusId) {
-    const createUserRes = await request.post(`${API}/system/users`, {
-      headers,
-      data: {
-        userType: 'tenant_admin',
-        firstName: 'Doctor',
-        lastName: 'User',
-        email: 'doctor@petcareplus.vet',
-        password: 'Test@123',
-        tenantId: petcarePlusId,
-      },
-    });
-    if (!createUserRes.ok()) {
-      const body = await createUserRes.json().catch(() => ({}));
-      const msg = body.error || body.message || '';
-      if (!msg.toLowerCase().includes('already exists') && !msg.toLowerCase().includes('duplicate')) {
-        expect(createUserRes.ok(), `Failed to create PETCAREPLUS user: ${createUserRes.status()} ${msg}`).toBeTruthy();
-      }
-    }
-  }
+  // 4. Ensure PETCAREPLUS tenant + app user
+  await ensureTenant(request, headers, existingTenants,
+    { code: 'PETCAREPLUS', name: 'PetCare Plus Veterinary', contactEmail: 'admin@petcareplus.vet' },
+    { firstName: 'Doctor', lastName: 'User', email: 'doctor@petcareplus.vet', password: 'Test@123' }
+  );
 });
 
 /**
@@ -160,14 +129,13 @@ setup('seed test data', async ({ request }) => {
  */
 for (const user of TEST_USERS) {
   setup(`authenticate as ${user.name}`, async ({ page }) => {
-    // Login via the UI
     await page.goto('/login');
     await page.getByLabel(/email/i).fill(user.email);
     await page.locator('input[type="password"]').fill(user.password);
     await page.getByLabel(/tenant/i).fill(user.tenantCode);
     await page.getByRole('button', { name: /sign in|log in|login/i }).click();
 
-    // Wait for redirect away from login page (dashboard or panel home)
+    // Wait for redirect away from login page
     await expect(page).not.toHaveURL(/\/login/, { timeout: 15_000 });
 
     // Save authenticated state
