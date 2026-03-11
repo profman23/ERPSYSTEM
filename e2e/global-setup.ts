@@ -22,14 +22,14 @@ const TEST_USERS = [
   },
   {
     name: 'admin',
-    email: 'tenantadmin@petcare.vet',
+    email: 'e2e-admin@petcare.vet',
     password: 'Test@123',
     tenantCode: 'PETCARE',
     storageFile: 'e2e/.auth/admin.json',
   },
   {
     name: 'app',
-    email: 'doctor@petcareplus.vet',
+    email: 'e2e-doctor@petcareplus.vet',
     password: 'Test@123',
     tenantCode: 'PETCAREPLUS',
     storageFile: 'e2e/.auth/app.json',
@@ -124,13 +124,13 @@ setup('seed test data', async ({ request }) => {
   // 3. Ensure PETCARE tenant + admin user
   await ensureTenant(request, headers, existingTenants,
     { code: 'PETCARE', name: 'PetCare Clinic', contactEmail: 'admin@petcare.vet' },
-    { firstName: 'Tenant', lastName: 'Admin', email: 'tenantadmin@petcare.vet', password: 'Test@123' }
+    { firstName: 'E2E', lastName: 'Admin', email: 'e2e-admin@petcare.vet', password: 'Test@123' }
   );
 
   // 4. Ensure PETCAREPLUS tenant + app user
   await ensureTenant(request, headers, existingTenants,
     { code: 'PETCAREPLUS', name: 'PetCare Plus Veterinary', contactEmail: 'admin@petcareplus.vet' },
-    { firstName: 'Doctor', lastName: 'User', email: 'doctor@petcareplus.vet', password: 'Test@123' }
+    { firstName: 'E2E', lastName: 'Doctor', email: 'e2e-doctor@petcareplus.vet', password: 'Test@123' }
   );
 });
 
