@@ -39,7 +39,7 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
       timeout: 30_000,
       env: {
-        NODE_ENV: 'test',
+        NODE_ENV: 'development',
         DATABASE_URL: process.env.DATABASE_URL_TEST || process.env.DATABASE_URL || '',
         JWT_SECRET: process.env.JWT_SECRET_TEST || 'test-jwt-secret-minimum16chars',
         SERVER_PORT: '5500',
