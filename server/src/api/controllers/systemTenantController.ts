@@ -22,6 +22,7 @@ export const createTenantAdvanced = async (req: Request, res: Response, next: Ne
 
     const result = await tenantSetupService.createTenant({
       name: validatedData.name,
+      code: validatedData.code,
       subscriptionPlan: validatedData.subscriptionPlan as SubscriptionPlanType,
       countryCode: validatedData.countryCode,
       contactEmail: validatedData.contactEmail,

@@ -25,6 +25,7 @@ import { PostingPeriodService } from './PostingPeriodService';
 
 export interface CreateTenantInput {
   name: string;
+  code?: string;
   subscriptionPlan: SubscriptionPlanType;
   countryCode: string;
   contactEmail: string;
@@ -86,13 +87,38 @@ export class TenantSetupService {
     const startTime = Date.now();
 
     try {
-      // Generate unique code atomically (creates reservation in DB)
-      const code = await tenantCodeGenerator.generateUniqueCode();
+      // Code generation: use provided code or auto-generate
+      let code: string;
+
+      if (input.code) {
+        // Custom code path — direct insert as reservation (DB UNIQUE constraint prevents duplicates)
+        code = input.code.toUpperCase();
+        const insertResult = await db.insert(tenants)
+          .values({
+            code,
+            name: '__CODE_RESERVATION__',
+            subscriptionPlan: 'trial',
+            status: 'pending',
+          })
+          .onConflictDoNothing({ target: tenants.code })
+          .returning({ code: tenants.code });
+
+        if (insertResult.length === 0) {
+          return { success: false, error: `Tenant code "${code}" already exists` };
+        }
+      } else {
+        // Auto-generate code atomically (creates reservation in DB)
+        code = await tenantCodeGenerator.generateUniqueCode();
+      }
 
       const country = MIDDLE_EAST_COUNTRIES.find(c => c.code === input.countryCode);
       if (!country) {
         // Cancel the reservation if validation fails
-        await tenantCodeGenerator.cancelCodeReservation(code);
+        if (input.code) {
+          await db.delete(tenants).where(eq(tenants.code, code));
+        } else {
+          await tenantCodeGenerator.cancelCodeReservation(code);
+        }
         return { success: false, error: 'Invalid country code' };
       }
 
