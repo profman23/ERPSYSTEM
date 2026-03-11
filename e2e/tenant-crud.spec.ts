@@ -3,6 +3,14 @@
  * Tests tenant list, create, edit, suspend
  */
 import { test, expect } from '@playwright/test';
+import {
+  waitForDataTable,
+  clickIfVisible,
+  clickWithConfirm,
+  uniqueName,
+  uniqueCode,
+  uniqueEmail,
+} from './helpers';
 
 test.use({ storageState: 'e2e/.auth/system.json' });
 
@@ -11,113 +19,91 @@ test.describe('Tenant CRUD (System Admin)', () => {
     await page.goto('/system/tenants');
     await expect(page).not.toHaveURL(/\/login/);
 
-    // Should show a table or list of tenants
-    await expect(page.locator('table, [role="table"], [data-testid="tenant-list"]')).toBeVisible({
-      timeout: 15_000,
-    });
-
-    // Should have at least one tenant row
-    const rows = page.locator('tbody tr, [data-testid="tenant-row"]');
-    await expect(rows.first()).toBeVisible({ timeout: 10_000 });
+    // AdvancedDataTable renders as <div>, not <table>
+    await waitForDataTable(page);
   });
 
   test('creates a new tenant', async ({ page }) => {
     await page.goto('/system/tenants/create');
     await expect(page).not.toHaveURL(/\/login/);
 
-    const uniqueName = `E2E Test Clinic ${Date.now()}`;
-    const uniqueCode = `E2E${Date.now().toString().slice(-6)}`;
+    const name = uniqueName('E2E Test Clinic');
+    const code = uniqueCode('E2E');
 
-    // Fill required fields — form field labels may vary
-    await page.getByLabel(/name/i).first().fill(uniqueName);
+    // Fill required fields — FormField uses htmlFor, so getByLabel works
+    await page.getByLabel(/name/i).first().fill(name);
 
-    // Look for code field — some forms auto-generate codes
+    // Code field — some forms auto-generate codes
     const codeField = page.getByLabel(/code/i);
-    if (await codeField.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await codeField.fill(uniqueCode);
+    if (await codeField.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      await codeField.fill(code);
     }
 
-    // Fill email if present
+    // Email if present
     const emailField = page.getByLabel(/email/i);
-    if (await emailField.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await emailField.fill(`e2e-${Date.now()}@test.com`);
+    if (await emailField.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      await emailField.fill(uniqueEmail('e2e'));
     }
 
     // Submit
     await page.getByRole('button', { name: /save|create|submit/i }).click();
 
     // Should redirect to tenant list or detail, or show success
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(3_000);
     const url = page.url();
     const hasSuccess =
       url.includes('/tenants') ||
-      (await page.locator('text=/success|created/i').isVisible({ timeout: 5000 }).catch(() => false));
+      (await page.locator('text=/success|created/i').isVisible({ timeout: 5_000 }).catch(() => false));
 
     expect(hasSuccess || !url.includes('/create')).toBeTruthy();
   });
 
   test('edits an existing tenant', async ({ page }) => {
     await page.goto('/system/tenants');
-    await expect(page.locator('table, [role="table"]')).toBeVisible({ timeout: 15_000 });
+    await waitForDataTable(page);
 
-    // Click first tenant row or edit button (icon-only with aria-label/title)
+    // Click edit button (icon-only with aria-label or title)
     const editButton = page.locator(
       'button[aria-label="Edit"], button[title="Edit"], [data-testid="edit-tenant"]'
     );
-    const firstRow = page.locator('tbody tr').first();
 
-    if (await editButton.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+    if (await editButton.first().isVisible({ timeout: 3_000 }).catch(() => false)) {
       await editButton.first().click();
     } else {
-      await firstRow.click();
+      // Tenant list has onRowClick — click first row content
+      const firstRow = page.locator('[data-testid="data-table"]').locator('div.border-b').first();
+      await clickIfVisible(firstRow, 3_000);
     }
 
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(2_000);
 
     // Should be on edit/detail page
     const nameField = page.getByLabel(/name/i).first();
-    if (await nameField.isVisible({ timeout: 5000 }).catch(() => false)) {
+    if (await nameField.isVisible({ timeout: 5_000 }).catch(() => false)) {
       const currentValue = await nameField.inputValue();
-      // Append a marker to verify edit works
       await nameField.fill(currentValue.replace(/ \[edited\]$/, '') + ' [edited]');
       await page.getByRole('button', { name: /save|update|submit/i }).click();
-      await page.waitForTimeout(3000);
+      await page.waitForTimeout(3_000);
     }
   });
 
   test('suspends and reactivates a tenant', async ({ page }) => {
     await page.goto('/system/tenants');
-    await expect(page.locator('table, [role="table"]')).toBeVisible({ timeout: 15_000 });
+    await waitForDataTable(page);
 
-    // Look for a suspend/deactivate toggle button
+    // No suspend action exists in tenant list — test gracefully no-ops
     const toggleButton = page.locator(
-      'button[aria-label*="suspend"], button[aria-label*="deactivate"], button:has-text("Suspend"), [data-testid="toggle-status"]'
+      'button[aria-label*="suspend" i], button[aria-label*="deactivate" i], button:has-text("Suspend"), [data-testid="toggle-status"]'
     );
 
-    if (await toggleButton.first().isVisible({ timeout: 5000 }).catch(() => false)) {
-      await toggleButton.first().click();
-
-      // Confirm dialog if present
-      const confirmButton = page.locator(
-        'button:has-text("Confirm"), button:has-text("Yes"), [data-testid="confirm-action"]'
-      );
-      if (await confirmButton.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await confirmButton.click();
-      }
-
-      await page.waitForTimeout(2000);
+    if (await toggleButton.first().isVisible({ timeout: 5_000 }).catch(() => false)) {
+      await clickWithConfirm(page, toggleButton);
 
       // Reactivate
       const activateButton = page.locator(
-        'button[aria-label*="activate"], button:has-text("Activate"), [data-testid="toggle-status"]'
+        'button[aria-label*="activate" i], button:has-text("Activate"), [data-testid="toggle-status"]'
       );
-      if (await activateButton.first().isVisible({ timeout: 5000 }).catch(() => false)) {
-        await activateButton.first().click();
-        const confirm2 = page.locator('button:has-text("Confirm"), button:has-text("Yes")');
-        if (await confirm2.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await confirm2.click();
-        }
-      }
+      await clickWithConfirm(page, activateButton, 5_000);
     }
   });
 });

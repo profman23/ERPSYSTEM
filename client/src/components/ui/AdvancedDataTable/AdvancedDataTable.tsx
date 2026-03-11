@@ -353,6 +353,7 @@ export function AdvancedDataTable<TData extends RowData>({
   return (
     <div
       ref={containerRef}
+      data-testid="data-table"
       className={cn('flex flex-col overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] w-full', className)}
       style={autoHeight ? { height: containerHeight } : undefined}
     >
