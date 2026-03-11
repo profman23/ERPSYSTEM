@@ -13,7 +13,7 @@ test.describe('Authentication Flow', () => {
   test('shows error on invalid credentials', async ({ page }) => {
     await page.goto('/login');
     await page.getByLabel(/email/i).fill('wrong@email.com');
-    await page.getByLabel(/password/i).fill('WrongPassword');
+    await page.locator('input[type="password"]').fill('WrongPassword');
     await page.getByLabel(/tenant/i).fill('INVALID');
     await page.getByRole('button', { name: /sign in|log in|login/i }).click();
 
