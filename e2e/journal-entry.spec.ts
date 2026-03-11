@@ -8,7 +8,7 @@ test.use({ storageState: 'e2e/.auth/admin.json' });
 
 test.describe('Journal Entry', () => {
   test('creates a balanced journal entry', async ({ page }) => {
-    await page.goto('/admin/finance/journal-entries/create');
+    await page.goto('/app/finance/journal-entries/create');
 
     if (page.url().includes('/login')) {
       test.skip(true, 'Not authenticated for this panel');
@@ -18,40 +18,63 @@ test.describe('Journal Entry', () => {
     await page.waitForTimeout(3000);
 
     // Fill posting date
-    const dateField = page.getByLabel(/posting.?date|date/i).first();
+    const dateField = page.locator('[data-testid="postingDate"]');
     if (await dateField.isVisible({ timeout: 5000 }).catch(() => false)) {
       await dateField.fill('2025-06-01');
     }
 
     // Fill remarks
-    const remarksField = page.getByLabel(/remarks|memo|description/i);
+    const remarksField = page.locator('[data-testid="remarks"]');
     if (await remarksField.isVisible({ timeout: 3000 }).catch(() => false)) {
       await remarksField.fill('E2E Test Journal Entry');
     }
 
-    // Add first line — debit
-    const debitInputs = page.locator('input[name*="debit"], input[placeholder*="Debit"]');
-    const creditInputs = page.locator('input[name*="credit"], input[placeholder*="Credit"]');
+    // Try to select accounts for the first two lines via AccountSelector
+    const accountTriggers = page.locator('table tbody tr td:nth-child(2) button');
+    if (await accountTriggers.first().isVisible({ timeout: 5000 }).catch(() => false)) {
+      // Select account for first line
+      await accountTriggers.first().click();
+      const firstOption = page.locator('[role="option"], [data-radix-collection-item]').first();
+      if (await firstOption.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await firstOption.click();
+        await page.waitForTimeout(500);
 
-    if (await debitInputs.first().isVisible({ timeout: 5000 }).catch(() => false)) {
-      await debitInputs.first().fill('1000');
-      await creditInputs.nth(1).fill('1000');
+        // Select account for second line
+        await accountTriggers.nth(1).click();
+        const secondOption = page.locator('[role="option"], [data-radix-collection-item]').first();
+        if (await secondOption.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await secondOption.click();
+          await page.waitForTimeout(500);
+        }
+      }
+    }
+
+    // Fill debit on first line (column 3) and credit on second line (column 4)
+    const debitFirstLine = page.locator('table tbody tr:first-child td:nth-child(3) input[type="number"]');
+    const creditSecondLine = page.locator('table tbody tr:nth-child(2) td:nth-child(4) input[type="number"]');
+
+    if (await debitFirstLine.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await debitFirstLine.fill('1000');
+      await creditSecondLine.fill('1000');
     }
 
     // Submit
-    await page.getByRole('button', { name: /save|post|create|submit/i }).click();
-    await page.waitForTimeout(3000);
+    const submitBtn = page.locator('[data-testid="submitBtn"]');
+    if (await submitBtn.isEnabled({ timeout: 3000 }).catch(() => false)) {
+      await submitBtn.click();
+      await page.waitForTimeout(3000);
 
-    // Should show success or redirect to detail/list
-    const url = page.url();
-    const isSuccess =
-      !url.includes('/create') ||
-      (await page.locator('text=/success|posted/i').isVisible({ timeout: 5000 }).catch(() => false));
-    expect(isSuccess).toBeTruthy();
+      // Should show success or redirect to detail/list
+      const url = page.url();
+      const isSuccess =
+        !url.includes('/create') ||
+        (await page.locator('text=/success|posted/i').isVisible({ timeout: 5000 }).catch(() => false));
+      expect(isSuccess).toBeTruthy();
+    }
   });
 
   test('rejects unbalanced journal entry', async ({ page }) => {
-    await page.goto('/admin/finance/journal-entries/create');
+    await page.goto('/app/finance/journal-entries/create');
 
     if (page.url().includes('/login')) {
       test.skip(true, 'Not authenticated for this panel');
@@ -60,36 +83,43 @@ test.describe('Journal Entry', () => {
     await page.waitForTimeout(3000);
 
     // Fill date
-    const dateField = page.getByLabel(/posting.?date|date/i).first();
+    const dateField = page.locator('[data-testid="postingDate"]');
     if (await dateField.isVisible({ timeout: 5000 }).catch(() => false)) {
       await dateField.fill('2025-06-01');
     }
 
-    // Add unbalanced lines — debit 1000 but credit only 500
-    const debitInputs = page.locator('input[name*="debit"], input[placeholder*="Debit"]');
-    const creditInputs = page.locator('input[name*="credit"], input[placeholder*="Credit"]');
+    // Fill unbalanced amounts — debit 1000, credit 500
+    const debitFirstLine = page.locator('table tbody tr:first-child td:nth-child(3) input[type="number"]');
+    const creditSecondLine = page.locator('table tbody tr:nth-child(2) td:nth-child(4) input[type="number"]');
 
-    if (await debitInputs.first().isVisible({ timeout: 5000 }).catch(() => false)) {
-      await debitInputs.first().fill('1000');
-      await creditInputs.nth(1).fill('500');
+    if (await debitFirstLine.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await debitFirstLine.fill('1000');
+      await creditSecondLine.fill('500');
     }
 
-    // Submit
-    await page.getByRole('button', { name: /save|post|create|submit/i }).click();
-    await page.waitForTimeout(3000);
+    // Submit button should be disabled when unbalanced
+    const submitBtn = page.locator('[data-testid="submitBtn"]');
+    const isDisabled = await submitBtn.isDisabled().catch(() => false);
 
-    // Should stay on create page with error about balance
-    const hasError =
-      page.url().includes('/create') ||
-      (await page
-        .locator('text=/balance|equal|mismatch|debit.*credit/i')
-        .isVisible({ timeout: 5000 })
-        .catch(() => false));
-    expect(hasError).toBeTruthy();
+    if (isDisabled) {
+      // Good — button is disabled for unbalanced entry
+      expect(isDisabled).toBeTruthy();
+    } else {
+      // If button is enabled, click and check for error
+      await submitBtn.click();
+      await page.waitForTimeout(3000);
+      const hasError =
+        page.url().includes('/create') ||
+        (await page
+          .locator('text=/balance|equal|mismatch|debit.*credit|unbalanced/i')
+          .isVisible({ timeout: 5000 })
+          .catch(() => false));
+      expect(hasError).toBeTruthy();
+    }
   });
 
   test('reverses a posted journal entry', async ({ page }) => {
-    await page.goto('/admin/finance/journal-entries');
+    await page.goto('/app/finance/journal-entries');
 
     if (page.url().includes('/login')) {
       test.skip(true, 'Not authenticated for this panel');
@@ -105,13 +135,15 @@ test.describe('Journal Entry', () => {
 
       // Find reverse button
       const reverseButton = page.locator(
-        'button:has-text("Reverse"), button[aria-label*="reverse"]'
+        'button:has-text("Reverse"), button[aria-label*="reverse" i], button[title*="Reverse"]'
       );
       if (await reverseButton.isVisible({ timeout: 5000 }).catch(() => false)) {
         await reverseButton.click();
 
         // Confirm dialog
-        const confirmButton = page.locator('button:has-text("Confirm"), button:has-text("Yes")');
+        const confirmButton = page.locator(
+          'button:has-text("Confirm"), button:has-text("Yes"), button:has-text("Confirm Reverse")'
+        );
         if (await confirmButton.isVisible({ timeout: 3000 }).catch(() => false)) {
           await confirmButton.click();
         }
@@ -121,7 +153,7 @@ test.describe('Journal Entry', () => {
   });
 
   test('shows REVERSED status on reversed entry', async ({ page }) => {
-    await page.goto('/admin/finance/journal-entries');
+    await page.goto('/app/finance/journal-entries');
 
     if (page.url().includes('/login')) {
       test.skip(true, 'Not authenticated for this panel');

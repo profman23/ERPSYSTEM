@@ -60,9 +60,9 @@ test.describe('Tenant CRUD (System Admin)', () => {
     await page.goto('/system/tenants');
     await expect(page.locator('table, [role="table"]')).toBeVisible({ timeout: 15_000 });
 
-    // Click first tenant row or edit button
+    // Click first tenant row or edit button (icon-only with aria-label/title)
     const editButton = page.locator(
-      'a:has-text("Edit"), button:has-text("Edit"), [data-testid="edit-tenant"]'
+      'button[aria-label="Edit"], button[title="Edit"], [data-testid="edit-tenant"]'
     );
     const firstRow = page.locator('tbody tr').first();
 

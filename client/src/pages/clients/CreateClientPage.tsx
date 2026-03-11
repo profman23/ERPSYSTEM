@@ -207,6 +207,7 @@ export default function CreateClientPage() {
                 First Name
               </Label>
               <Input
+                data-testid="firstName"
                 value={formData.firstName}
                 onChange={(e) => updateField('firstName', e.target.value)}
                 placeholder="First name"
@@ -223,6 +224,7 @@ export default function CreateClientPage() {
                 Last Name
               </Label>
               <Input
+                data-testid="lastName"
                 value={formData.lastName}
                 onChange={(e) => updateField('lastName', e.target.value)}
                 placeholder="Last name"
@@ -242,6 +244,7 @@ export default function CreateClientPage() {
               Email Address
             </Label>
             <Input
+              data-testid="email"
               type="email"
               value={formData.email}
               onChange={(e) => updateField('email', e.target.value)}
@@ -261,6 +264,7 @@ export default function CreateClientPage() {
               Phone Number
             </Label>
             <Input
+              data-testid="phone"
               value={formData.phone}
               onChange={(e) => updateField('phone', e.target.value)}
               placeholder="+966 5XX XXX XXX"
@@ -325,6 +329,7 @@ export default function CreateClientPage() {
             Cancel
           </Button>
           <Button
+            data-testid="submitBtn"
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting || createClient.isPending || updateClient.isPending}

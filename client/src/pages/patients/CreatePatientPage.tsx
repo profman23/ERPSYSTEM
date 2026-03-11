@@ -463,7 +463,7 @@ export default function CreatePatientPage() {
                   {t('pets.ownerClient')}
                 </Label>
                 {!isNewOwner ? (
-                  <div className="relative">
+                  <div className="relative" data-testid="ownerClient">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--color-text-muted)' }} />
                     <Input
                       value={ownerSearch}
@@ -620,6 +620,7 @@ export default function CreatePatientPage() {
               {t('pets.petName')}
             </Label>
             <Input
+              data-testid="petName"
               value={formData.name}
               onChange={(e) => updateField('name', e.target.value)}
               placeholder={t('pets.petNamePlaceholder')}
@@ -638,16 +639,18 @@ export default function CreatePatientPage() {
                 <StyledIcon icon={Dog} emoji="🐕" className="w-3.5 h-3.5" style={{ color: 'var(--color-text-muted)' }} />
                 {t('pets.species')}
               </Label>
-              <SimpleSelect
-                value={formData.speciesId}
-                onValueChange={(val) => {
-                  updateField('speciesId', val);
-                  setFormData(prev => ({ ...prev, breedId: '', crossBreedId: '' }));
-                }}
-                options={speciesOptions}
-                placeholder={t('pets.selectSpecies')}
-                error={!!errors.speciesId}
-              />
+              <div data-testid="species">
+                <SimpleSelect
+                  value={formData.speciesId}
+                  onValueChange={(val) => {
+                    updateField('speciesId', val);
+                    setFormData(prev => ({ ...prev, breedId: '', crossBreedId: '' }));
+                  }}
+                  options={speciesOptions}
+                  placeholder={t('pets.selectSpecies')}
+                  error={!!errors.speciesId}
+                />
+              </div>
               {errors.speciesId && (
                 <p className="text-xs" style={{ color: 'var(--color-text-danger)' }}>{errors.speciesId}</p>
               )}
@@ -903,6 +906,7 @@ export default function CreatePatientPage() {
             {t('common.cancel')}
           </Button>
           <Button
+            data-testid="submitBtn"
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting || createPatient.isPending || updatePatient.isPending}

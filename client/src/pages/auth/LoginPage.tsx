@@ -211,6 +211,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
             <div
+              data-testid="login-error"
               className="p-4 rounded-lg border flex items-start gap-3"
               style={{
                 backgroundColor: 'var(--alert-danger-bg)',

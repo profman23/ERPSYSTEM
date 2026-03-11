@@ -12,8 +12,8 @@ test.describe('Multi-Tenant Isolation', () => {
     });
     const page = await ctx.newPage();
 
-    // Go to users list — should only see PETCARE users
-    await page.goto('/admin/users');
+    // Go to patients list — should only see PETCARE data
+    await page.goto('/app/patients');
 
     if (page.url().includes('/login')) {
       test.skip(true, 'Not authenticated');

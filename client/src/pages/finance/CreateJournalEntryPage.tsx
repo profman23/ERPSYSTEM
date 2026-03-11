@@ -264,6 +264,7 @@ export default function CreateJournalEntryPage() {
                   {isRTL ? 'تاريخ الترحيل' : 'Posting Date'} *
                 </Label>
                 <Input
+                  data-testid="postingDate"
                   type="date"
                   value={postingDate}
                   onChange={(e) => setPostingDate(e.target.value)}
@@ -325,6 +326,7 @@ export default function CreateJournalEntryPage() {
                   {isRTL ? 'ملاحظات' : 'Remarks'}
                 </Label>
                 <Input
+                  data-testid="remarks"
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
                   placeholder={isRTL ? 'وصف القيد' : 'Entry description'}
@@ -530,7 +532,7 @@ export default function CreateJournalEntryPage() {
           <Button type="button" variant="ghost" onClick={() => navigate(listPath)}>
             {t('common.cancel')}
           </Button>
-          <Button type="submit" disabled={isSaving || !isBalanced}>
+          <Button data-testid="submitBtn" type="submit" disabled={isSaving || !isBalanced}>
             {isSaving && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
             {isRTL ? 'إضافة' : 'Add'}
           </Button>
