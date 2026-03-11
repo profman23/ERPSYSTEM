@@ -34,6 +34,7 @@ import {
   useCreateWarehouse,
   useUpdateWarehouse,
 } from '@/hooks/useWarehouses';
+import { useSetPageResource } from '@/contexts/PageResourceContext';
 
 const SCREEN_CODE = 'WAREHOUSES';
 
@@ -95,6 +96,8 @@ export default function CreateWarehousePage() {
   const [form, setForm] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState('');
+
+  useSetPageResource('warehouse', isEdit ? id : undefined, existingWarehouse?.code);
 
   // Pre-fill form in edit mode
   // Two-step update: clear branchId first to force Radix Select to see a value transition,

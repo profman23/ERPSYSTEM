@@ -195,7 +195,7 @@ export class PatientService extends BaseService {
     }
 
     const code = await this.generateCode(tenantId);
-    return this.insertOne<Patient>(tenantId, this.TABLE, { ...input, code });
+    return this.auditableInsertOne<Patient>(tenantId, this.TABLE, { ...input, code }, 'patient');
   }
 
   static async update(tenantId: string, id: string, input: UpdatePatientInput) {
@@ -217,10 +217,10 @@ export class PatientService extends BaseService {
       if (!crossBreedExists) throw new NotFoundError('Cross Breed', input.crossBreedId);
     }
 
-    return this.updateById<Patient>(tenantId, this.TABLE, id, input, this.ENTITY_NAME);
+    return this.auditableUpdateById<Patient>(tenantId, this.TABLE, id, input, 'patient', this.ENTITY_NAME);
   }
 
   static async remove(tenantId: string, id: string) {
-    await this.softDelete(tenantId, this.TABLE, id, this.ENTITY_NAME);
+    await this.auditableSoftDelete(tenantId, this.TABLE, id, 'patient', this.ENTITY_NAME);
   }
 }

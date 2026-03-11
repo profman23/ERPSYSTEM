@@ -29,6 +29,7 @@ import {
   useCreateUnitOfMeasure,
   useUpdateUnitOfMeasure,
 } from '@/hooks/useUnitOfMeasures';
+import { useSetPageResource } from '@/contexts/PageResourceContext';
 
 const SCREEN_CODE = 'UNITS_OF_MEASURE';
 
@@ -66,6 +67,8 @@ export default function CreateUnitOfMeasurePage() {
   const [form, setForm] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState('');
+
+  useSetPageResource('unit_of_measure', isEdit ? id : undefined, existingUnit?.code);
 
   // Pre-fill form in edit mode
   useEffect(() => {

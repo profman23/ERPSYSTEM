@@ -59,7 +59,7 @@ export class ClientService extends BaseService {
     }
 
     const code = await this.generateCode(tenantId);
-    return this.insertOne<Client>(tenantId, this.TABLE, { ...input, code });
+    return this.auditableInsertOne<Client>(tenantId, this.TABLE, { ...input, code }, 'client');
   }
 
   static async update(tenantId: string, id: string, input: UpdateClientInput) {
@@ -73,11 +73,11 @@ export class ClientService extends BaseService {
       }
     }
 
-    return this.updateById<Client>(tenantId, this.TABLE, id, input, this.ENTITY_NAME);
+    return this.auditableUpdateById<Client>(tenantId, this.TABLE, id, input, 'client', this.ENTITY_NAME);
   }
 
   static async remove(tenantId: string, id: string) {
-    await this.softDelete(tenantId, this.TABLE, id, this.ENTITY_NAME);
+    await this.auditableSoftDelete(tenantId, this.TABLE, id, 'client', this.ENTITY_NAME);
   }
 
   /**

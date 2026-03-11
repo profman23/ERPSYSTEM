@@ -40,6 +40,7 @@ import { db } from '../../db';
 import { eq, and, or, ilike, sql, asc, desc, SQL } from 'drizzle-orm';
 import { PgTableWithColumns } from 'drizzle-orm/pg-core';
 import { NotFoundError } from '../errors';
+import { auditService } from '../audit/auditService';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -221,6 +222,70 @@ export class BaseService {
     if (results.length === 0) {
       throw new NotFoundError(entityName, id);
     }
+  }
+
+  // ─── Auditable CRUD (auto-logs to audit trail) ──────────────────────────
+
+  /**
+   * Insert + audit log. Fire-and-forget: queued write, zero latency impact.
+   */
+  protected static async auditableInsertOne<T = any>(
+    tenantId: string,
+    table: PgTableWithColumns<any>,
+    data: Record<string, any>,
+    resourceType: string,
+  ): Promise<T> {
+    const result = await this.insertOne<T>(tenantId, table, data);
+    auditService.log({
+      action: 'create',
+      resourceType,
+      resourceId: (result as Record<string, any>).id,
+      newData: result as Record<string, unknown>,
+    });
+    return result;
+  }
+
+  /**
+   * Update + audit log with automatic old/new diff.
+   */
+  protected static async auditableUpdateById<T = any>(
+    tenantId: string,
+    table: PgTableWithColumns<any>,
+    id: string,
+    data: Record<string, any>,
+    resourceType: string,
+    entityName = 'Record',
+  ): Promise<T> {
+    const oldRecord = await this.findByIdOrNull(tenantId, table, id);
+    const result = await this.updateById<T>(tenantId, table, id, data, entityName);
+    auditService.log({
+      action: 'update',
+      resourceType,
+      resourceId: id,
+      oldData: oldRecord as Record<string, unknown>,
+      newData: result as Record<string, unknown>,
+    });
+    return result;
+  }
+
+  /**
+   * Soft delete + audit log.
+   */
+  protected static async auditableSoftDelete(
+    tenantId: string,
+    table: PgTableWithColumns<any>,
+    id: string,
+    resourceType: string,
+    entityName = 'Record',
+  ): Promise<void> {
+    const oldRecord = await this.findByIdOrNull(tenantId, table, id);
+    await this.softDelete(tenantId, table, id, entityName);
+    auditService.log({
+      action: 'delete',
+      resourceType,
+      resourceId: id,
+      oldData: oldRecord as Record<string, unknown>,
+    });
   }
 
   /**

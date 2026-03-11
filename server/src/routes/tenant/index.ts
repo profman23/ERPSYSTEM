@@ -34,6 +34,7 @@ import itemsRouter from './items';
 import documentNumberSeriesRouter from './documentNumberSeries';
 import postingPeriodsRouter from './postingPeriods';
 import journalEntriesRouter from './journalEntries';
+import auditTrailRouter from './auditTrail';
 import { BaseController } from '../../core/controller';
 import { UserRoleService } from '../../services/userRoleService';
 import { requirePermission, getUserAllScreenAuthorizations } from '../../rbac/permissionMiddleware';
@@ -116,5 +117,8 @@ router.use('/warehouses', warehousesRouter);
 router.use('/item-groups', itemGroupsRouter);
 router.use('/units-of-measure', unitOfMeasuresRouter);
 router.use('/items', itemsRouter);
+
+// Audit Trail
+router.use('/audit-trail', auditTrailRouter);
 
 export default router;

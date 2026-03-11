@@ -13,10 +13,12 @@
 import { eq, and, sql, gte, lte } from 'drizzle-orm';
 import { BaseService } from '../core/service';
 import { ConflictError, NotFoundError, ValidationError } from '../core/errors';
+import { auditService } from '../core/audit/auditService';
 import { db } from '../db';
 import { journalEntries, journalEntryLines } from '../db/schemas/journalEntries';
 import { postingSubPeriods } from '../db/schemas/postingPeriods';
 import { chartOfAccounts } from '../db/schemas/chartOfAccounts';
+import { users } from '../db/schemas/users';
 import { DocumentNumberSeriesService } from './DocumentNumberSeriesService';
 import type { JournalEntry, JournalEntryLine } from '../db/schemas/journalEntries';
 import type {
@@ -103,7 +105,43 @@ export class JournalEntryService extends BaseService {
       )
       .orderBy(journalEntryLines.lineNumber);
 
-    return { ...entry, lines };
+    // Creator info
+    let createdByUser = null;
+    if (entry.createdBy) {
+      const [creator] = await db
+        .select({ id: users.id, name: users.name, email: users.email })
+        .from(users)
+        .where(eq(users.id, entry.createdBy));
+      createdByUser = creator ?? null;
+    }
+
+    // Reversal user info (who created the reversal entry)
+    let reversedByUser = null;
+    if (entry.reversedById) {
+      const [reversalEntry] = await db
+        .select({
+          createdBy: journalEntries.createdBy,
+          createdAt: journalEntries.createdAt,
+        })
+        .from(journalEntries)
+        .where(
+          and(
+            eq(journalEntries.id, entry.reversedById),
+            eq(journalEntries.tenantId, tenantId),
+          ),
+        );
+      if (reversalEntry?.createdBy) {
+        const [reverser] = await db
+          .select({ id: users.id, name: users.name, email: users.email })
+          .from(users)
+          .where(eq(users.id, reversalEntry.createdBy));
+        reversedByUser = reverser
+          ? { ...reverser, reversedAt: reversalEntry.createdAt }
+          : null;
+      }
+    }
+
+    return { ...entry, lines, createdByUser, reversedByUser };
   }
 
   // ─── Create (Save = POSTED, Immutable) ─────────────────────────────────────
@@ -130,7 +168,7 @@ export class JournalEntryService extends BaseService {
     );
 
     // 5. Atomic insert: header + lines in transaction
-    return this.transaction(async (tx) => {
+    const result = await this.transaction(async (tx) => {
       // Insert header
       const [entry] = await tx.insert(journalEntries).values({
         tenantId,
@@ -165,6 +203,8 @@ export class JournalEntryService extends BaseService {
 
       return entry as JournalEntry;
     });
+    auditService.log({ action: 'create', resourceType: 'journal_entry', resourceId: result.id, newData: result as Record<string, unknown> });
+    return result;
   }
 
   // ─── Reverse (POSTED → REVERSED + create new reversal entry) ──────────────
@@ -213,7 +253,7 @@ export class JournalEntryService extends BaseService {
     );
 
     // 6. Atomic: create reversal entry + mark original as REVERSED
-    return this.transaction(async (tx) => {
+    const result = await this.transaction(async (tx) => {
       // Create reversal entry (swap debit ↔ credit)
       const [reversalEntry] = await tx.insert(journalEntries).values({
         tenantId,
@@ -264,6 +304,9 @@ export class JournalEntryService extends BaseService {
 
       return reversalEntry as JournalEntry;
     });
+    auditService.log({ action: 'update', resourceType: 'journal_entry', resourceId: id, oldData: { status: 'POSTED' } as Record<string, unknown>, newData: { status: 'REVERSED', reversedById: result.id } as Record<string, unknown> });
+    auditService.log({ action: 'create', resourceType: 'journal_entry', resourceId: result.id, newData: result as Record<string, unknown> });
+    return result;
   }
 
   // ─── Validate Posting Period ───────────────────────────────────────────────

@@ -13,6 +13,7 @@
 
 import { eq, and, like, asc, sql } from 'drizzle-orm';
 import { BaseService } from '../core/service';
+import { auditService } from '../core/audit/auditService';
 import { db } from '../db';
 import { ConflictError, NotFoundError, ValidationError, ForbiddenError } from '../core/errors';
 import { chartOfAccounts } from '../db/schemas/chartOfAccounts';
@@ -201,7 +202,7 @@ export class ChartOfAccountsService extends BaseService {
     };
 
     try {
-      return await this.insertOne<ChartOfAccount>(tenantId, this.TABLE, data);
+      return await this.auditableInsertOne<ChartOfAccount>(tenantId, this.TABLE, data, 'account');
     } catch (err: unknown) {
       // Catch PostgreSQL unique violation (concurrent insert with same code)
       if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === '23505') {
@@ -257,10 +258,11 @@ export class ChartOfAccountsService extends BaseService {
       if (results.length === 0) {
         throw new ConflictError('Record was modified by another user. Please refresh and try again.');
       }
+      auditService.log({ action: 'update', resourceType: 'account', resourceId: id, oldData: existing as Record<string, unknown>, newData: results[0] as Record<string, unknown> });
       return results[0] as ChartOfAccount;
     }
 
-    return this.updateById<ChartOfAccount>(tenantId, this.TABLE, id, updateData, this.ENTITY_NAME);
+    return this.auditableUpdateById<ChartOfAccount>(tenantId, this.TABLE, id, updateData, 'account', this.ENTITY_NAME);
   }
 
   // ─── MOVE (re-parent) ───────────────────────────────────────────────
@@ -371,7 +373,7 @@ export class ChartOfAccountsService extends BaseService {
     // const hasEntries = await JournalEntryService.hasEntriesForAccount(tenantId, id);
     // if (hasEntries) throw new ValidationError('Cannot delete account with posted journal entries.');
 
-    await this.softDelete(tenantId, this.TABLE, id, this.ENTITY_NAME);
+    await this.auditableSoftDelete(tenantId, this.TABLE, id, 'account', this.ENTITY_NAME);
   }
 
   // ─── PRIVATE HELPERS ─────────────────────────────────────────────────

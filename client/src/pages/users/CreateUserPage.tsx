@@ -32,6 +32,7 @@ import { apiClient } from '@/lib/api';
 import { extractApiError } from '@/lib/apiError';
 import { useToast } from '@/components/ui/toast';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSetPageResource } from '@/contexts/PageResourceContext';
 
 type UserType = 'system' | 'tenant_admin' | 'regular';
 
@@ -119,6 +120,8 @@ export default function CreateUserPage() {
   const { data: allBranches } = useAllBranches(effectiveTenantId || undefined);
   const { data: existingUser, isLoading: isLoadingUser } = useUser(userId);
   const { data: userRoles } = useUserRoles(isEditMode ? userId : undefined);
+
+  useSetPageResource('user', isEditMode ? userId : undefined, existingUser?.name || (existingUser ? `${existingUser.firstName} ${existingUser.lastName}` : undefined));
 
   // Fetch REAL roles from API
   const { data: rolesData, isLoading: isLoadingRoles } = useRoles({

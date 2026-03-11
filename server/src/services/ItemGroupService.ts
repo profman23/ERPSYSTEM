@@ -104,7 +104,7 @@ export class ItemGroupService extends BaseService {
       }
     }
 
-    return this.insertOne<ItemGroup>(tenantId, this.TABLE, input);
+    return this.auditableInsertOne<ItemGroup>(tenantId, this.TABLE, input, 'item_group');
   }
 
   static async update(tenantId: string, id: string, input: UpdateItemGroupInput) {
@@ -119,10 +119,10 @@ export class ItemGroupService extends BaseService {
       }
     }
 
-    return this.updateById<ItemGroup>(tenantId, this.TABLE, id, input, this.ENTITY_NAME);
+    return this.auditableUpdateById<ItemGroup>(tenantId, this.TABLE, id, input, 'item_group', this.ENTITY_NAME);
   }
 
   static async remove(tenantId: string, id: string) {
-    await this.softDelete(tenantId, this.TABLE, id, this.ENTITY_NAME);
+    await this.auditableSoftDelete(tenantId, this.TABLE, id, 'item_group', this.ENTITY_NAME);
   }
 }

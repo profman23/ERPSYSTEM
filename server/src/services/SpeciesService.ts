@@ -51,7 +51,7 @@ export class SpeciesService extends BaseService {
       throw new ConflictError(`Species with code '${input.code}' already exists`);
     }
 
-    return this.insertOne<Species>(tenantId, this.TABLE, input);
+    return this.auditableInsertOne<Species>(tenantId, this.TABLE, input, 'species');
   }
 
   static async update(tenantId: string, id: string, input: UpdateSpeciesInput) {
@@ -66,10 +66,10 @@ export class SpeciesService extends BaseService {
       }
     }
 
-    return this.updateById<Species>(tenantId, this.TABLE, id, input, this.ENTITY_NAME);
+    return this.auditableUpdateById<Species>(tenantId, this.TABLE, id, input, 'species', this.ENTITY_NAME);
   }
 
   static async remove(tenantId: string, id: string) {
-    await this.softDelete(tenantId, this.TABLE, id, this.ENTITY_NAME);
+    await this.auditableSoftDelete(tenantId, this.TABLE, id, 'species', this.ENTITY_NAME);
   }
 }

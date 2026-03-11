@@ -31,6 +31,7 @@ import {
   useCreateTaxCode,
   useUpdateTaxCode,
 } from '@/hooks/useTaxCodes';
+import { useSetPageResource } from '@/contexts/PageResourceContext';
 
 const SCREEN_CODE = 'TAX_CODES';
 
@@ -80,6 +81,8 @@ export default function CreateTaxCodePage() {
   const [form, setForm] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState('');
+
+  useSetPageResource('tax_code', isEdit ? id : undefined, existingTaxCode?.code);
 
   // Pre-fill form in edit mode
   // Two-step update: clear Select fields first to force Radix Select to see a value transition,

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/AuthService';
+import { RequestContext } from '../core/context';
 
 // Extend Express Request to include user
 declare global {
@@ -67,6 +68,17 @@ export const authMiddleware = (
         businessLineId: decoded.businessLineId,
         branchId: decoded.branchId,
       };
+
+      // Enrich RequestContext with auth data (for audit trail, logging, etc.)
+      const context = RequestContext.get();
+      if (context) {
+        context.tenantId = decoded.tenantId;
+        context.userId = decoded.userId;
+        context.branchId = decoded.branchId;
+        context.businessLineId = decoded.businessLineId;
+        context.accessScope = decoded.accessScope;
+        context.role = decoded.role;
+      }
     } catch (error: any) {
       // Token verification failed - leave req.user undefined
       // Let enforceRouteMetadata() reject the request

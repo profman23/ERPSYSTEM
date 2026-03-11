@@ -7,10 +7,10 @@
  * Uses shared document components: DocumentStatusBadge, DocumentReversalBanner, ReverseDocumentDialog.
  */
 
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  BookOpen, Calendar, FileText, Hash,
+  BookOpen, Calendar, FileText, Hash, History,
   RotateCcw, Loader2, CheckCircle2,
 } from 'lucide-react';
 import { StyledIcon } from '@/components/ui/StyledIcon';
@@ -21,7 +21,8 @@ import { Label } from '@/components/ui/label';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { TableSkeleton } from '@/components/ui/Skeleton';
 import { ErrorState } from '@/components/ui/error-state';
-import { DocumentStatusBadge, DocumentReversalBanner, ReverseDocumentDialog } from '@/components/document';
+import { DocumentStatusBadge, DocumentReversalBanner, ReverseDocumentDialog, DocumentHistoryDrawer } from '@/components/document';
+import type { HistoryEntry } from '@/components/document/DocumentHistoryDrawer';
 import { useDocumentReversal } from '@/hooks/useDocumentReversal';
 import { useRouteBreadcrumbs } from '@/hooks/useRouteBreadcrumbs';
 import { useScopePath } from '@/hooks/useScopePath';
@@ -32,6 +33,7 @@ import { extractApiError } from '@/lib/apiError';
 import { useJournalEntryDetail, useReverseJournalEntry } from '@/hooks/useJournalEntries';
 import { AccountSelector } from '@/components/finance/AccountSelector';
 import { getActiveBranch } from '@/hooks/useActiveBranch';
+import { useSetPageResource } from '@/contexts/PageResourceContext';
 
 const SCREEN_CODE = 'JOURNAL_ENTRIES';
 
@@ -55,6 +57,9 @@ export default function JournalEntryDetailPage() {
   });
 
   const activeBranch = getActiveBranch();
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+  useSetPageResource('journal_entry', id, entry?.code);
 
   const sourceTypeLabel = useMemo(() => {
     if (!entry) return '';
@@ -68,6 +73,25 @@ export default function JournalEntryDetailPage() {
     };
     const pair = map[entry.sourceType];
     return pair ? (isRTL ? pair[1] : pair[0]) : entry.sourceType;
+  }, [entry, isRTL]);
+
+  const historyEntries = useMemo((): HistoryEntry[] => {
+    if (!entry) return [];
+    const items: HistoryEntry[] = [{
+      action: 'CREATED',
+      userName: entry.createdByUser?.name || (isRTL ? 'غير معروف' : 'Unknown'),
+      userEmail: entry.createdByUser?.email || '',
+      timestamp: entry.createdAt,
+    }];
+    if (entry.reversedByUser) {
+      items.push({
+        action: 'REVERSED',
+        userName: entry.reversedByUser.name,
+        userEmail: entry.reversedByUser.email,
+        timestamp: entry.reversedByUser.reversedAt,
+      });
+    }
+    return items;
   }, [entry, isRTL]);
 
   const formatAmount = (val: string) => {
@@ -370,6 +394,14 @@ export default function JournalEntryDetailPage() {
           <Button type="button" variant="ghost" onClick={() => navigate(listPath)}>
             {isRTL ? 'العودة للقائمة' : 'Back to List'}
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setIsHistoryOpen(true)}
+          >
+            <History className="w-4 h-4 me-2" />
+            {isRTL ? 'سجل المستند' : 'History Log'}
+          </Button>
           {canReverse && (
             <Button
               onClick={() => setShowDialog(true)}
@@ -391,6 +423,14 @@ export default function JournalEntryDetailPage() {
         onConfirm={handleReverse}
         isReversing={reverseMutation.isPending}
         documentLabel={isRTL ? 'قيد اليومية' : 'Journal Entry'}
+      />
+
+      {/* Document History Drawer */}
+      <DocumentHistoryDrawer
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        documentCode={entry.code}
+        entries={historyEntries}
       />
     </div>
   );

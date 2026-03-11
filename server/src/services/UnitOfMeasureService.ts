@@ -58,7 +58,7 @@ export class UnitOfMeasureService extends BaseService {
       throw new ConflictError(`Unit of measure '${input.code}' already exists`);
     }
 
-    return this.insertOne<UnitOfMeasure>(tenantId, this.TABLE, input);
+    return this.auditableInsertOne<UnitOfMeasure>(tenantId, this.TABLE, input, 'unit_of_measure');
   }
 
   static async update(tenantId: string, id: string, input: UpdateUnitOfMeasureInput) {
@@ -89,10 +89,10 @@ export class UnitOfMeasureService extends BaseService {
       version: existing.version + 1,
     };
 
-    return this.updateById<UnitOfMeasure>(tenantId, this.TABLE, id, dbInput, this.ENTITY_NAME);
+    return this.auditableUpdateById<UnitOfMeasure>(tenantId, this.TABLE, id, dbInput, 'unit_of_measure', this.ENTITY_NAME);
   }
 
   static async remove(tenantId: string, id: string) {
-    await this.softDelete(tenantId, this.TABLE, id, this.ENTITY_NAME);
+    await this.auditableSoftDelete(tenantId, this.TABLE, id, 'unit_of_measure', this.ENTITY_NAME);
   }
 }

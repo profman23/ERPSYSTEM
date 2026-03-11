@@ -38,6 +38,7 @@ import {
 import { useItemGroupsList } from '@/hooks/useItemGroups';
 import { useUnitOfMeasuresList } from '@/hooks/useUnitOfMeasures';
 import { useWarehousesList } from '@/hooks/useWarehouses';
+import { useSetPageResource } from '@/contexts/PageResourceContext';
 
 const SCREEN_CODE = 'ITEM_MASTER';
 
@@ -117,6 +118,8 @@ export default function CreateItemPage() {
   const [form, setForm] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState('');
+
+  useSetPageResource('item', isEdit ? id : undefined, existingItem?.code);
 
   // Pre-fill in edit mode
   useEffect(() => {

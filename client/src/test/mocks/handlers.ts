@@ -200,4 +200,15 @@ export const handlers = [
     const body = await request.json() as Record<string, unknown>;
     return HttpResponse.json(single({ id: 'ur1', ...body }), { status: 201 });
   }),
+
+  // ── Audit Trail ──
+  http.get(`${API}/tenant/audit-trail/:resourceType/:resourceId`, () =>
+    HttpResponse.json(single([
+      {
+        id: 'aud_1', action: 'create', resourceType: 'species', resourceId: 'sp-1',
+        userId: 'u1', userName: 'Ahmed Mohamed', userEmail: 'ahmed@petcare.vet',
+        diff: null, createdAt: '2025-03-10T14:00:00.000Z',
+      },
+    ])),
+  ),
 ];

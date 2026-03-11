@@ -19,6 +19,7 @@ import { useScreenPermission } from '@/hooks/useScreenPermission';
 import { extractApiError } from '@/lib/apiError';
 import { useToast } from '@/components/ui/toast';
 import type { CreateRoleInput } from '@shared/dpf';
+import { useSetPageResource } from '@/contexts/PageResourceContext';
 
 const SCREEN_CODE = 'ROLES';
 
@@ -34,6 +35,8 @@ export default function EditRolePage() {
   const updateAuth = useUpdateTenantRoleAuthorizations();
   const { canModify, isLoading: permissionsLoading } = useScreenPermission(SCREEN_CODE);
   const { showToast } = useToast();
+
+  useSetPageResource('role', roleId, role?.roleName);
 
   const handleSubmit = async (data: CreateRoleInput) => {
     if (!roleId) return;

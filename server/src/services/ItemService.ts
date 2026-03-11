@@ -13,6 +13,7 @@
 import { eq, and, like, desc, ne, sql } from 'drizzle-orm';
 import { BaseService } from '../core/service';
 import { ConflictError } from '../core/errors';
+import { auditService } from '../core/audit/auditService';
 import { withRetry } from '../core/retry';
 import { items } from '../db/schemas/items';
 import type { Item } from '../db/schemas/items';
@@ -117,7 +118,7 @@ export class ItemService extends BaseService {
     };
 
     // Atomic code generation + insert inside transaction with retry for deadlock resilience
-    return withRetry(
+    const result = await withRetry(
       () =>
         this.transaction(async (tx) => {
           const code = await this.generateCodeInTx(tx, tenantId);
@@ -129,6 +130,8 @@ export class ItemService extends BaseService {
         }),
       { maxRetries: 3, label: 'ItemService.create' },
     );
+    auditService.log({ action: 'create', resourceType: 'item', resourceId: result.id, newData: result as Record<string, unknown> });
+    return result;
   }
 
   // ─── Update ───────────────────────────────────────────────────────────────
@@ -188,13 +191,13 @@ export class ItemService extends BaseService {
       dbInput.maximumStock = updateFields.maximumStock != null ? String(updateFields.maximumStock) : null;
     }
 
-    return this.updateById<Item>(tenantId, this.TABLE, id, dbInput, this.ENTITY_NAME);
+    return this.auditableUpdateById<Item>(tenantId, this.TABLE, id, dbInput, 'item', this.ENTITY_NAME);
   }
 
   // ─── Soft Delete ──────────────────────────────────────────────────────────
 
   static async remove(tenantId: string, id: string) {
-    await this.softDelete(tenantId, this.TABLE, id, this.ENTITY_NAME);
+    await this.auditableSoftDelete(tenantId, this.TABLE, id, 'item', this.ENTITY_NAME);
   }
 
   // ─── Image Management ────────────────────────────────────────────────────

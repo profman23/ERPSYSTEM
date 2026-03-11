@@ -157,22 +157,22 @@ export class UserService extends BaseService {
     const name = `${input.firstName} ${input.lastName}`;
 
     const { password, ...rest } = input;
-    return this.insertOne<User>(tenantId, this.TABLE, {
+    return this.auditableInsertOne<User>(tenantId, this.TABLE, {
       ...rest,
       name,
       passwordHash,
-    });
+    }, 'user');
   }
 
   static async update(tenantId: string, id: string, input: UpdateUserInput) {
-    return this.updateById<User>(tenantId, this.TABLE, id, input, this.ENTITY_NAME);
+    return this.auditableUpdateById<User>(tenantId, this.TABLE, id, input, 'user', this.ENTITY_NAME);
   }
 
   static async toggleStatus(tenantId: string, id: string, isActive: boolean) {
-    return this.updateById<User>(tenantId, this.TABLE, id, { isActive }, this.ENTITY_NAME);
+    return this.auditableUpdateById<User>(tenantId, this.TABLE, id, { isActive }, 'user', this.ENTITY_NAME);
   }
 
   static async remove(tenantId: string, id: string) {
-    await this.softDelete(tenantId, this.TABLE, id, this.ENTITY_NAME);
+    await this.auditableSoftDelete(tenantId, this.TABLE, id, 'user', this.ENTITY_NAME);
   }
 }

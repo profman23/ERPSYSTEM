@@ -43,7 +43,7 @@ export interface DPFModuleDefinition {
 
 /**
  * Complete DPF Structure — Only DEVELOPED modules/screens
- * Tenant: 5 modules (16 screens) | System: 8 modules (11 screens)
+ * Tenant: 6 modules (19 screens) | System: 8 modules (11 screens)
  * Add new modules/screens here ONLY when the feature is fully built.
  */
 export const DPF_STRUCTURE: DPFModuleDefinition[] = [
@@ -261,6 +261,46 @@ export const DPF_STRUCTURE: DPFModuleDefinition[] = [
         screenNameAr: 'بيانات الأصناف',
         route: '/app/inventory/items',
         sortOrder: '001',
+      },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 6. TOOLBAR MODULE
+  // ═══════════════════════════════════════════════════════════════
+  {
+    moduleCode: 'TOOLBAR',
+    moduleName: 'Toolbar',
+    moduleNameAr: 'شريط الأدوات',
+    category: 'OPERATIONS',
+    icon: 'wrench',
+    description: 'Header toolbar quick actions and utilities',
+    descriptionAr: 'إجراءات وأدوات سريعة في شريط الأدوات',
+    sortOrder: '006',
+    screens: [
+      {
+        screenCode: 'TOOLBAR_SWITCH_BRANCH',
+        screenName: 'Switch Branch',
+        screenNameAr: 'تبديل الفرع',
+        description: 'Switch active branch without logging out',
+        descriptionAr: 'تبديل الفرع النشط بدون تسجيل الخروج',
+        sortOrder: '001',
+      },
+      {
+        screenCode: 'TOOLBAR_HISTORY_LOG',
+        screenName: 'History Log',
+        screenNameAr: 'سجل التاريخ',
+        description: 'View document and entity history logs',
+        descriptionAr: 'عرض سجلات تاريخ المستندات والكيانات',
+        sortOrder: '002',
+      },
+      {
+        screenCode: 'TOOLBAR_JE_PREVIEW',
+        screenName: 'Journal Entry Preview',
+        screenNameAr: 'معاينة قيد اليومية',
+        description: 'Preview linked journal entries from source documents',
+        descriptionAr: 'معاينة قيود اليومية المرتبطة بالمستندات المصدر',
+        sortOrder: '003',
       },
     ],
   },

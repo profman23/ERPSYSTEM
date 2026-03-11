@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { PageSkeleton } from '@/components/ui/Skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useSetPageResource } from '@/contexts/PageResourceContext';
 
 function DetailRow({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
@@ -24,6 +25,8 @@ export default function PatientDetailPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
   const { data: patient, isLoading, error } = usePatientDetail(patientId);
+
+  useSetPageResource('patient', patientId, patient?.name);
 
   if (isLoading) return <PageSkeleton />;
 

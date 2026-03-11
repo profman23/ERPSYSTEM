@@ -11,6 +11,7 @@
 import { eq, and } from 'drizzle-orm';
 import { BaseService } from '../core/service';
 import { ConflictError, NotFoundError } from '../core/errors';
+import { auditService } from '../core/audit/auditService';
 import { db } from '../db';
 import { warehouses } from '../db/schemas/warehouses';
 import type { Warehouse } from '../db/schemas/warehouses';
@@ -119,7 +120,7 @@ export class WarehouseService extends BaseService {
 
     // If isDefault, toggle off other defaults in same branch (transactional)
     if (input.isDefault) {
-      return this.transaction(async (tx) => {
+      const result = await this.transaction(async (tx) => {
         await tx.update(warehouses)
           .set({ isDefault: false, updatedAt: new Date() })
           .where(and(
@@ -134,9 +135,11 @@ export class WarehouseService extends BaseService {
           .returning();
         return created as Warehouse;
       });
+      auditService.log({ action: 'create', resourceType: 'warehouse', resourceId: result.id, newData: result as Record<string, unknown> });
+      return result;
     }
 
-    return this.insertOne<Warehouse>(tenantId, this.TABLE, input);
+    return this.auditableInsertOne<Warehouse>(tenantId, this.TABLE, input, 'warehouse');
   }
 
   static async update(tenantId: string, id: string, input: UpdateWarehouseInput) {
@@ -155,7 +158,7 @@ export class WarehouseService extends BaseService {
     if (input.isDefault === true) {
       const existing = await this.findById<Warehouse>(tenantId, this.TABLE, id, this.ENTITY_NAME);
 
-      return this.transaction(async (tx) => {
+      const result = await this.transaction(async (tx) => {
         await tx.update(warehouses)
           .set({ isDefault: false, updatedAt: new Date() })
           .where(and(
@@ -174,9 +177,11 @@ export class WarehouseService extends BaseService {
           .returning();
         return updated as Warehouse;
       });
+      auditService.log({ action: 'update', resourceType: 'warehouse', resourceId: id, oldData: existing as Record<string, unknown>, newData: result as Record<string, unknown> });
+      return result;
     }
 
-    return this.updateById<Warehouse>(tenantId, this.TABLE, id, input, this.ENTITY_NAME);
+    return this.auditableUpdateById<Warehouse>(tenantId, this.TABLE, id, input, 'warehouse', this.ENTITY_NAME);
   }
 
   static async remove(tenantId: string, id: string) {
@@ -197,7 +202,7 @@ export class WarehouseService extends BaseService {
       throw new ConflictError('Cannot delete the default warehouse. Set another warehouse as default first.');
     }
 
-    await this.softDelete(tenantId, this.TABLE, id, this.ENTITY_NAME);
+    await this.auditableSoftDelete(tenantId, this.TABLE, id, 'warehouse', this.ENTITY_NAME);
   }
 
   static async toggleStatus(tenantId: string, id: string) {

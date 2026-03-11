@@ -33,6 +33,7 @@ import {
   useCreateItemGroup,
   useUpdateItemGroup,
 } from '@/hooks/useItemGroups';
+import { useSetPageResource } from '@/contexts/PageResourceContext';
 
 const SCREEN_CODE = 'ITEM_GROUPS';
 
@@ -87,6 +88,8 @@ export default function CreateItemGroupPage() {
   const [form, setForm] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState('');
+
+  useSetPageResource('item_group', isEdit ? id : undefined, existingItemGroup?.code);
 
   // Pre-fill form in edit mode
   // Two-step update: clear itemGroupType first to force Radix Select to see a value transition,

@@ -980,5 +980,14 @@
     "preferredVendor": "Preferred Vendor",
     "itemImage": "Item Image",
     "saveItemFirst": "Save item first to upload image"
+  },
+  "toolbar": {
+    "title": "Toolbar",
+    "switchBranch": "Switch Branch",
+    "historyLog": "History Log",
+    "journalEntryPreview": "Journal Entry Preview",
+    "comingSoon": "Coming Soon",
+    "currentBranch": "Current",
+    "noRecord": "No Record"
   }
 }

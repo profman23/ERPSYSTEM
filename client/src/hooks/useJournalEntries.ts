@@ -56,6 +56,18 @@ export interface JournalEntry {
   lines?: JournalEntryLine[];
 }
 
+export interface UserInfo {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface JournalEntryDetail extends JournalEntry {
+  lines: JournalEntryLine[];
+  createdByUser: UserInfo | null;
+  reversedByUser: (UserInfo & { reversedAt: string }) | null;
+}
+
 export interface JournalEntryListParams {
   search?: string;
   page?: number;
@@ -128,7 +140,7 @@ export function useJournalEntryDetail(id: string | undefined) {
     queryKey: journalEntryKeys.detail(id!),
     queryFn: async () => {
       const { data } = await apiClient.get(`/tenant/journal-entries/${id}`);
-      return data.data as JournalEntry;
+      return data.data as JournalEntryDetail;
     },
     enabled: !!id,
     staleTime: 5 * 60 * 1000,

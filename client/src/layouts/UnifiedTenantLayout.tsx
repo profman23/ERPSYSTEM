@@ -46,6 +46,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { HeaderToolbar } from '@/components/ui/HeaderToolbar';
+import { PageResourceProvider } from '@/contexts/PageResourceContext';
 import { StyledIcon } from '@/components/ui/StyledIcon';
 import AiAssistantChat from '@/components/ai/AiAssistantChat';
 import { useAgiStatus } from '@/hooks/useAgi';
@@ -320,6 +322,7 @@ export default function UnifiedTenantLayout() {
   const collapsed = !isMobile && isCollapsed;
 
   return (
+    <PageResourceProvider>
     <div className="h-screen flex flex-row overflow-hidden bg-panel">
       {/* ═══ SIDEBAR ═══
        * No flex-row-reverse needed — dir="rtl" on <html> reverses flex-row automatically.
@@ -646,6 +649,9 @@ export default function UnifiedTenantLayout() {
 
                 {/* Theme toggle */}
                 <ThemeToggle variant="cycle" size="sm" />
+
+                {/* Toolbar */}
+                <HeaderToolbar />
               </div>
 
               <div className="flex-1" />
@@ -674,6 +680,9 @@ export default function UnifiedTenantLayout() {
               <div className="flex items-center gap-3">
                 {/* Theme toggle */}
                 <ThemeToggle variant="cycle" size="sm" />
+
+                {/* Toolbar */}
+                <HeaderToolbar />
 
                 {/* Username */}
                 <span className="text-sm font-medium hidden md:block" style={{ color: 'inherit' }}>{userName}</span>
@@ -761,5 +770,6 @@ export default function UnifiedTenantLayout() {
         isEnabled={aiStatus?.isEnabled ?? false}
       />
     </div>
+    </PageResourceProvider>
   );
 }

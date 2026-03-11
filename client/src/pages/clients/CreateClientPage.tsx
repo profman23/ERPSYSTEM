@@ -17,6 +17,7 @@ import { useCreateClient, useUpdateClient, useClientDetail } from '@/hooks/useCl
 import { useScreenPermission } from '@/hooks/useScreenPermission';
 import { extractApiError } from '@/lib/apiError';
 import { useToast } from '@/components/ui/toast';
+import { useSetPageResource } from '@/contexts/PageResourceContext';
 
 const SCREEN_CODE = 'CLIENT_LIST';
 
@@ -58,6 +59,8 @@ export default function CreateClientPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [formLoaded, setFormLoaded] = useState(false);
+
+  useSetPageResource('client', isEditMode ? clientId : undefined, existingClient?.code);
 
   // Pre-fill in edit mode
   useEffect(() => {

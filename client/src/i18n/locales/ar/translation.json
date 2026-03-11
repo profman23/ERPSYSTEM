@@ -980,5 +980,14 @@
     "preferredVendor": "المورد المفضل",
     "itemImage": "صورة الصنف",
     "saveItemFirst": "احفظ الصنف أولاً لرفع صورة"
+  },
+  "toolbar": {
+    "title": "شريط الأدوات",
+    "switchBranch": "تبديل الفرع",
+    "historyLog": "سجل التاريخ",
+    "journalEntryPreview": "معاينة قيد اليومية",
+    "comingSoon": "قريبًا",
+    "currentBranch": "الحالي",
+    "noRecord": "لا يوجد سجل"
   }
 }

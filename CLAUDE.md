@@ -48,7 +48,7 @@ Package:    npm only (not yarn/pnpm)
 
 ### Built & Working
 - Multi-tenant auth (JWT + refresh + AsyncLocalStorage tenant context)
-- DPF permission system (22 modules, SAP B1 AuthorizationLevel)
+- DPF permission system (6 tenant + 8 system modules, SAP B1 AuthorizationLevel)
 - Tenant / BusinessLine / Branch / User CRUD — all using BaseService + BaseController
 - BaseController + BaseService + AppError + ApiResponse (unified patterns)
 - Drizzle relations for 40+ tables
@@ -64,28 +64,32 @@ Package:    npm only (not yarn/pnpm)
 - 0 production TypeScript errors
 - Tiered cache: L1 (in-memory) → L2 (Redis/Upstash) → L3 (AGI Knowledge Cache) with graceful degradation
 - DPF Engine optimized: 2 queries on cache miss (UNION ALL), 15min TTL, cache warming on login
-- Full test infrastructure: 477 backend tests + 104 frontend tests + 25 E2E tests (Playwright)
+- Full test infrastructure: 477 backend tests + 132 frontend tests + 25 E2E tests (Playwright)
 - Redis: SCAN-based invalidation (non-blocking), legacy CacheService bridged to AGI-Ready cache
 - Reusable UI: FormWizard, PhoneInput, VirtualizedList, VirtualizedTable, AccountSelector, empty/error/loading states
 - Document Number Series (branch-scoped, 7 doc types, concurrent-safe SELECT FOR UPDATE + withRetry)
 - Posting Periods (fiscal year + 12 monthly sub-periods, OPEN/CLOSED/LOCKED, auto-seeded per tenant)
 - Journal Entries (double-entry bookkeeping, immutable documents, reversal transactions, master/detail)
 - withRetry() utility for database resilience (exponential backoff + jitter, Neon cold starts, deadlocks)
+- Header Toolbar (DPF-controlled quick actions, branch switching, history log, registry pattern for extensibility)
+- Document History Drawer (reusable timeline component for document audit trail — created/reversed/updated)
+- Audit Trail Integration (all 13 CRUD services auto-log via BaseService auditable methods, REST API, frontend hook + contextual HeaderToolbar History Log)
 
 ### NOT Built Yet (Domain Features)
 - Appointments, Medical Records
 - Invoices, Payments, Inventory transactions, Purchase Orders
 
 ### Recently Completed
+- Audit Trail Integration (BaseService auditable methods + audit trail API + PageResourceContext + useAuditTrail hook + HeaderToolbar History Log)
 - Journal Entries (double-entry bookkeeping engine, full list/create/detail/reverse workflow)
 - Financial document UI pattern (SAP B1 style: Create + Detail same layout, shared reversal components)
 - Item Master Data (CRUD + frontend form with image upload)
-- Comprehensive test suite: 477 backend (35 files) + 104 frontend (20 files) + 25 E2E Playwright
+- Comprehensive test suite: 477 backend (35 files) + 121 frontend (22 files) + 25 E2E Playwright
 - CI/CD: GitHub Actions workflow (backend + frontend + E2E pipeline)
 - Deployment config: Render blueprint (staging + production) + Neon 3-environment setup
 
 ### Known Technical Debt
-- Legacy controllers still in use: `roleController` (Phase 2B deferred), `usersController` (used by system panel)
+- Legacy controllers still in use: `roleController` (Phase 2B deferred, no audit trail), `usersController` (used by system panel)
 - `systemTenantController` / `hierarchyController` use next(error) pattern (functional, not yet BaseController)
 - DPF Engine: 2 queries on cache miss (goal is 1 — needs single JOIN replacing UNION ALL)
 - Legacy Phase 5 security tests (18 tests) fail — need DB connection, not updated for current middleware
@@ -291,6 +295,9 @@ Beyond basic CRUD (`findMany`, `findById`, `insertOne`, `updateById`, `softDelet
 | `this.findByIdOrNull(tenantId, table, id)` | Returns null instead of throwing NotFoundError |
 | `this.count(tenantId, table, filters?)` | Count records with automatic tenant isolation |
 | `this.db` (protected) | Direct Drizzle access for complex queries (JOINs, subqueries, aggregations) |
+| `this.auditableInsertOne(tenantId, table, data, resourceType)` | Insert + fire-and-forget audit log |
+| `this.auditableUpdateById(tenantId, table, id, data, resourceType, entityName)` | Update + audit log with old/new diff |
+| `this.auditableSoftDelete(tenantId, table, id, resourceType, entityName)` | Soft delete + audit log |
 
 ### Master/Detail Pattern (Header + Lines)
 
@@ -416,6 +423,7 @@ Before creating anything, check `client/src/components/ui/`:
 | `FormWizard/` | Multi-step wizard forms |
 | `PhoneInput` | Phone number with country dial code |
 | `ImageUpload` | Image upload with drag-drop + preview |
+| `HeaderToolbar` | Header quick actions dropdown (branch switch, history, JE preview) |
 | `VirtualizedTable` | Large scrollable tables (react-window) |
 | `empty-state` / `error-state` / `loading-state` | Full-page state displays |
 
@@ -698,11 +706,11 @@ JWT_SECRET resolution: explicit `JWT_SECRET` → `SESSION_SECRET` fallback → d
 | Backend Services | ~200 | 16 | Vitest + mock DB |
 | Backend Routes | ~175 | 16 | Vitest + Supertest |
 | Backend Core | ~100 | 3 | Vitest |
-| Frontend Hooks | 60 | 10 | Vitest + MSW |
-| Frontend Components | 40 | 8 | Vitest + Testing Library |
+| Frontend Hooks | 66 | 11 | Vitest + MSW |
+| Frontend Components | 62 | 10 | Vitest + Testing Library |
 | Frontend Setup | 4 | 2 | Vitest |
 | E2E | 25 | 7 | Playwright + Chromium |
-| **Total** | **~604** | **62** | |
+| **Total** | **~632** | **65** | |
 
 ### Structure
 
@@ -716,7 +724,7 @@ e2e/**/*.spec.ts           ← E2E tests (25 tests, 7 files)
 
 ```bash
 cd server && npm test              # 477 backend tests
-cd client && npm test              # 104 frontend tests (may need batches on Windows)
+cd client && npm test              # 115 frontend tests (may need batches on Windows)
 npm run test:e2e                   # 25 E2E tests (needs running server+client+test DB)
 ```
 
@@ -1045,6 +1053,7 @@ All 7 financial document types (Journal Entry, Sales Invoice, Purchase Order, Cr
 | `DocumentStatusBadge` | `client/src/components/document/DocumentStatusBadge.tsx` | POSTED/REVERSED badge with bilingual labels |
 | `DocumentReversalBanner` | `client/src/components/document/DocumentReversalBanner.tsx` | Info/warning banners linking to original/reversal document |
 | `ReverseDocumentDialog` | `client/src/components/document/ReverseDocumentDialog.tsx` | Reversal confirmation dialog (date + remarks) |
+| `DocumentHistoryDrawer` | `client/src/components/document/DocumentHistoryDrawer.tsx` | Timeline drawer showing document lifecycle (create/reverse/update) |
 | `useDocumentReversal` | `client/src/hooks/useDocumentReversal.ts` | Dialog state + `canReverse` logic |
 
 **Pattern rule:** Extract shared **behaviors** (reversal, status). Keep domain-specific **layout** at page level. Each document type has different fields and line columns — no visual wrapper abstraction.
@@ -1052,7 +1061,7 @@ All 7 financial document types (Journal Entry, Sales Invoice, Purchase Order, Cr
 **New document type checklist (frontend):**
 1. Copy `CreateJournalEntryPage.tsx` → adapt fields and line columns
 2. Copy `JournalEntryDetailPage.tsx` → adapt fields and line columns (all disabled)
-3. Import `DocumentStatusBadge`, `DocumentReversalBanner`, `ReverseDocumentDialog` from `@/components/document`
+3. Import `DocumentStatusBadge`, `DocumentReversalBanner`, `ReverseDocumentDialog`, `DocumentHistoryDrawer` from `@/components/document`
 4. Import `useDocumentReversal` from `@/hooks/useDocumentReversal`
 
 ---
@@ -1213,7 +1222,12 @@ types/                              ← Shared types (client + server)
 | Document status badge | `client/src/components/document/DocumentStatusBadge.tsx` |
 | Reversal dialog | `client/src/components/document/ReverseDocumentDialog.tsx` |
 | Reversal banners | `client/src/components/document/DocumentReversalBanner.tsx` |
+| Document history drawer | `client/src/components/document/DocumentHistoryDrawer.tsx` |
 | Document reversal hook | `client/src/hooks/useDocumentReversal.ts` |
+| Header Toolbar | `client/src/components/ui/HeaderToolbar.tsx` |
+| Audit trail API route | `server/src/routes/tenant/auditTrail.ts` |
+| Audit trail hook | `client/src/hooks/useAuditTrail.ts` |
+| Page resource context | `client/src/contexts/PageResourceContext.tsx` |
 | Document Create template | `client/src/pages/finance/CreateJournalEntryPage.tsx` |
 | Document Detail template | `client/src/pages/finance/JournalEntryDetailPage.tsx` |
 | Service test template | `server/src/services/SpeciesService.test.ts` |

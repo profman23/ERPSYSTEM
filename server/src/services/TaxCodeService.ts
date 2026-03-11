@@ -114,7 +114,7 @@ export class TaxCodeService extends BaseService {
       rate: String(input.rate),
     };
 
-    return this.insertOne<TaxCode>(tenantId, this.TABLE, dbInput);
+    return this.auditableInsertOne<TaxCode>(tenantId, this.TABLE, dbInput, 'tax_code');
   }
 
   static async update(tenantId: string, id: string, input: UpdateTaxCodeInput) {
@@ -162,11 +162,11 @@ export class TaxCodeService extends BaseService {
     // Increment version
     dbInput.version = existing.version + 1;
 
-    return this.updateById<TaxCode>(tenantId, this.TABLE, id, dbInput, this.ENTITY_NAME);
+    return this.auditableUpdateById<TaxCode>(tenantId, this.TABLE, id, dbInput, 'tax_code', this.ENTITY_NAME);
   }
 
   static async remove(tenantId: string, id: string) {
-    await this.softDelete(tenantId, this.TABLE, id, this.ENTITY_NAME);
+    await this.auditableSoftDelete(tenantId, this.TABLE, id, 'tax_code', this.ENTITY_NAME);
   }
 
   /**
