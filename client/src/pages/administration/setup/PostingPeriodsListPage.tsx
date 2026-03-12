@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
   Pencil, Calendar, Search, Filter, ChevronDown,
-  Activity, Settings, Plus, Loader2,
+  Activity, Settings, Plus, Loader2, FileText, Hash, Clock, Layers,
 } from 'lucide-react';
 import { StyledIcon } from '@/components/ui/StyledIcon';
 import { Card, CardContent } from '@/components/ui/card';
@@ -112,6 +112,7 @@ export default function PostingPeriodsListPage() {
       accessorKey: 'name',
       header: () => (
         <span className="flex items-center gap-1.5">
+          <StyledIcon icon={FileText} emoji="📄" className="w-3.5 h-3.5" />
           {isRTL ? 'الاسم' : 'Name'}
         </span>
       ),
@@ -127,6 +128,7 @@ export default function PostingPeriodsListPage() {
       accessorKey: 'fiscalYear',
       header: () => (
         <span className="flex items-center gap-1.5">
+          <StyledIcon icon={Hash} emoji="#️⃣" className="w-3.5 h-3.5" />
           {isRTL ? 'السنة المالية' : 'Fiscal Year'}
         </span>
       ),
@@ -142,6 +144,7 @@ export default function PostingPeriodsListPage() {
       accessorKey: 'startDate',
       header: () => (
         <span className="flex items-center gap-1.5">
+          <StyledIcon icon={Calendar} emoji="📅" className="w-3.5 h-3.5" />
           {isRTL ? 'من' : 'Start Date'}
         </span>
       ),
@@ -157,6 +160,7 @@ export default function PostingPeriodsListPage() {
       accessorKey: 'endDate',
       header: () => (
         <span className="flex items-center gap-1.5">
+          <StyledIcon icon={Clock} emoji="🕐" className="w-3.5 h-3.5" />
           {isRTL ? 'إلى' : 'End Date'}
         </span>
       ),
@@ -172,6 +176,7 @@ export default function PostingPeriodsListPage() {
       accessorKey: 'numberOfPeriods',
       header: () => (
         <span className="flex items-center gap-1.5">
+          <StyledIcon icon={Layers} emoji="📚" className="w-3.5 h-3.5" />
           {isRTL ? 'الفترات' : 'Periods'}
         </span>
       ),

@@ -71,6 +71,12 @@ vi.mock('./DocumentNumberSeriesService', () => ({
   },
 }));
 
+vi.mock('./GLPostingService', () => ({
+  GLPostingService: {
+    postJournalEntry: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 // Import AFTER mocking
 import { JournalEntryService } from './JournalEntryService';
 import { DocumentNumberSeriesService } from './DocumentNumberSeriesService';
@@ -91,13 +97,19 @@ function mockFindByIdResult(record: Record<string, unknown> | null) {
   });
 }
 
-/** Mock a db.select chain for posting period or account validation queries */
+/** Mock a db.select chain for posting period or account validation queries.
+ *  Supports: .from().where().limit() AND .from().innerJoin().where().limit() */
 function mockDbSelectChainResult(records: Record<string, unknown>[]) {
+  const whereResult = {
+    limit: vi.fn().mockResolvedValue(records),
+    orderBy: mockOrderBy,
+  };
+  const whereHandler = vi.fn().mockReturnValue(whereResult);
   mockSelect.mockReturnValueOnce({
     from: vi.fn().mockReturnValue({
-      where: vi.fn().mockReturnValue({
-        limit: vi.fn().mockResolvedValue(records),
-        orderBy: mockOrderBy,
+      where: whereHandler,
+      innerJoin: vi.fn().mockReturnValue({
+        where: whereHandler,
       }),
     }),
   });
@@ -118,7 +130,7 @@ function validCreateInput() {
 
 function mockOpenPeriod() {
   mockDbSelectChainResult([
-    { id: 'sp1', name: 'June 2025', status: 'OPEN', isActive: true },
+    { subPeriodId: 'sp1', name: 'June 2025', status: 'OPEN', isActive: true, fiscalYear: 2025, periodNumber: 6 },
   ]);
 }
 
@@ -341,7 +353,7 @@ describe('JournalEntryService', () => {
 
     it('throws ValidationError when posting period is CLOSED', async () => {
       mockDbSelectChainResult([
-        { id: 'sp1', name: 'June 2025', status: 'CLOSED', isActive: true },
+        { subPeriodId: 'sp1', name: 'June 2025', status: 'CLOSED', isActive: true, fiscalYear: 2025, periodNumber: 6 },
       ]);
 
       await expect(
@@ -413,7 +425,7 @@ describe('JournalEntryService', () => {
 
       // validatePostingPeriod for reversal date
       mockDbSelectChainResult([
-        { id: 'sp2', name: 'June 2025', status: 'OPEN', isActive: true },
+        { subPeriodId: 'sp2', name: 'June 2025', status: 'OPEN', isActive: true, fiscalYear: 2025, periodNumber: 6 },
       ]);
 
       // fetch original lines: db.select().from().where().orderBy()
@@ -444,7 +456,7 @@ describe('JournalEntryService', () => {
     it('marks original as REVERSED', async () => {
       mockFindByIdResult({ ...sampleEntry, status: 'POSTED', version: 1 });
       mockDbSelectChainResult([
-        { id: 'sp2', name: 'June 2025', status: 'OPEN', isActive: true },
+        { subPeriodId: 'sp2', name: 'June 2025', status: 'OPEN', isActive: true, fiscalYear: 2025, periodNumber: 6 },
       ]);
       // original lines
       mockSelect.mockReturnValueOnce({ from: mockFrom });

@@ -88,7 +88,7 @@ export class DocumentNumberSeriesService extends BaseService {
 
     // Optimistic locking check
     if (existing.version !== input.version) {
-      throw new ConflictError('Record was modified by another user. Please refresh and try again.');
+      throw new ConflictError('Record was modified by another user. Please refresh and try again.', 'OPTIMISTIC_LOCK_CONFLICT');
     }
 
     const { version, ...updateFields } = input;

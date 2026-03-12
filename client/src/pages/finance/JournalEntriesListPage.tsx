@@ -14,6 +14,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import {
   BookOpen, Search, Filter, ChevronDown,
   Activity, Settings, Plus, Loader2, Eye, Calendar,
+  FileText, MessageSquare, DollarSign, GitBranch,
 } from 'lucide-react';
 import { StyledIcon } from '@/components/ui/StyledIcon';
 import { Card, CardContent } from '@/components/ui/card';
@@ -161,6 +162,7 @@ export default function JournalEntriesListPage() {
       accessorKey: 'documentDate',
       header: () => (
         <span className="flex items-center gap-1.5">
+          <StyledIcon icon={Calendar} emoji="📅" className="w-3.5 h-3.5" />
           {isRTL ? 'تاريخ المستند' : 'Doc Date'}
         </span>
       ),
@@ -176,6 +178,7 @@ export default function JournalEntriesListPage() {
       accessorKey: 'remarks',
       header: () => (
         <span className="flex items-center gap-1.5">
+          <StyledIcon icon={MessageSquare} emoji="💬" className="w-3.5 h-3.5" />
           {isRTL ? 'ملاحظات' : 'Remarks'}
         </span>
       ),
@@ -225,6 +228,7 @@ export default function JournalEntriesListPage() {
       accessorKey: 'totalDebit',
       header: () => (
         <span className="flex items-center gap-1.5">
+          <StyledIcon icon={DollarSign} emoji="💲" className="w-3.5 h-3.5" />
           {isRTL ? 'إجمالي المدين' : 'Total Debit'}
         </span>
       ),
@@ -240,6 +244,7 @@ export default function JournalEntriesListPage() {
       accessorKey: 'totalCredit',
       header: () => (
         <span className="flex items-center gap-1.5">
+          <StyledIcon icon={DollarSign} emoji="💲" className="w-3.5 h-3.5" />
           {isRTL ? 'إجمالي الدائن' : 'Total Credit'}
         </span>
       ),
@@ -255,6 +260,7 @@ export default function JournalEntriesListPage() {
       accessorKey: 'sourceType',
       header: () => (
         <span className="flex items-center gap-1.5">
+          <StyledIcon icon={GitBranch} emoji="🌿" className="w-3.5 h-3.5" />
           {isRTL ? 'المصدر' : 'Source'}
         </span>
       ),

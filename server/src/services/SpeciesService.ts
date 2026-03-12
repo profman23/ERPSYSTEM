@@ -48,7 +48,7 @@ export class SpeciesService extends BaseService {
     // Business rule: code must be unique per tenant
     const codeExists = await this.exists(tenantId, this.TABLE, eq(species.code, input.code));
     if (codeExists) {
-      throw new ConflictError(`Species with code '${input.code}' already exists`);
+      throw new ConflictError(`Species with code '${input.code}' already exists`, 'ENTITY_CODE_EXISTS', { entity: 'Species', code: input.code });
     }
 
     return this.auditableInsertOne<Species>(tenantId, this.TABLE, input, 'species');
@@ -61,7 +61,7 @@ export class SpeciesService extends BaseService {
       if (existing && existing.code !== input.code) {
         const codeExists = await this.exists(tenantId, this.TABLE, eq(species.code, input.code));
         if (codeExists) {
-          throw new ConflictError(`Species with code '${input.code}' already exists`);
+          throw new ConflictError(`Species with code '${input.code}' already exists`, 'ENTITY_CODE_EXISTS', { entity: 'Species', code: input.code });
         }
       }
     }

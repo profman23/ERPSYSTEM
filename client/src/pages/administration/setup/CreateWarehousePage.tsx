@@ -207,7 +207,6 @@ export default function CreateWarehousePage() {
         setErrors(apiError.fieldErrors);
       }
       setSubmitError(apiError.message);
-      showToast('error', apiError.message);
     }
   };
 

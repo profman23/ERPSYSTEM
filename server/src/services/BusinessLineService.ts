@@ -46,7 +46,7 @@ export class BusinessLineService extends BaseService {
     // Business rule: code must be unique per tenant
     const codeExists = await this.exists(tenantId, this.TABLE, eq(businessLines.code, code));
     if (codeExists) {
-      throw new ConflictError(`Business line with code '${code}' already exists`);
+      throw new ConflictError(`Business line with code '${code}' already exists`, 'ENTITY_CODE_EXISTS', { entity: 'BusinessLine', code });
     }
 
     return this.insertOne<BusinessLine>(tenantId, this.TABLE, { ...input, code });

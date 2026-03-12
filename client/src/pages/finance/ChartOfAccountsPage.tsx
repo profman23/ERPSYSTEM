@@ -124,7 +124,7 @@ export default function ChartOfAccountsPage() {
 
   const handleSelectRow = useCallback((account: ChartOfAccount) => {
     setSelectedAccountId(account.id);
-    setPanelMode('edit');
+    setPanelMode('view');
     setCreateDefaults(undefined);
     if (isMobile) setShowMobileDetail(true);
   }, [isMobile]);

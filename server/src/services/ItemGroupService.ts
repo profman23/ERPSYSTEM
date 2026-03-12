@@ -84,7 +84,7 @@ export class ItemGroupService extends BaseService {
     // Business rule: code must be unique per tenant
     const codeExists = await this.exists(tenantId, this.TABLE, eq(itemGroups.code, input.code));
     if (codeExists) {
-      throw new ConflictError(`Item group with code '${input.code}' already exists`);
+      throw new ConflictError(`Item group with code '${input.code}' already exists`, 'ENTITY_CODE_EXISTS', { entity: 'ItemGroup', code: input.code });
     }
 
     // Auto-assign default GL accounts if not provided (IAS/IFRS standard codes)
@@ -114,7 +114,7 @@ export class ItemGroupService extends BaseService {
       if (existing && existing.code !== input.code) {
         const codeExists = await this.exists(tenantId, this.TABLE, eq(itemGroups.code, input.code));
         if (codeExists) {
-          throw new ConflictError(`Item group with code '${input.code}' already exists`);
+          throw new ConflictError(`Item group with code '${input.code}' already exists`, 'ENTITY_CODE_EXISTS', { entity: 'ItemGroup', code: input.code });
         }
       }
     }

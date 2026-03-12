@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useIsMobile } from '@/hooks/useResponsive';
+import { useAccountBalance } from '@/hooks/useGLReports';
 import { DetailRow } from './AccountFormRow';
 import { ACCOUNT_TYPE_BADGE } from './coaConstants';
 import type { ChartOfAccount } from '@/hooks/useChartOfAccounts';
@@ -47,6 +48,7 @@ export interface AccountViewPanelProps {
 export function AccountViewPanel({ account, canModify, isRTL, onEdit, onAddChild, onDeactivate, isDeactivating }: AccountViewPanelProps) {
   const isMobile = useIsMobile();
   const badge = ACCOUNT_TYPE_BADGE[account.accountType];
+  const { data: balance, isLoading: balanceLoading } = useAccountBalance(account.id);
 
   return (
     <div className="flex flex-col h-full">
@@ -92,9 +94,13 @@ export function AccountViewPanel({ account, canModify, isRTL, onEdit, onAddChild
             icon={DollarSign}
             label={isRTL ? 'الرصيد' : 'Balance'}
             value={
-              <span className="font-mono text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                0.00
-              </span>
+              balanceLoading ? (
+                <span className="font-mono text-sm" style={{ color: 'var(--color-text-muted)' }}>...</span>
+              ) : (
+                <span className="font-mono text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+                  {parseFloat(balance?.netBalance || '0').toFixed(2)}
+                </span>
+              )
             }
           />
           <DetailRow

@@ -92,6 +92,8 @@ const ChartOfAccountsPage = lazy(() => import('@/pages/finance/ChartOfAccountsPa
 const JournalEntriesListPage = lazy(() => import('@/pages/finance/JournalEntriesListPage'));
 const CreateJournalEntryPage = lazy(() => import('@/pages/finance/CreateJournalEntryPage'));
 const JournalEntryDetailPage = lazy(() => import('@/pages/finance/JournalEntryDetailPage'));
+const TrialBalancePage = lazy(() => import('@/pages/finance/TrialBalancePage'));
+const AccountLedgerPage = lazy(() => import('@/pages/finance/AccountLedgerPage'));
 
 // Unified App Panel — Administration > Setup
 const TaxCodesListPage = lazy(() => import('@/pages/administration/setup/TaxCodesListPage'));
@@ -765,6 +767,22 @@ const router = createBrowserRouter([
             element: (
               <Suspense fallback={<LoadingFallback />}>
                 <JournalEntryDetailPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'finance/trial-balance',
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <TrialBalancePage />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'finance/account-ledger',
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <AccountLedgerPage />
               </Suspense>
             ),
           },

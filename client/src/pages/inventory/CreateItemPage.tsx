@@ -282,7 +282,6 @@ export default function CreateItemPage() {
         setErrors(apiError.fieldErrors);
       }
       setSubmitError(apiError.message);
-      showToast('error', apiError.message);
     }
   };
 

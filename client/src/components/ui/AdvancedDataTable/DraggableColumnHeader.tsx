@@ -64,7 +64,7 @@ export function DraggableColumnHeader({
       {...(enableDrag ? { ...attributes, ...listeners } : {})}
     >
       {/* Header content */}
-      <div className="flex-1 truncate">{children}</div>
+      <div className="flex-1 min-w-0">{children}</div>
 
       {/* Resize handle */}
       {enableResize && onResize && (

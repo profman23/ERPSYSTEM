@@ -51,6 +51,7 @@ import { taxCodes } from './taxCodes';
 import { documentNumberSeries } from './documentNumberSeries';
 import { postingPeriods, postingSubPeriods } from './postingPeriods';
 import { journalEntries, journalEntryLines } from './journalEntries';
+import { accountBalances } from './accountBalances';
 
 // Inventory tables
 import { warehouses } from './warehouses';
@@ -99,6 +100,7 @@ export const tenantsRelations = relations(tenants, ({ many }) => ({
   postingSubPeriods: many(postingSubPeriods),
   journalEntries: many(journalEntries),
   journalEntryLines: many(journalEntryLines),
+  accountBalances: many(accountBalances),
   // Inventory
   warehouses: many(warehouses),
   itemGroups: many(itemGroups),
@@ -155,6 +157,7 @@ export const branchesRelations = relations(branches, ({ one, many }) => ({
   warehouses: many(warehouses),
   documentNumberSeries: many(documentNumberSeries),
   journalEntries: many(journalEntries),
+  accountBalances: many(accountBalances),
 }));
 
 export const branchCapacityRelations = relations(branchCapacity, ({ one }) => ({
@@ -580,7 +583,7 @@ export const postingPeriodsRelations = relations(postingPeriods, ({ one, many })
   subPeriods: many(postingSubPeriods),
 }));
 
-export const postingSubPeriodsRelations = relations(postingSubPeriods, ({ one }) => ({
+export const postingSubPeriodsRelations = relations(postingSubPeriods, ({ one, many }) => ({
   tenant: one(tenants, {
     fields: [postingSubPeriods.tenantId],
     references: [tenants.id],
@@ -589,6 +592,8 @@ export const postingSubPeriodsRelations = relations(postingSubPeriods, ({ one })
     fields: [postingSubPeriods.postingPeriodId],
     references: [postingPeriods.id],
   }),
+  journalEntries: many(journalEntries),
+  accountBalances: many(accountBalances),
 }));
 
 export const journalEntriesRelations = relations(journalEntries, ({ one, many }) => ({
@@ -599,6 +604,10 @@ export const journalEntriesRelations = relations(journalEntries, ({ one, many })
   branch: one(branches, {
     fields: [journalEntries.branchId],
     references: [branches.id],
+  }),
+  postingSubPeriod: one(postingSubPeriods, {
+    fields: [journalEntries.postingSubPeriodId],
+    references: [postingSubPeriods.id],
   }),
   createdByUser: one(users, {
     fields: [journalEntries.createdBy],
@@ -629,6 +638,25 @@ export const journalEntryLinesRelations = relations(journalEntryLines, ({ one })
   account: one(chartOfAccounts, {
     fields: [journalEntryLines.accountId],
     references: [chartOfAccounts.id],
+  }),
+}));
+
+export const accountBalancesRelations = relations(accountBalances, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [accountBalances.tenantId],
+    references: [tenants.id],
+  }),
+  account: one(chartOfAccounts, {
+    fields: [accountBalances.accountId],
+    references: [chartOfAccounts.id],
+  }),
+  postingSubPeriod: one(postingSubPeriods, {
+    fields: [accountBalances.postingSubPeriodId],
+    references: [postingSubPeriods.id],
+  }),
+  branch: one(branches, {
+    fields: [accountBalances.branchId],
+    references: [branches.id],
   }),
 }));
 

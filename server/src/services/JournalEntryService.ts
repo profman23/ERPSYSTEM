@@ -8,6 +8,9 @@
  * Posting period validation: date must fall in OPEN sub-period.
  * Account validation: all accounts must be isPostable = true.
  * Document number: auto-generated via DocumentNumberSeriesService.
+ *
+ * GL Integration: On create/reverse, GLPostingService.postJournalEntry() is called
+ * inside the same transaction to atomically update account balances.
  */
 
 import { eq, and, sql, gte, lte } from 'drizzle-orm';
@@ -16,16 +19,44 @@ import { ConflictError, NotFoundError, ValidationError } from '../core/errors';
 import { auditService } from '../core/audit/auditService';
 import { db } from '../db';
 import { journalEntries, journalEntryLines } from '../db/schemas/journalEntries';
-import { postingSubPeriods } from '../db/schemas/postingPeriods';
+import { postingPeriods, postingSubPeriods } from '../db/schemas/postingPeriods';
 import { chartOfAccounts } from '../db/schemas/chartOfAccounts';
 import { users } from '../db/schemas/users';
 import { DocumentNumberSeriesService } from './DocumentNumberSeriesService';
+import { GLPostingService } from './GLPostingService';
 import type { JournalEntry, JournalEntryLine } from '../db/schemas/journalEntries';
 import type {
   CreateJournalEntryInput,
   ReverseJournalEntryInput,
   ListJournalEntryParams,
 } from '../validations/journalEntryValidation';
+
+// Return type for validatePostingPeriod — includes GL posting metadata
+interface PostingPeriodInfo {
+  subPeriodId: string;
+  fiscalYear: number;
+  periodNumber: number;
+}
+
+// Input for createFromDocument — used by future document services (Invoice, GRPO, etc.)
+export interface CreateFromDocumentInput {
+  branchId: string;
+  postingDate: string;
+  documentDate: string;
+  dueDate?: string;
+  remarks?: string;
+  remarksAr?: string;
+  reference?: string;
+  sourceType: string;
+  sourceId: string;
+  lines: Array<{
+    accountId: string;
+    debit: number;
+    credit: number;
+    remarks?: string;
+    remarksAr?: string;
+  }>;
+}
 
 export class JournalEntryService extends BaseService {
   private static readonly TABLE = journalEntries;
@@ -147,8 +178,8 @@ export class JournalEntryService extends BaseService {
   // ─── Create (Save = POSTED, Immutable) ─────────────────────────────────────
 
   static async create(tenantId: string, userId: string, input: CreateJournalEntryInput) {
-    // 1. Validate posting period
-    await this.validatePostingPeriod(tenantId, input.postingDate);
+    // 1. Validate posting period — returns sub-period info for GL posting
+    const periodInfo = await this.validatePostingPeriod(tenantId, input.postingDate);
 
     // 2. Validate all accounts are postable
     await this.validateAccounts(tenantId, input.lines.map((l) => l.accountId));
@@ -157,7 +188,7 @@ export class JournalEntryService extends BaseService {
     const totalDebit = input.lines.reduce((sum, l) => sum + l.debit, 0);
     const totalCredit = input.lines.reduce((sum, l) => sum + l.credit, 0);
     if (Math.abs(totalDebit - totalCredit) >= 0.0001) {
-      throw new ValidationError('Total debit must equal total credit');
+      throw new ValidationError('Total debit must equal total credit', undefined, 'JE_DEBIT_CREDIT_MISMATCH');
     }
 
     // 4. Generate document number (concurrent-safe via SELECT FOR UPDATE + withRetry)
@@ -167,9 +198,9 @@ export class JournalEntryService extends BaseService {
       'JOURNAL_ENTRY',
     );
 
-    // 5. Atomic insert: header + lines in transaction
+    // 5. Atomic insert: header + lines + GL balance update in transaction
     const result = await this.transaction(async (tx) => {
-      // Insert header
+      // Insert header (with postingSubPeriodId link)
       const [entry] = await tx.insert(journalEntries).values({
         tenantId,
         branchId: input.branchId,
@@ -184,6 +215,7 @@ export class JournalEntryService extends BaseService {
         status: 'POSTED',
         totalDebit: String(totalDebit),
         totalCredit: String(totalCredit),
+        postingSubPeriodId: periodInfo.subPeriodId,
         createdBy: userId,
       }).returning();
 
@@ -201,6 +233,18 @@ export class JournalEntryService extends BaseService {
 
       await tx.insert(journalEntryLines).values(lineValues);
 
+      // Post to GL balances (atomic with JE creation)
+      await GLPostingService.postJournalEntry(tx, tenantId, {
+        branchId: input.branchId,
+        postingSubPeriodId: periodInfo.subPeriodId,
+        fiscalYear: periodInfo.fiscalYear,
+        periodNumber: periodInfo.periodNumber,
+      }, lineValues.map((l) => ({
+        accountId: l.accountId,
+        debit: l.debit,
+        credit: l.credit,
+      })));
+
       return entry as JournalEntry;
     });
     auditService.log({ action: 'create', resourceType: 'journal_entry', resourceId: result.id, newData: result as Record<string, unknown> });
@@ -214,20 +258,20 @@ export class JournalEntryService extends BaseService {
     const original = await this.findById<JournalEntry>(tenantId, this.TABLE, id, this.ENTITY_NAME);
 
     if (original.status !== 'POSTED') {
-      throw new ValidationError('Only POSTED entries can be reversed');
+      throw new ValidationError('Only POSTED entries can be reversed', undefined, 'JE_ONLY_POSTED_REVERSIBLE');
     }
 
     if (original.reversedById) {
-      throw new ValidationError('This entry has already been reversed');
+      throw new ValidationError('This entry has already been reversed', undefined, 'JE_ALREADY_REVERSED');
     }
 
     // 2. Optimistic locking
     if (original.version !== input.version) {
-      throw new ConflictError('Record was modified by another user. Please refresh and try again.');
+      throw new ConflictError('Record was modified by another user. Please refresh and try again.', 'OPTIMISTIC_LOCK_CONFLICT');
     }
 
-    // 3. Validate reversal date posting period
-    await this.validatePostingPeriod(tenantId, input.reversalDate);
+    // 3. Validate reversal date posting period — returns sub-period info for GL posting
+    const periodInfo = await this.validatePostingPeriod(tenantId, input.reversalDate);
 
     // 4. Get original lines
     const originalLines = await db
@@ -242,7 +286,7 @@ export class JournalEntryService extends BaseService {
       .orderBy(journalEntryLines.lineNumber);
 
     if (originalLines.length === 0) {
-      throw new ValidationError('Original entry has no lines');
+      throw new ValidationError('Original entry has no lines', undefined, 'JE_NO_LINES');
     }
 
     // 5. Generate new code for reversal entry
@@ -252,7 +296,7 @@ export class JournalEntryService extends BaseService {
       'JOURNAL_ENTRY',
     );
 
-    // 6. Atomic: create reversal entry + mark original as REVERSED
+    // 6. Atomic: create reversal entry + mark original as REVERSED + update GL balances
     const result = await this.transaction(async (tx) => {
       // Create reversal entry (swap debit ↔ credit)
       const [reversalEntry] = await tx.insert(journalEntries).values({
@@ -269,6 +313,7 @@ export class JournalEntryService extends BaseService {
         reversalOfId: original.id,
         totalDebit: original.totalCredit,   // Swapped
         totalCredit: original.totalDebit,   // Swapped
+        postingSubPeriodId: periodInfo.subPeriodId,
         createdBy: userId,
       }).returning();
 
@@ -285,6 +330,18 @@ export class JournalEntryService extends BaseService {
       }));
 
       await tx.insert(journalEntryLines).values(reversalLineValues);
+
+      // Post reversal to GL balances (swapped amounts naturally negate the original)
+      await GLPostingService.postJournalEntry(tx, tenantId, {
+        branchId: original.branchId,
+        postingSubPeriodId: periodInfo.subPeriodId,
+        fiscalYear: periodInfo.fiscalYear,
+        periodNumber: periodInfo.periodNumber,
+      }, reversalLineValues.map((l) => ({
+        accountId: l.accountId,
+        debit: String(l.debit),
+        credit: String(l.credit),
+      })));
 
       // Mark original as REVERSED
       await tx
@@ -309,12 +366,109 @@ export class JournalEntryService extends BaseService {
     return result;
   }
 
+  // ─── Create From Document (Extensibility Point for Future Documents) ───────
+
+  /**
+   * Create a JE from a source document (Invoice, GRPO, etc.).
+   * Called INSIDE the source document's transaction — shares the same tx.
+   *
+   * Usage (future):
+   *   await JournalEntryService.createFromDocument(tx, tenantId, userId, {
+   *     branchId, postingDate, documentDate,
+   *     sourceType: 'SALES_INVOICE', sourceId: invoice.id,
+   *     lines: [{ accountId, debit, credit, remarks }],
+   *   });
+   */
+  static async createFromDocument(
+    tx: typeof db,
+    tenantId: string,
+    userId: string,
+    input: CreateFromDocumentInput,
+  ): Promise<JournalEntry> {
+    // 1. Validate posting period
+    const periodInfo = await this.validatePostingPeriod(tenantId, input.postingDate);
+
+    // 2. Validate accounts
+    await this.validateAccounts(tenantId, input.lines.map((l) => l.accountId));
+
+    // 3. Validate golden rule
+    const totalDebit = input.lines.reduce((sum, l) => sum + l.debit, 0);
+    const totalCredit = input.lines.reduce((sum, l) => sum + l.credit, 0);
+    if (Math.abs(totalDebit - totalCredit) >= 0.0001) {
+      throw new ValidationError('Total debit must equal total credit', undefined, 'JE_DEBIT_CREDIT_MISMATCH');
+    }
+
+    // 4. Generate document number
+    const code = await DocumentNumberSeriesService.getNextNumber(
+      tenantId,
+      input.branchId,
+      'JOURNAL_ENTRY',
+    );
+
+    // 5. Insert header
+    const [entry] = await tx.insert(journalEntries).values({
+      tenantId,
+      branchId: input.branchId,
+      code,
+      postingDate: input.postingDate,
+      documentDate: input.documentDate,
+      dueDate: input.dueDate,
+      remarks: input.remarks,
+      remarksAr: input.remarksAr,
+      reference: input.reference,
+      sourceType: input.sourceType,
+      sourceId: input.sourceId,
+      status: 'POSTED',
+      totalDebit: String(totalDebit),
+      totalCredit: String(totalCredit),
+      postingSubPeriodId: periodInfo.subPeriodId,
+      createdBy: userId,
+    }).returning();
+
+    // 6. Insert lines
+    const lineValues = input.lines.map((line, idx) => ({
+      tenantId,
+      journalEntryId: entry.id,
+      lineNumber: idx + 1,
+      accountId: line.accountId,
+      debit: String(line.debit),
+      credit: String(line.credit),
+      remarks: line.remarks,
+      remarksAr: line.remarksAr,
+    }));
+
+    await tx.insert(journalEntryLines).values(lineValues);
+
+    // 7. Post to GL balances
+    await GLPostingService.postJournalEntry(tx, tenantId, {
+      branchId: input.branchId,
+      postingSubPeriodId: periodInfo.subPeriodId,
+      fiscalYear: periodInfo.fiscalYear,
+      periodNumber: periodInfo.periodNumber,
+    }, lineValues.map((l) => ({
+      accountId: l.accountId,
+      debit: l.debit,
+      credit: l.credit,
+    })));
+
+    auditService.log({ action: 'create', resourceType: 'journal_entry', resourceId: entry.id, newData: entry as Record<string, unknown> });
+    return entry as JournalEntry;
+  }
+
   // ─── Validate Posting Period ───────────────────────────────────────────────
 
-  static async validatePostingPeriod(tenantId: string, postingDate: string): Promise<void> {
-    const subPeriods = await db
-      .select()
+  static async validatePostingPeriod(tenantId: string, postingDate: string): Promise<PostingPeriodInfo> {
+    const results = await db
+      .select({
+        subPeriodId: postingSubPeriods.id,
+        status: postingSubPeriods.status,
+        isActive: postingSubPeriods.isActive,
+        name: postingSubPeriods.name,
+        periodNumber: postingSubPeriods.periodNumber,
+        fiscalYear: postingPeriods.fiscalYear,
+      })
       .from(postingSubPeriods)
+      .innerJoin(postingPeriods, eq(postingSubPeriods.postingPeriodId, postingPeriods.id))
       .where(
         and(
           eq(postingSubPeriods.tenantId, tenantId),
@@ -324,19 +478,25 @@ export class JournalEntryService extends BaseService {
       )
       .limit(1);
 
-    if (subPeriods.length === 0) {
-      throw new ValidationError('No posting period found for the specified date. Please create a fiscal year first.');
+    if (results.length === 0) {
+      throw new ValidationError('No posting period found for the specified date. Please create a fiscal year first.', undefined, 'POSTING_PERIOD_NOT_FOUND');
     }
 
-    const period = subPeriods[0];
+    const period = results[0];
 
     if (period.status !== 'OPEN') {
-      throw new ValidationError(`Posting period "${period.name}" is ${period.status}. Cannot post to a ${period.status} period.`);
+      throw new ValidationError(`Posting period "${period.name}" is ${period.status}. Cannot post to a ${period.status} period.`, undefined, 'POSTING_PERIOD_CLOSED', { name: period.name, status: period.status });
     }
 
     if (!period.isActive) {
-      throw new ValidationError(`Posting period "${period.name}" is disabled.`);
+      throw new ValidationError(`Posting period "${period.name}" is disabled.`, undefined, 'POSTING_PERIOD_DISABLED', { name: period.name });
     }
+
+    return {
+      subPeriodId: period.subPeriodId,
+      fiscalYear: period.fiscalYear,
+      periodNumber: period.periodNumber,
+    };
   }
 
   // ─── Validate Accounts ─────────────────────────────────────────────────────
@@ -362,15 +522,15 @@ export class JournalEntryService extends BaseService {
         .limit(1);
 
       if (accounts.length === 0) {
-        throw new ValidationError(`Account ${accountId} does not exist`);
+        throw new ValidationError(`Account ${accountId} does not exist`, undefined, 'ACCOUNT_NOT_FOUND', { id: accountId });
       }
 
       if (!accounts[0].isActive) {
-        throw new ValidationError(`Account "${accounts[0].code}" is inactive`);
+        throw new ValidationError(`Account "${accounts[0].code}" is inactive`, undefined, 'ACCOUNT_INACTIVE', { code: accounts[0].code });
       }
 
       if (!accounts[0].isPostable) {
-        throw new ValidationError(`Account "${accounts[0].code}" is not postable (group account)`);
+        throw new ValidationError(`Account "${accounts[0].code}" is not postable (group account)`, undefined, 'ACCOUNT_NOT_POSTABLE', { code: accounts[0].code });
       }
     }
   }

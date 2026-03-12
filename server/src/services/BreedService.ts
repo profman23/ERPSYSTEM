@@ -55,7 +55,7 @@ export class BreedService extends BaseService {
     // Code must be unique per tenant
     const codeExists = await this.exists(tenantId, this.TABLE, eq(breeds.code, input.code));
     if (codeExists) {
-      throw new ConflictError(`Breed with code '${input.code}' already exists`);
+      throw new ConflictError(`Breed with code '${input.code}' already exists`, 'ENTITY_CODE_EXISTS', { entity: 'Breed', code: input.code });
     }
 
     return this.auditableInsertOne<Breed>(tenantId, this.TABLE, input, 'breed');
@@ -74,7 +74,7 @@ export class BreedService extends BaseService {
       if (existing && existing.code !== input.code) {
         const codeExists = await this.exists(tenantId, this.TABLE, eq(breeds.code, input.code));
         if (codeExists) {
-          throw new ConflictError(`Breed with code '${input.code}' already exists`);
+          throw new ConflictError(`Breed with code '${input.code}' already exists`, 'ENTITY_CODE_EXISTS', { entity: 'Breed', code: input.code });
         }
       }
     }

@@ -34,6 +34,7 @@ import itemsRouter from './items';
 import documentNumberSeriesRouter from './documentNumberSeries';
 import postingPeriodsRouter from './postingPeriods';
 import journalEntriesRouter from './journalEntries';
+import glReportsRouter from './glReports';
 import auditTrailRouter from './auditTrail';
 import { BaseController } from '../../core/controller';
 import { UserRoleService } from '../../services/userRoleService';
@@ -111,6 +112,7 @@ router.use('/tax-codes', taxCodesRouter);
 router.use('/document-number-series', documentNumberSeriesRouter);
 router.use('/posting-periods', postingPeriodsRouter);
 router.use('/journal-entries', journalEntriesRouter);
+router.use('/gl-reports', glReportsRouter);
 
 // Inventory Routes
 router.use('/warehouses', warehousesRouter);

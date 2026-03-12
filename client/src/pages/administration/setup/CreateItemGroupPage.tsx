@@ -195,7 +195,6 @@ export default function CreateItemGroupPage() {
         setErrors(apiError.fieldErrors);
       }
       setSubmitError(apiError.message);
-      showToast('error', apiError.message);
     }
   };
 

@@ -50,6 +50,8 @@ export const errorHandler = (
       err.message,
       err.code,
       err.details,
+      err.messageKey,
+      err.params,
     );
   }
 

@@ -37,6 +37,7 @@ import { tenants } from './tenants';
 import { branches } from './branches';
 import { users } from './users';
 import { chartOfAccounts } from './chartOfAccounts';
+import { postingSubPeriods } from './postingPeriods';
 
 // ─── Journal Entry Header ────────────────────────────────────────────────────
 
@@ -77,6 +78,10 @@ export const journalEntries = pgTable('journal_entries', {
   totalDebit: numeric('total_debit', { precision: 18, scale: 4 }).notNull().default('0'),
   totalCredit: numeric('total_credit', { precision: 18, scale: 4 }).notNull().default('0'),
 
+  // Posting period link (resolved from postingDate during creation)
+  postingSubPeriodId: uuid('posting_sub_period_id')
+    .references(() => postingSubPeriods.id, { onDelete: 'set null' }),
+
   // Who created this entry (save = posted, so createdBy = postedBy)
   createdBy: uuid('created_by')
     .references(() => users.id, { onDelete: 'set null' }),
@@ -102,6 +107,8 @@ export const journalEntries = pgTable('journal_entries', {
   tenantSourceIdx: index('je_tenant_source_idx')
     .on(table.tenantId, table.sourceType, table.sourceId),
   // FK indexes
+  postingSubPeriodIdIdx: index('je_posting_sub_period_id_idx')
+    .on(table.postingSubPeriodId),
   branchIdIdx: index('je_branch_id_idx')
     .on(table.branchId),
   reversalOfIdIdx: index('je_reversal_of_id_idx')

@@ -97,7 +97,7 @@ export class WarehouseService extends BaseService {
     // Business rule: code must be unique per tenant
     const codeExists = await this.exists(tenantId, this.TABLE, eq(warehouses.code, input.code));
     if (codeExists) {
-      throw new ConflictError(`Warehouse with code '${input.code}' already exists`);
+      throw new ConflictError(`Warehouse with code '${input.code}' already exists`, 'ENTITY_CODE_EXISTS', { entity: 'Warehouse', code: input.code });
     }
 
     // Auto-assign default GL accounts if not provided (SAP B1 standard codes)
@@ -149,7 +149,7 @@ export class WarehouseService extends BaseService {
       if (existing && existing.code !== input.code) {
         const codeExists = await this.exists(tenantId, this.TABLE, eq(warehouses.code, input.code));
         if (codeExists) {
-          throw new ConflictError(`Warehouse with code '${input.code}' already exists`);
+          throw new ConflictError(`Warehouse with code '${input.code}' already exists`, 'ENTITY_CODE_EXISTS', { entity: 'Warehouse', code: input.code });
         }
       }
     }
@@ -196,10 +196,10 @@ export class WarehouseService extends BaseService {
       ));
 
       if (otherCount <= 1) {
-        throw new ConflictError('Cannot delete the only warehouse for this branch');
+        throw new ConflictError('Cannot delete the only warehouse for this branch', 'WAREHOUSE_LAST_IN_BRANCH');
       }
 
-      throw new ConflictError('Cannot delete the default warehouse. Set another warehouse as default first.');
+      throw new ConflictError('Cannot delete the default warehouse. Set another warehouse as default first.', 'WAREHOUSE_DELETE_DEFAULT');
     }
 
     await this.auditableSoftDelete(tenantId, this.TABLE, id, 'warehouse', this.ENTITY_NAME);
@@ -210,7 +210,7 @@ export class WarehouseService extends BaseService {
 
     // Cannot deactivate the default warehouse
     if (warehouse.isDefault && warehouse.isActive) {
-      throw new ConflictError('Cannot deactivate the default warehouse. Set another warehouse as default first.');
+      throw new ConflictError('Cannot deactivate the default warehouse. Set another warehouse as default first.', 'WAREHOUSE_DEACTIVATE_DEFAULT');
     }
 
     const newStatus = !warehouse.isActive;

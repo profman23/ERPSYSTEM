@@ -197,7 +197,6 @@ export default function EditDocumentNumberSeriesPage() {
         setErrors(apiError.fieldErrors);
       }
       setSubmitError(apiError.message);
-      showToast('error', apiError.message);
     }
   };
 

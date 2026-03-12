@@ -89,7 +89,7 @@ export class PostingPeriodService extends BaseService {
     // Uniqueness: one fiscal year per tenant
     const exists = await this.exists(tenantId, this.TABLE, eq(postingPeriods.code, code));
     if (exists) {
-      throw new ConflictError(`Fiscal year ${input.fiscalYear} already exists`);
+      throw new ConflictError(`Fiscal year ${input.fiscalYear} already exists`, 'ENTITY_YEAR_EXISTS', { year: input.fiscalYear });
     }
 
     return this.transaction(async (tx) => {
@@ -138,12 +138,12 @@ export class PostingPeriodService extends BaseService {
 
     // LOCKED sub-periods cannot be modified
     if (existing.status === 'LOCKED') {
-      throw new ValidationError('Cannot modify a locked posting period');
+      throw new ValidationError('Cannot modify a locked posting period', undefined, 'POSTING_PERIOD_LOCKED');
     }
 
     // Optimistic locking
     if (existing.version !== input.version) {
-      throw new ConflictError('Record was modified by another user. Please refresh and try again.');
+      throw new ConflictError('Record was modified by another user. Please refresh and try again.', 'OPTIMISTIC_LOCK_CONFLICT');
     }
 
     const updateData: Record<string, unknown> = {

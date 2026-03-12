@@ -49,15 +49,15 @@ export class TaxCodeService extends BaseService {
       .limit(1);
 
     if (results.length === 0) {
-      throw new ValidationError(`${label} not found`);
+      throw new ValidationError(`${label} not found`, undefined, 'TAX_ACCOUNT_NOT_FOUND', { label });
     }
 
     const account = results[0];
     if (!account.isActive) {
-      throw new ValidationError(`${label} is inactive`);
+      throw new ValidationError(`${label} is inactive`, undefined, 'TAX_ACCOUNT_INACTIVE', { label });
     }
     if (!account.isPostable) {
-      throw new ValidationError(`${label} is not a postable account`);
+      throw new ValidationError(`${label} is not a postable account`, undefined, 'TAX_ACCOUNT_NOT_POSTABLE', { label });
     }
   }
 
@@ -97,7 +97,7 @@ export class TaxCodeService extends BaseService {
       eq(taxCodes.code, input.code),
     );
     if (codeExists) {
-      throw new ConflictError(`Tax code '${input.code}' already exists`);
+      throw new ConflictError(`Tax code '${input.code}' already exists`, 'ENTITY_CODE_EXISTS', { entity: 'TaxCode', code: input.code });
     }
 
     // Validate linked accounts
@@ -123,7 +123,7 @@ export class TaxCodeService extends BaseService {
 
     // Optimistic locking
     if (existing.version !== input.version) {
-      throw new ConflictError('Record was modified by another user. Please refresh and try again.');
+      throw new ConflictError('Record was modified by another user. Please refresh and try again.', 'OPTIMISTIC_LOCK_CONFLICT');
     }
 
     // If updating code, check uniqueness
@@ -134,13 +134,13 @@ export class TaxCodeService extends BaseService {
         eq(taxCodes.code, input.code),
       );
       if (codeExists) {
-        throw new ConflictError(`Tax code '${input.code}' already exists`);
+        throw new ConflictError(`Tax code '${input.code}' already exists`, 'ENTITY_CODE_EXISTS', { entity: 'TaxCode', code: input.code });
       }
     }
 
     // EXEMPT check: if existing is EXEMPT, rate must stay 0
     if (existing.taxType === 'EXEMPT' && input.rate !== undefined && input.rate !== 0) {
-      throw new ValidationError('Exempt tax codes must have a rate of 0');
+      throw new ValidationError('Exempt tax codes must have a rate of 0', undefined, 'TAX_EXEMPT_RATE_NONZERO');
     }
 
     // Validate linked accounts if changed

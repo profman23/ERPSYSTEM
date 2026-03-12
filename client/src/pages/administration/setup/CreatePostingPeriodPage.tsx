@@ -100,7 +100,6 @@ export default function CreatePostingPeriodPage() {
         setErrors(apiError.fieldErrors);
       }
       setSubmitError(apiError.message);
-      showToast('error', apiError.message);
     }
   };
 

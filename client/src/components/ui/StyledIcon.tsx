@@ -137,10 +137,11 @@ export function StyledIcon({
       <span
         className={cn('inline-flex items-center justify-center leading-none select-none flex-shrink-0')}
         style={{
-          fontSize: `${sizePx}px`,
+          fontSize: `${sizePx * 0.85}px`,
           width: `${sizePx}px`,
           height: `${sizePx}px`,
           lineHeight: 1,
+          overflow: 'visible',
           ...inlineStyle,
         }}
         role="img"

@@ -54,7 +54,7 @@ export class ClientService extends BaseService {
     if (input.email) {
       const emailExists = await this.exists(tenantId, this.TABLE, eq(clients.email, input.email));
       if (emailExists) {
-        throw new ConflictError(`Client with email '${input.email}' already exists`);
+        throw new ConflictError(`Client with email '${input.email}' already exists`, 'ENTITY_EMAIL_EXISTS', { entity: 'Client', email: input.email });
       }
     }
 
@@ -68,7 +68,7 @@ export class ClientService extends BaseService {
       if (existing && existing.email !== input.email) {
         const emailExists = await this.exists(tenantId, this.TABLE, eq(clients.email, input.email));
         if (emailExists) {
-          throw new ConflictError(`Client with email '${input.email}' already exists`);
+          throw new ConflictError(`Client with email '${input.email}' already exists`, 'ENTITY_EMAIL_EXISTS', { entity: 'Client', email: input.email });
         }
       }
     }

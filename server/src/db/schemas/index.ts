@@ -46,6 +46,7 @@ export * from './taxCodes';
 export * from './documentNumberSeries';
 export * from './postingPeriods';
 export * from './journalEntries';
+export * from './accountBalances';
 
 // Inventory Tables
 export * from './warehouses';

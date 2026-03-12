@@ -174,6 +174,26 @@ export const handlers = [
     return HttpResponse.json(single({ id: 'new-je1', tenantId: 't1', code: '10000001', status: 'POSTED', ...body }), { status: 201 });
   }),
 
+  // ── GL Reports ──
+  http.get(`${API}/tenant/gl-reports/trial-balance`, () => {
+    return HttpResponse.json(single({
+      fiscalYear: 2025,
+      periodFrom: 1,
+      periodTo: 12,
+      branchId: null,
+      totals: { totalDebit: '10000.0000', totalCredit: '10000.0000' },
+      accounts: [],
+    }));
+  }),
+  http.get(`${API}/tenant/gl-reports/account-ledger`, () => {
+    return HttpResponse.json(single({
+      account: { id: 'acc1', code: '1100', name: 'Cash', nameAr: 'نقد', accountType: 'ASSET', normalBalance: 'DEBIT' },
+      entries: [],
+      pagination: { page: 1, limit: 50, total: 0, totalPages: 0, hasNext: false, hasPrev: false },
+      summary: { totalDebit: '0', totalCredit: '0', closingBalance: '0' },
+    }));
+  }),
+
   // ── Hierarchy ──
   http.get(`${API}/tenant/hierarchy/tree`, () => {
     return HttpResponse.json(single({

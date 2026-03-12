@@ -55,7 +55,7 @@ export class UnitOfMeasureService extends BaseService {
       eq(unitOfMeasures.code, input.code),
     );
     if (codeExists) {
-      throw new ConflictError(`Unit of measure '${input.code}' already exists`);
+      throw new ConflictError(`Unit of measure '${input.code}' already exists`, 'ENTITY_CODE_EXISTS', { entity: 'UnitOfMeasure', code: input.code });
     }
 
     return this.auditableInsertOne<UnitOfMeasure>(tenantId, this.TABLE, input, 'unit_of_measure');
@@ -67,7 +67,7 @@ export class UnitOfMeasureService extends BaseService {
 
     // Optimistic locking
     if (existing.version !== input.version) {
-      throw new ConflictError('This unit of measure was modified by another user. Please refresh and try again.');
+      throw new ConflictError('This unit of measure was modified by another user. Please refresh and try again.', 'OPTIMISTIC_LOCK_CONFLICT');
     }
 
     // If updating code, check uniqueness
@@ -78,7 +78,7 @@ export class UnitOfMeasureService extends BaseService {
         eq(unitOfMeasures.code, input.code),
       );
       if (codeExists) {
-        throw new ConflictError(`Unit of measure '${input.code}' already exists`);
+        throw new ConflictError(`Unit of measure '${input.code}' already exists`, 'ENTITY_CODE_EXISTS', { entity: 'UnitOfMeasure', code: input.code });
       }
     }
 

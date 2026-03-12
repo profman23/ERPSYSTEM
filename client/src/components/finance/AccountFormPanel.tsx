@@ -30,6 +30,7 @@ import {
   type CreateChartOfAccountInput,
   type UpdateChartOfAccountInput,
 } from '@/hooks/useChartOfAccounts';
+import { useAccountBalance } from '@/hooks/useGLReports';
 
 // ═══════════════════════════════════════════════════════════════
 // TYPES & CONSTANTS
@@ -103,6 +104,7 @@ export function AccountFormPanel({ account, isEdit, isRTL, createDefaults, onCan
   const createMutation = useCreateChartOfAccount();
   const updateMutation = useUpdateChartOfAccount();
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const { data: balanceData } = useAccountBalance(isEdit ? account?.id : undefined);
 
   const [formData, setFormData] = useState<FormData>(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
@@ -285,7 +287,7 @@ export function AccountFormPanel({ account, isEdit, isRTL, createDefaults, onCan
 
         <FormRow label={isRTL ? 'الرصيد' : 'Balance'} icon={DollarSign} emoji="💲" compact={isMobile}>
           <div className="flex items-center h-8">
-            <span className="font-mono text-sm font-semibold" style={{ color: 'var(--color-text)' }}>0.00</span>
+            <span className="font-mono text-sm font-semibold" style={{ color: 'var(--color-text)' }}>{parseFloat(balanceData?.netBalance || '0').toFixed(2)}</span>
           </div>
         </FormRow>
 

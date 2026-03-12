@@ -27,6 +27,18 @@ describe('AppError', () => {
     expect(err.details).toEqual(details);
   });
 
+  it('accepts messageKey and params for bilingual support', () => {
+    const err = new AppError('test', 400, 'VALIDATION_ERROR', undefined, 'POSTING_PERIOD_CLOSED', { name: 'March' });
+    expect(err.messageKey).toBe('POSTING_PERIOD_CLOSED');
+    expect(err.params).toEqual({ name: 'March' });
+  });
+
+  it('messageKey and params are undefined when not provided', () => {
+    const err = new AppError('test', 500, 'INTERNAL_ERROR');
+    expect(err.messageKey).toBeUndefined();
+    expect(err.params).toBeUndefined();
+  });
+
   it('is an instance of Error', () => {
     const err = new AppError('test', 500, 'INTERNAL_ERROR');
     expect(err).toBeInstanceOf(Error);
@@ -49,6 +61,18 @@ describe('NotFoundError', () => {
 
   it('is instanceof AppError', () => {
     expect(new NotFoundError('X')).toBeInstanceOf(AppError);
+  });
+
+  it('auto-populates ENTITY_NOT_FOUND messageKey without ID', () => {
+    const err = new NotFoundError('Species');
+    expect(err.messageKey).toBe('ENTITY_NOT_FOUND');
+    expect(err.params).toEqual({ entity: 'Species' });
+  });
+
+  it('auto-populates ENTITY_NOT_FOUND_BY_ID messageKey with ID', () => {
+    const err = new NotFoundError('Species', 'abc-123');
+    expect(err.messageKey).toBe('ENTITY_NOT_FOUND_BY_ID');
+    expect(err.params).toEqual({ entity: 'Species', id: 'abc-123' });
   });
 });
 
@@ -82,6 +106,24 @@ describe('ConflictError', () => {
     expect(err.code).toBe('CONFLICT');
     expect(err.message).toBe('Email already exists');
   });
+
+  it('accepts messageKey and params for bilingual support', () => {
+    const err = new ConflictError(
+      "Species with code 'DOG' already exists",
+      'ENTITY_CODE_EXISTS',
+      { entity: 'Species', code: 'DOG' },
+    );
+    expect(err.statusCode).toBe(409);
+    expect(err.code).toBe('CONFLICT');
+    expect(err.messageKey).toBe('ENTITY_CODE_EXISTS');
+    expect(err.params).toEqual({ entity: 'Species', code: 'DOG' });
+  });
+
+  it('messageKey is undefined when not provided (backward compat)', () => {
+    const err = new ConflictError('simple conflict');
+    expect(err.messageKey).toBeUndefined();
+    expect(err.params).toBeUndefined();
+  });
 });
 
 describe('ValidationError', () => {
@@ -96,6 +138,27 @@ describe('ValidationError', () => {
   it('works without details', () => {
     const err = new ValidationError('Bad request');
     expect(err.details).toBeUndefined();
+  });
+
+  it('accepts messageKey and params for bilingual support', () => {
+    const err = new ValidationError(
+      'Posting period "March 2026" is CLOSED',
+      undefined,
+      'POSTING_PERIOD_CLOSED',
+      { name: 'March 2026', status: 'CLOSED' },
+    );
+    expect(err.statusCode).toBe(400);
+    expect(err.messageKey).toBe('POSTING_PERIOD_CLOSED');
+    expect(err.params).toEqual({ name: 'March 2026', status: 'CLOSED' });
+    expect(err.details).toBeUndefined();
+  });
+
+  it('supports both details and messageKey together', () => {
+    const details = [{ field: 'lines', message: 'Mismatch' }];
+    const err = new ValidationError('Debit/credit mismatch', details, 'JE_DEBIT_CREDIT_MISMATCH');
+    expect(err.details).toEqual(details);
+    expect(err.messageKey).toBe('JE_DEBIT_CREDIT_MISMATCH');
+    expect(err.params).toBeUndefined();
   });
 });
 

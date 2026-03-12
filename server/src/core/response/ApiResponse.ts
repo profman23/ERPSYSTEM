@@ -35,6 +35,8 @@ export interface ErrorResponse {
   error: string;
   code?: string;
   details?: Record<string, unknown>[];
+  messageKey?: string;
+  params?: Record<string, unknown>;
 }
 
 export class ApiResponse {
@@ -94,10 +96,20 @@ export class ApiResponse {
   /**
    * Error response - used by errorHandler middleware, not controllers directly
    */
-  static error(res: Response, statusCode: number, message: string, code?: string, details?: Record<string, unknown>[]): Response {
+  static error(
+    res: Response,
+    statusCode: number,
+    message: string,
+    code?: string,
+    details?: Record<string, unknown>[],
+    messageKey?: string,
+    params?: Record<string, unknown>,
+  ): Response {
     const body: ErrorResponse = { success: false, error: message };
     if (code) body.code = code;
-    if (details) body.details = details;
+    if (details?.length) body.details = details;
+    if (messageKey) body.messageKey = messageKey;
+    if (params && Object.keys(params).length > 0) body.params = params;
     return res.status(statusCode).json(body);
   }
 }

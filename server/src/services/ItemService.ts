@@ -102,7 +102,7 @@ export class ItemService extends BaseService {
         and(eq(items.barcode, input.barcode), eq(items.isActive, true))!,
       );
       if (barcodeExists) {
-        throw new ConflictError(`An active item with barcode '${input.barcode}' already exists`);
+        throw new ConflictError(`An active item with barcode '${input.barcode}' already exists`, 'ENTITY_BARCODE_EXISTS', { barcode: input.barcode });
       }
     }
 
@@ -142,7 +142,7 @@ export class ItemService extends BaseService {
 
     // Optimistic locking
     if (existing.version !== input.version) {
-      throw new ConflictError('This item was modified by another user. Please refresh and try again.');
+      throw new ConflictError('This item was modified by another user. Please refresh and try again.', 'OPTIMISTIC_LOCK_CONFLICT');
     }
 
     // Barcode uniqueness if changing
@@ -157,7 +157,7 @@ export class ItemService extends BaseService {
         )!,
       );
       if (barcodeExists) {
-        throw new ConflictError(`An active item with barcode '${input.barcode}' already exists`);
+        throw new ConflictError(`An active item with barcode '${input.barcode}' already exists`, 'ENTITY_BARCODE_EXISTS', { barcode: input.barcode });
       }
     }
 

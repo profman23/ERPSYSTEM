@@ -159,7 +159,7 @@ export class ChartOfAccountsService extends BaseService {
       eq(chartOfAccounts.code, input.code),
     );
     if (codeExists) {
-      throw new ConflictError(`Account with code '${input.code}' already exists`);
+      throw new ConflictError(`Account with code '${input.code}' already exists`, 'ENTITY_CODE_EXISTS', { entity: 'Account', code: input.code });
     }
 
     // 2. Resolve parent and compute tree fields
@@ -174,13 +174,14 @@ export class ChartOfAccountsService extends BaseService {
 
       // Parent must not be postable (cannot add children to leaf account)
       if (parent.isPostable) {
-        throw new ValidationError('Cannot add child to a postable account. Change parent to non-postable first.');
+        throw new ValidationError('Cannot add child to a postable account. Change parent to non-postable first.', undefined, 'ACCOUNT_POSTABLE_HAS_CHILDREN');
       }
 
       // Children must inherit parent's accountType
       if (parent.accountType !== input.accountType) {
         throw new ValidationError(
           `Child account must have the same type as parent. Parent type: ${parent.accountType}`,
+          undefined, 'ACCOUNT_TYPE_MISMATCH', { childType: input.accountType, parentType: parent.accountType },
         );
       }
 
@@ -206,7 +207,7 @@ export class ChartOfAccountsService extends BaseService {
     } catch (err: unknown) {
       // Catch PostgreSQL unique violation (concurrent insert with same code)
       if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === '23505') {
-        throw new ConflictError(`Account with code '${input.code}' already exists`);
+        throw new ConflictError(`Account with code '${input.code}' already exists`, 'ENTITY_CODE_EXISTS', { entity: 'Account', code: input.code });
       }
       throw err;
     }
@@ -225,7 +226,7 @@ export class ChartOfAccountsService extends BaseService {
         eq(chartOfAccounts.code, input.code),
       );
       if (codeExists) {
-        throw new ConflictError(`Account with code '${input.code}' already exists`);
+        throw new ConflictError(`Account with code '${input.code}' already exists`, 'ENTITY_CODE_EXISTS', { entity: 'Account', code: input.code });
       }
 
       // Cascade path update to all descendants
@@ -236,7 +237,7 @@ export class ChartOfAccountsService extends BaseService {
     if (input.isPostable === true && !existing.isPostable) {
       const hasChildren = await this.hasActiveChildren(tenantId, id);
       if (hasChildren) {
-        throw new ValidationError('Cannot make account postable while it has children.');
+        throw new ValidationError('Cannot make account postable while it has children.', undefined, 'ACCOUNT_MAKE_POSTABLE_HAS_CHILDREN');
       }
     }
 
@@ -256,7 +257,7 @@ export class ChartOfAccountsService extends BaseService {
         .returning();
 
       if (results.length === 0) {
-        throw new ConflictError('Record was modified by another user. Please refresh and try again.');
+        throw new ConflictError('Record was modified by another user. Please refresh and try again.', 'OPTIMISTIC_LOCK_CONFLICT');
       }
       auditService.log({ action: 'update', resourceType: 'account', resourceId: id, oldData: existing as Record<string, unknown>, newData: results[0] as Record<string, unknown> });
       return results[0] as ChartOfAccount;
@@ -277,7 +278,7 @@ export class ChartOfAccountsService extends BaseService {
     if (newParentId) {
       // Cannot move to self
       if (newParentId === id) {
-        throw new ValidationError('Cannot move account under itself.');
+        throw new ValidationError('Cannot move account under itself.', undefined, 'ACCOUNT_MOVE_SELF');
       }
 
       const newParent = await this.findById<ChartOfAccount>(
@@ -286,19 +287,20 @@ export class ChartOfAccountsService extends BaseService {
 
       // Cycle detection: new parent must not be a descendant
       if (newParent.path.startsWith(`${account.path}.`)) {
-        throw new ValidationError('Cannot move account under its own descendant (cycle detected).');
+        throw new ValidationError('Cannot move account under its own descendant (cycle detected).', undefined, 'ACCOUNT_MOVE_DESCENDANT');
       }
 
       // Same account type
       if (newParent.accountType !== account.accountType) {
         throw new ValidationError(
           `Cannot move to a parent with different account type. Account: ${account.accountType}, Parent: ${newParent.accountType}`,
+          undefined, 'ACCOUNT_TYPE_MISMATCH', { childType: account.accountType, parentType: newParent.accountType },
         );
       }
 
       // New parent must not be postable
       if (newParent.isPostable) {
-        throw new ValidationError('Cannot move under a postable account. Change parent to non-postable first.');
+        throw new ValidationError('Cannot move under a postable account. Change parent to non-postable first.', undefined, 'ACCOUNT_MOVE_POSTABLE_PARENT');
       }
 
       newLevel = newParent.level + 1;
@@ -361,12 +363,12 @@ export class ChartOfAccountsService extends BaseService {
     // Cannot delete account with active children
     const hasChildren = await this.hasActiveChildren(tenantId, id);
     if (hasChildren) {
-      throw new ValidationError('Cannot delete account with active children. Move or delete children first.');
+      throw new ValidationError('Cannot delete account with active children. Move or delete children first.', undefined, 'ACCOUNT_DELETE_HAS_CHILDREN');
     }
 
     // Cannot delete system template accounts
     if (account.isSystemAccount) {
-      throw new ForbiddenError('Cannot delete system template account. Deactivate instead.');
+      throw new ForbiddenError('Cannot delete system template account. Deactivate instead.', 'ACCOUNT_DELETE_SYSTEM_TEMPLATE');
     }
 
     // TODO: When journal entries exist, check if account has posted entries

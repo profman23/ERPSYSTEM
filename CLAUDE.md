@@ -64,12 +64,15 @@ Package:    npm only (not yarn/pnpm)
 - 0 production TypeScript errors
 - Tiered cache: L1 (in-memory) → L2 (Redis/Upstash) → L3 (AGI Knowledge Cache) with graceful degradation
 - DPF Engine optimized: 2 queries on cache miss (UNION ALL), 15min TTL, cache warming on login
-- Full test infrastructure: 477 backend tests + 132 frontend tests + 25 E2E tests (Playwright)
+- Full test infrastructure: 508 backend tests + 138 frontend tests + 25 E2E tests (Playwright)
 - Redis: SCAN-based invalidation (non-blocking), legacy CacheService bridged to AGI-Ready cache
 - Reusable UI: FormWizard, PhoneInput, VirtualizedList, VirtualizedTable, AccountSelector, empty/error/loading states
 - Document Number Series (branch-scoped, 7 doc types, concurrent-safe SELECT FOR UPDATE + withRetry)
 - Posting Periods (fiscal year + 12 monthly sub-periods, OPEN/CLOSED/LOCKED, auto-seeded per tenant)
 - Journal Entries (double-entry bookkeeping, immutable documents, reversal transactions, master/detail)
+- GL Engine (account_balances materialized ledger, atomic UPSERT posting on JE create/reverse, GLPostingService)
+- GL Reports (Trial Balance from account_balances, Account Ledger from JE lines with running balance)
+- `createFromDocument()` extensibility point for future document types (GRPO, Invoice, etc.)
 - withRetry() utility for database resilience (exponential backoff + jitter, Neon cold starts, deadlocks)
 - Header Toolbar (DPF-controlled quick actions, branch switching, history log, registry pattern for extensibility)
 - Document History Drawer (reusable timeline component for document audit trail — created/reversed/updated)
@@ -80,11 +83,13 @@ Package:    npm only (not yarn/pnpm)
 - Invoices, Payments, Inventory transactions, Purchase Orders
 
 ### Recently Completed
+- GL Accounting Engine Phase 1 (account_balances schema, GLPostingService atomic posting, GLReportService Trial Balance + Account Ledger, frontend pages, DPF screens)
 - Audit Trail Integration (BaseService auditable methods + audit trail API + PageResourceContext + useAuditTrail hook + HeaderToolbar History Log)
 - Journal Entries (double-entry bookkeeping engine, full list/create/detail/reverse workflow)
 - Financial document UI pattern (SAP B1 style: Create + Detail same layout, shared reversal components)
 - Item Master Data (CRUD + frontend form with image upload)
-- Comprehensive test suite: 477 backend (35 files) + 121 frontend (22 files) + 25 E2E Playwright
+- Bilingual Error Message System (Code + Params pattern — 37 MessageErrorCodes, ~55 service throws migrated, frontend i18n resolution)
+- Comprehensive test suite: 521 backend (39 files) + 154 frontend (25 files) + 25 E2E Playwright
 - CI/CD: GitHub Actions workflow (backend + frontend + E2E pipeline)
 - Deployment config: Render blueprint (staging + production) + Neon 3-environment setup
 
@@ -170,17 +175,46 @@ Reference: `server/src/services/SpeciesService.ts`
 
 | Class | Code | When |
 |-------|------|------|
-| `ValidationError(msg, details?)` | 400 | Bad input |
+| `ValidationError(msg, details?, messageKey?, params?)` | 400 | Bad input |
 | `UnauthorizedError(msg?)` | 401 | No/invalid token |
-| `ForbiddenError(msg?)` | 403 | No permission |
+| `ForbiddenError(msg?, messageKey?, params?)` | 403 | No permission |
 | `TenantSuspendedError(tenantId)` | 403 | Suspended tenant |
-| `NotFoundError(entity, id?)` | 404 | Record missing |
-| `ConflictError(msg)` | 409 | Duplicate/conflict |
+| `NotFoundError(entity, id?)` | 404 | Record missing (auto-populates messageKey) |
+| `ConflictError(msg, messageKey?, params?)` | 409 | Duplicate/conflict |
 | `QuotaExceededError(resource, limit)` | 429 | Quota hit |
 | `RateLimitedError(retryAfter?)` | 429 | Rate exceeded |
 | `ServiceUnavailableError(service)` | 503 | External down |
 
 **Production:** NEVER expose stack traces. 500 errors return: `"An unexpected error occurred."`
+
+### Bilingual Error Messages — Code + Params Pattern
+
+Backend sends `messageKey` + `params` alongside English `message`. Frontend translates via i18n. Adding a new language = translation file only (zero backend changes).
+
+| Rule | Standard |
+|------|----------|
+| **Pattern** | `throw new ConflictError(msg, 'ENTITY_CODE_EXISTS', { entity, code })` |
+| **Backend** | English `message` (fallback) + `messageKey` (i18n code) + `params` (interpolation data) |
+| **Frontend** | `extractApiError()` → `i18n.t(errors.api.${messageKey}, params)` → localized display |
+| **Fallback chain** | (1) `i18n.t(messageKey, params)` → (2) `i18n.t(code)` → (3) `data.error` → (4) `UNKNOWN` |
+| **Adding language** | Create translation file + register in i18n config. Zero backend changes |
+| **New error** | Add to `MessageErrorCode` type → add i18n key EN+AR → use in service throw |
+| **Entity names** | Backend sends English name in `params.entity`, frontend translates via `entities.*` i18n |
+| **NotFoundError** | Auto-populates `messageKey` + `params` from constructor args — free i18n for all throws |
+| **Backward compat** | `messageKey` is optional — existing throws without it continue to work |
+
+**API error response with bilingual data:**
+```json
+{
+  "success": false,
+  "error": "Posting period \"March 2026\" is CLOSED",
+  "code": "VALIDATION_ERROR",
+  "messageKey": "POSTING_PERIOD_CLOSED",
+  "params": { "name": "March 2026", "status": "CLOSED" }
+}
+```
+
+**MessageErrorCode type** (`server/src/core/errors/AppError.ts`): 37 specific codes covering Entity CRUD, Chart of Accounts, Journal Entries, Posting Periods, Warehouse, Tax, and Roles.
 
 ### API Response Format — NEVER Deviate
 
@@ -550,7 +584,7 @@ When loading entity options for a dropdown (e.g., Item Groups in Item form):
 
 ### Error Handling
 
-Flow: Backend → `errorHandler` → JSON → Axios → `extractApiError()` → toast + field errors
+Flow: Backend → `errorHandler` → JSON → Axios → `extractApiError()` → banner OR toast (never both)
 
 ```typescript
 import { extractApiError } from '@/lib/apiError';
@@ -560,11 +594,28 @@ import { useToast } from '@/components/ui/toast';
 const apiError = extractApiError(err);
 if (Object.keys(apiError.fieldErrors).length > 0) setErrors(apiError.fieldErrors);
 setSubmitError(apiError.message);
+// NO showToast('error') here — banner is sufficient for form errors
 ```
 
 - ALWAYS `extractApiError()` — NEVER parse `err.response.data` manually
 - ALWAYS `useToast()` from `@/components/ui/toast` — NEVER `@/hooks/use-toast`
 - Toast types: `'success'`, `'error'`, `'warning'`, `'info'`
+
+### Error Display Pattern — Banner vs Toast
+
+| Scenario | Banner (`setSubmitError`) | Toast (`showToast`) |
+|----------|--------------------------|---------------------|
+| Form submit error | YES | NO — redundant |
+| Non-form action error (toggle, delete, reversal) | NO | YES |
+| Success notification | NO | YES |
+
+**NEVER show both banner AND toast for the same error.**
+
+### `extractApiError` Priority
+
+Backend `data.error` ALWAYS takes priority over code-mapped generic messages.
+i18n code mappings (`errors.api.*`) are FALLBACK only when backend sends no message.
+This ensures specific backend messages (e.g., "Posting period March 2026 is CLOSED") are shown to the user, not generic text.
 
 ### Component Rules
 
@@ -703,28 +754,29 @@ JWT_SECRET resolution: explicit `JWT_SECRET` → `SESSION_SECRET` fallback → d
 
 | Layer | Tests | Files | Runner |
 |-------|-------|-------|--------|
-| Backend Services | ~200 | 16 | Vitest + mock DB |
-| Backend Routes | ~175 | 16 | Vitest + Supertest |
-| Backend Core | ~100 | 3 | Vitest |
-| Frontend Hooks | 66 | 11 | Vitest + MSW |
+| Backend Services | ~220 | 18 | Vitest + mock DB |
+| Backend Routes | ~186 | 17 | Vitest + Supertest |
+| Backend Core | ~115 | 4 | Vitest |
+| Frontend Hooks | 72 | 12 | Vitest + MSW |
 | Frontend Components | 62 | 10 | Vitest + Testing Library |
+| Frontend Lib | 16 | 1 | Vitest |
 | Frontend Setup | 4 | 2 | Vitest |
 | E2E | 25 | 7 | Playwright + Chromium |
-| **Total** | **~632** | **65** | |
+| **Total** | **~700** | **71** | |
 
 ### Structure
 
 ```
-server/src/**/*.test.ts    ← Co-located with source (477 tests, 35 files)
-client/src/**/*.test.tsx   ← Co-located with source (104 tests, 20 files)
+server/src/**/*.test.ts    ← Co-located with source (521 tests, 39 files)
+client/src/**/*.test.tsx   ← Co-located with source (154 tests, 25 files)
 e2e/**/*.spec.ts           ← E2E tests (25 tests, 7 files)
 ```
 
 ### Running Tests
 
 ```bash
-cd server && npm test              # 477 backend tests
-cd client && npm test              # 115 frontend tests (may need batches on Windows)
+cd server && npm test              # 521 backend tests
+cd client && npm test              # 154 frontend tests (may need batches on Windows)
 npm run test:e2e                   # 25 E2E tests (needs running server+client+test DB)
 ```
 
@@ -1030,7 +1082,24 @@ Props: `value` (URL), `onUpload` (File → Promise<URL>), `onRemove`, `maxSizeMB
 - Account validation: all accounts must be `isPostable = true`
 - Document number: auto-generated via DocumentNumberSeriesService (JOURNAL_ENTRY type)
 - Reversal: creates new POSTED entry with swapped debits/credits, marks original REVERSED
+- GL posting: atomic balance update via GLPostingService inside same transaction
+- `createFromDocument(tx, tenantId, userId, input)`: extensibility for future documents (GRPO, Invoice)
 - Reference: `server/src/services/JournalEntryService.ts`
+
+### Account Balances (GL Engine)
+- Materialized balance per (tenant × account × sub-period × branch) — SAP B1 pattern
+- UPSERT on JE create: `INSERT ... ON CONFLICT DO UPDATE` — row-level lock, zero contention across accounts
+- Fields: openingDebit/Credit, periodDebit/Credit, closingDebit/Credit (= opening + period), transactionCount, version
+- ~1800 rows/tenant/year → instant Trial Balance queries (<10ms)
+- GLPostingService called inside JE transaction — if posting fails, JE rolls back
+- Reversal: swapped amounts naturally negate — no special undo logic needed
+- Reference: `server/src/services/GLPostingService.ts`, `server/src/db/schemas/accountBalances.ts`
+
+### GL Reports
+- Trial Balance: aggregates from account_balances GROUP BY account — period range + branch filter
+- Account Ledger: detail from journal_entry_lines JOIN journal_entries — running balance server-side, paginated
+- DPF screens: TRIAL_BALANCE, ACCOUNT_LEDGER (Finance module, auto-granted on restart)
+- Reference: `server/src/services/GLReportService.ts`
 
 ### Financial Document UI Pattern (SAP B1 Style)
 
@@ -1219,6 +1288,12 @@ types/                              ← Shared types (client + server)
 | Document numbering | `server/src/services/DocumentNumberSeriesService.ts` |
 | Posting periods | `server/src/services/PostingPeriodService.ts` |
 | Journal entries | `server/src/services/JournalEntryService.ts` |
+| GL posting engine | `server/src/services/GLPostingService.ts` |
+| GL reports (TB + Ledger) | `server/src/services/GLReportService.ts` |
+| Account balances schema | `server/src/db/schemas/accountBalances.ts` |
+| GL report hooks | `client/src/hooks/useGLReports.ts` |
+| Trial Balance page | `client/src/pages/finance/TrialBalancePage.tsx` |
+| Account Ledger page | `client/src/pages/finance/AccountLedgerPage.tsx` |
 | Document status badge | `client/src/components/document/DocumentStatusBadge.tsx` |
 | Reversal dialog | `client/src/components/document/ReverseDocumentDialog.tsx` |
 | Reversal banners | `client/src/components/document/DocumentReversalBanner.tsx` |

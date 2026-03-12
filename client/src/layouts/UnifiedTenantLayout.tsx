@@ -39,6 +39,7 @@ import {
   Hash,
   Calendar,
   BookOpen,
+  Scale,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -194,6 +195,7 @@ export default function UnifiedTenantLayout() {
     children: [
       { key: 'nav.chartOfAccounts', href: '/app/finance/chart-of-accounts', icon: ListTree, emoji: '📊', screenCode: 'CHART_OF_ACCOUNTS' },
       { key: 'nav.journalEntries', href: '/app/finance/journal-entries', icon: BookOpen, emoji: '📖', screenCode: 'JOURNAL_ENTRIES' },
+      { key: 'nav.trialBalance', href: '/app/finance/trial-balance', icon: Scale, emoji: '⚖️', screenCode: 'TRIAL_BALANCE' },
     ],
   };
 

@@ -192,7 +192,6 @@ export default function CreateJournalEntryPage() {
         setErrors(apiError.fieldErrors);
       }
       setSubmitError(apiError.message);
-      showToast('error', apiError.message);
     }
   };
 

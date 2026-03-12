@@ -11,4 +11,4 @@ export {
   ServiceUnavailableError,
 } from './AppError';
 
-export type { ErrorCode } from './AppError';
+export type { ErrorCode, MessageErrorCode } from './AppError';

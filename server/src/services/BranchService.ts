@@ -56,7 +56,7 @@ export class BranchService extends BaseService {
     // Business rule: code must be unique per tenant
     const codeExists = await this.exists(tenantId, this.TABLE, eq(branches.code, code));
     if (codeExists) {
-      throw new ConflictError(`Branch with code '${code}' already exists`);
+      throw new ConflictError(`Branch with code '${code}' already exists`, 'ENTITY_CODE_EXISTS', { entity: 'Branch', code });
     }
 
     // Determine branch sequence for document number series
