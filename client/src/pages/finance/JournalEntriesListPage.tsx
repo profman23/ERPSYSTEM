@@ -14,7 +14,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import {
   BookOpen, Search, Filter, ChevronDown,
   Activity, Settings, Plus, Loader2, Eye, Calendar,
-  FileText, MessageSquare, DollarSign, GitBranch,
+  MessageSquare, DollarSign, GitBranch,
 } from 'lucide-react';
 import { StyledIcon } from '@/components/ui/StyledIcon';
 import { Card, CardContent } from '@/components/ui/card';
