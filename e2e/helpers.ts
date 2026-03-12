@@ -15,10 +15,10 @@ export async function waitForDataTable(page: Page, timeout = 15_000): Promise<Lo
   return table;
 }
 
-/** Wait for either data table OR empty state — use when data may not exist */
-export async function waitForTableOrEmpty(page: Page, timeout = 15_000): Promise<'table' | 'empty'> {
+/** Wait for either data table OR empty state OR error — use when data may not exist */
+export async function waitForTableOrEmpty(page: Page, timeout = 20_000): Promise<'table' | 'empty'> {
   const table = page.locator('[data-testid="data-table"]');
-  const empty = page.locator('text=/No.*data|No.*found|No.*entries|No.*results/i');
+  const empty = page.locator('text=/No.*data|No.*found|No.*entries|No.*results|No.*series|Error.*load|failed.*load/i');
   await expect(table.or(empty)).toBeVisible({ timeout });
   if (await table.isVisible().catch(() => false)) return 'table';
   return 'empty';

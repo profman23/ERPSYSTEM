@@ -137,7 +137,8 @@ test.describe('Journal Entry', () => {
     await page.goto('/app/finance/journal-entries');
     skipIfLoginRedirect(page, test);
 
-    // Wait for data table or empty state (AdvancedDataTable = div-based)
+    // Wait for loading to finish before checking table
+    await page.waitForTimeout(3_000);
     const state = await waitForTableOrEmpty(page);
     if (state === 'empty') {
       test.skip(true, 'No journal entries to reverse');
@@ -168,6 +169,8 @@ test.describe('Journal Entry', () => {
     await page.goto('/app/finance/journal-entries');
     skipIfLoginRedirect(page, test);
 
+    // Wait for loading to finish before checking table
+    await page.waitForTimeout(3_000);
     const state = await waitForTableOrEmpty(page);
     if (state === 'empty') {
       test.skip(true, 'No journal entries to check');
