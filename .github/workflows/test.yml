@@ -20,6 +20,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: cd server && npm ci
+      - name: Push schema to test DB
+        run: cd server && npx drizzle-kit push
       - name: TypeScript check (server)
         run: cd server && npx tsc --noEmit
       - name: Run backend tests

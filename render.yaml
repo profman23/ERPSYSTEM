@@ -9,7 +9,7 @@ services:
     region: frankfurt
     plan: free
     branch: main
-    buildCommand: cd server && npm ci --include=dev && npm run build
+    buildCommand: cd server && npm ci --include=dev && npx drizzle-kit push && npm run build
     startCommand: cd server && npx tsx src/index.ts
     healthCheckPath: /api/v1/health
     envVars:
@@ -52,7 +52,7 @@ services:
     region: frankfurt
     plan: starter
     branch: production
-    buildCommand: cd server && npm ci --include=dev && npm run build
+    buildCommand: cd server && npm ci --include=dev && npx drizzle-kit push && npm run build
     startCommand: cd server && npx tsx src/index.ts
     healthCheckPath: /api/v1/health
     envVars:
