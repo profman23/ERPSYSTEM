@@ -21,7 +21,7 @@ jobs:
       - run: npm ci
       - run: cd server && npm ci
       - name: Push schema to test DB
-        run: cd server && npx drizzle-kit push
+        run: cd server && npx drizzle-kit push --force
       - name: TypeScript check (server)
         run: cd server && npx tsc --noEmit
       - name: Run backend tests
